@@ -12,4 +12,6 @@ naming:
     ignoreAnnotated: ['Composable']
 complexity:
   LongParameterList:
+    # 공개 모델은 data class 대신(이진 호환) 일반 클래스로 두므로 생성자 인자가 필드 수만큼 길다.
+    constructorThreshold: 16
     ignoreAnnotated: ['Composable']
