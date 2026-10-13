@@ -12,7 +12,7 @@
 | 리다이렉트 Location의 토큰 | URL 값 헤더도 URL 규칙으로 마스킹 | `RedactorTest` |
 | 실패 메시지 속 URL·비밀 | 메시지 마스킹·길이 제한 | `RedactorTest`, `CaptureEngineTest` |
 | 저장소에 남는 원본 | 저장 타입이 마스킹 단계를 거쳐야만 생성됨 | `PulseStorageTest`(DB 덤프 검사) |
-| 기기 전체 파일·내보내기에 남는 비밀 | 위 대응 전체 + 내보낼 때 다시 마스킹 | **`SecretLeakAuditTest`**: 가짜 비밀 12개를 헤더·쿼리·중첩 JSON·form·잘못된 JSON·Set-Cookie·Location에 심고, DB·WAL·본문 파일·HAR·PULSE JSON·cURL을 바이트 단위로 검사 |
+| 기기 전체 파일·내보내기에 남는 비밀 | 위 대응 전체 + 내보낼 때 다시 마스킹 | **`SecretLeakAuditTest`**: 가짜 비밀 14개를 헤더·쿼리·중첩 JSON·문자열 속 JSON과 URL·form·잘못된 JSON·Set-Cookie·Location에 심고, DB·WAL·본문 파일·HAR·PULSE JSON·cURL을 바이트 단위로 검사 |
 | cURL로 자격 증명 재구성 | 가려진 헤더는 넣지 않음 | `CurlFormatterTest` |
 | release 빌드 유입 | no-op 교체, release 런타임 classpath 검사, 공개 API 일치 검사 | `verifyReleaseClasspath`, `verifyNoopApi` |
 | 다른 앱이 화면을 엶 | `exported=false` | merged manifest 확인(수동, README 참고) |

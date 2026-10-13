@@ -41,12 +41,17 @@ public class Redactor(policy: RedactionPolicy) {
     /** 실패 메시지 안의 URL과 `name=value` 형태의 민감 값을 가리고 [MAX_MESSAGE_LENGTH]자로 자른다. */
     public fun sanitizeMessage(message: String?): String? {
         if (message.isNullOrEmpty()) return message
-        val urlsSanitized = urlPattern.replace(message) { sanitizeUrl(it.value) }
-        val pairsSanitized = assignmentPattern.replace(urlsSanitized) { match ->
+        val sanitized = sanitizeText(message)
+        return if (sanitized.length > MAX_MESSAGE_LENGTH) sanitized.take(MAX_MESSAGE_LENGTH) + "…" else sanitized
+    }
+
+    /** 자유 텍스트 안의 URL과 `name=value` 형태의 민감 값을 가린다. 길이는 자르지 않는다. */
+    internal fun sanitizeText(text: String): String {
+        val urlsSanitized = urlPattern.replace(text) { sanitizeUrl(it.value) }
+        return assignmentPattern.replace(urlsSanitized) { match ->
             val name = match.groupValues[1]
             if (matcher.isSensitiveKey(name) || matcher.isSensitiveQueryParameter(name)) "$name=$REDACTED" else match.value
         }
-        return if (pairsSanitized.length > MAX_MESSAGE_LENGTH) pairsSanitized.take(MAX_MESSAGE_LENGTH) + "…" else pairsSanitized
     }
 
     private fun stripUserInfo(base: String): String {

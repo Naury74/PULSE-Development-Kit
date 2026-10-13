@@ -36,38 +36,77 @@ public class BodySanitizer(private val redactor: Redactor) {
     }
 
     internal fun redactJson(text: String): BodySanitizeResult {
-        if (nestingDepth(text) > MAX_JSON_DEPTH) return BodySanitizeResult.Rejected(BodyState.REDACTION_FAILED)
-        val element = try {
-            json.parseToJsonElement(text)
-        } catch (_: SerializationException) {
-            return BodySanitizeResult.Rejected(BodyState.REDACTION_FAILED)
-        } catch (_: IllegalArgumentException) {
-            return BodySanitizeResult.Rejected(BodyState.REDACTION_FAILED)
-        }
-        var redacted = 0
-        fun redact(node: JsonElement): JsonElement = when (node) {
+        val element = parseOrNull(text) ?: return BodySanitizeResult.Rejected(BodyState.REDACTION_FAILED)
+        val pass = RedactionPass()
+        val safe = pass.redact(element, embeddingDepth = 0)
+        return BodySanitizeResult.Captured(encode(safe), pass.count)
+    }
+
+    /** 한 본문을 마스킹하는 동안 가린 값의 수를 센다. */
+    private inner class RedactionPass {
+        var count = 0
+            private set
+
+        fun redact(node: JsonElement, embeddingDepth: Int): JsonElement = when (node) {
             is JsonObject -> JsonObject(
                 node.mapValues { (key, value) ->
                     if (redactor.matcher.isSensitiveKey(key)) {
-                        redacted++
+                        count++
                         JsonPrimitive(REDACTED)
                     } else {
-                        redact(value)
+                        redact(value, embeddingDepth)
                     }
                 },
             )
 
-            is JsonArray -> JsonArray(node.map(::redact))
+            is JsonArray -> JsonArray(node.map { redact(it, embeddingDepth) })
 
-            else -> node
+            is JsonPrimitive -> if (node.isString) redactString(node, embeddingDepth) else node
         }
-        val safe = redact(element)
-        return BodySanitizeResult.Captured(json.encodeToString(JsonElement.serializer(), safe), redacted)
+
+        // 서버가 받은 요청을 되돌려 주거나 로그를 담으면 비밀이 문자열 안에 JSON·URL·name=value로 들어 있다.
+        private fun redactString(node: JsonPrimitive, embeddingDepth: Int): JsonPrimitive {
+            val original = node.content
+            val embedded = embeddedJson(original, embeddingDepth)
+            if (embedded != null) {
+                val before = count
+                val safe = redact(embedded, embeddingDepth + 1)
+                // 가린 것이 없으면 원래 공백·순서를 그대로 둔다.
+                return if (count == before) node else JsonPrimitive(encode(safe))
+            }
+            val safe = redactor.sanitizeText(original)
+            if (safe == original) return node
+            count++
+            return JsonPrimitive(safe)
+        }
+
+        private fun embeddedJson(text: String, embeddingDepth: Int): JsonElement? {
+            if (embeddingDepth >= MAX_EMBEDDED_DEPTH) return null
+            val trimmed = text.trimStart()
+            if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
+            return parseOrNull(trimmed)
+        }
+    }
+
+    private fun encode(element: JsonElement): String = json.encodeToString(JsonElement.serializer(), element)
+
+    private fun parseOrNull(text: String): JsonElement? {
+        if (nestingDepth(text) > MAX_JSON_DEPTH) return null
+        return try {
+            json.parseToJsonElement(text)
+        } catch (_: SerializationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
     }
 
     public companion object {
         /** 이보다 깊게 중첩된 JSON은 해석하지 않는다(스택 소모 방지). */
         public const val MAX_JSON_DEPTH: Int = 64
+
+        /** 문자열 안에 든 JSON을 이 단계까지만 풀어 본다. */
+        private const val MAX_EMBEDDED_DEPTH = 2
 
         private val json = Json { prettyPrint = false }
         private val BYTE_ORDER_MARK = Char(0xFEFF).toString()

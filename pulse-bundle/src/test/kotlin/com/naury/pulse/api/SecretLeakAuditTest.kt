@@ -30,7 +30,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class SecretLeakAuditTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
-    private val secrets = (1..12).map { "pulse-canary-$it-${System.nanoTime()}" }
+    private val secrets = (1..14).map { "pulse-canary-$it-${System.nanoTime()}" }
 
     @After
     fun tearDown() {
@@ -51,7 +51,9 @@ class SecretLeakAuditTest {
                     .setHeader("Set-Cookie", "sid=${secrets[0]}; HttpOnly")
                     .body(
                         """{"user":{"accessToken":"${secrets[1]}","profile":{"ssn":"${secrets[2]}"}},""" +
-                            """"list":[{"refresh_token":"${secrets[3]}"}]}""",
+                            """"list":[{"refresh_token":"${secrets[3]}"}],""" +
+                            // 받은 요청을 문자열로 되돌려 주는 서버(httpbin 등)
+                            """"echo":"{\"password\":\"${secrets[12]}\"}","url":"https://api.test/get?token=${secrets[13]}"}""",
                     )
                     .build(),
             )

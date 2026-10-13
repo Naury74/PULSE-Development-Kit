@@ -104,4 +104,32 @@ class BodySanitizerTest {
         assertThat(result.text).isEqualTo("""{"id":7,"tags":["a","b"],"ok":true,"none":null}""")
         assertThat(result.redactedValueCount).isEqualTo(0)
     }
+
+    @Test
+    fun `문자열 값 안에 든 JSON의 민감한 키도 가린다`() {
+        // httpbin처럼 받은 요청 본문을 문자열로 되돌려 주는 응답
+        val result = captured("""{"data":"{\"email\":\"a@b.c\",\"password\":\"secret\"}","json":{"password":"secret"}}""")
+
+        assertThat(result.text).doesNotContain("secret")
+        assertThat(result.text).isEqualTo(
+            """{"data":"{\"email\":\"a@b.c\",\"password\":\"$REDACTED\"}","json":{"password":"$REDACTED"}}""",
+        )
+        assertThat(result.redactedValueCount).isEqualTo(2)
+    }
+
+    @Test
+    fun `문자열 값 안의 URL 쿼리와 name=value 비밀을 가린다`() {
+        val result = captured("""{"url":"https://api.test/get?token=secret&page=1","log":"retry password=secret done"}""")
+
+        assertThat(result.text).doesNotContain("secret")
+        assertThat(result.text).contains("page=1")
+        assertThat(result.redactedValueCount).isEqualTo(2)
+    }
+
+    @Test
+    fun `비밀 없는 문자열 속 JSON은 원래 모양 그대로 둔다`() {
+        val body = """{"data":"{ \"id\": 1 }","note":"a=b"}"""
+
+        assertThat(captured(body).text).isEqualTo(body)
+    }
 }
