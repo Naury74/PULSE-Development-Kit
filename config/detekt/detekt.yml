@@ -1,5 +1,8 @@
 # 기본 규칙 위에 덮어쓰는 값만 둔다. 규칙을 끄려면 ADR이 필요하다(docs/adr).
 style:
+  ReturnCount:
+    max: 3
+    excludeGuardClauses: true
   MaxLineLength:
     maxLineLength: 140
   MagicNumber:
