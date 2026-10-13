@@ -1,6 +1,6 @@
 # PULSE
 
-> **WIP** — 아직 배포 전입니다. Maven Central에 올라가 있지 않고, 공개 API는 0.x 동안 바뀔 수 있습니다.
+> **WIP** — 아직 Maven Central에 배포하지 않았습니다. 공개 API는 0.x 동안 바뀔 수 있습니다.
 
 **PULSE**는 Android 앱의 OkHttp 요청을 기기 안에서 안전하게 기록하고 살펴보는 네트워크 인스펙터 SDK입니다.
 연결한 `OkHttpClient`를 지나는 요청만 기록하며, 비밀 값은 **저장하기 전에** 가립니다. 호스트 앱이 받는 응답·예외·스트리밍 동작은 바뀌지 않습니다.
@@ -16,27 +16,30 @@
 
 화면은 `sample-app` debug 빌드를 Android 16(API 36) 에뮬레이터에서 실행한 실제 화면입니다.
 
-## 지금 되는 것 (0.1.0-SNAPSHOT)
+## 기능
 
 - **기록**: 메서드, 마스킹한 URL·헤더, 상태 코드, 실패 종류(I/O 실패·취소·시간 초과와 4xx·5xx 응답을 구분), 크기, 소요 시간
-- **본문**(선택): JSON 본문만, 상한(요청 128 KB·응답 512 KB 기본) 안에서, 호스트가 실제로 읽거나 쓴 바이트만 복사해 마스킹한 뒤 저장
-- **단계 타이밍**: OkHttp `EventListener`가 관찰한 DNS·연결·TLS·요청·응답 단계만. 관찰하지 못한 단계는 0으로 추정하지 않고 비워 둡니다
-- **보관**: Room DB와 앱 전용 파일(`noBackupFilesDir`), 건수·기간·본문 용량 상한, 앱이 죽어 끝나지 않은 요청은 다음 실행 때 "중단"으로 표시
-- **화면**: 검색·상태 필터·페이지 목록, 요약·요청·응답·타임라인 상세, 넓은 화면 두 칸 보기, 한국어·영어
-- **release 빌드**: 같은 API의 `pulse-noop`으로 바꿔 수집·저장·화면 코드가 들어가지 않음
+- **본문**(선택): JSON만, 상한 안에서, 호스트가 실제로 읽거나 쓴 바이트만 복사해 마스킹한 뒤 저장. 트리·원문 보기
+- **단계 타이밍**: OkHttp `EventListener`가 관찰한 DNS·연결·TLS·요청·응답 단계, 캐시 응답·연결 재사용 근거. 관찰하지 못한 값은 추정하지 않음
+- **개요·진단**: 기간별 요청 수·오류율·p50/p95/p99·응답 크기, 느린 엔드포인트, 진단 규칙 6개(느린 요청, 오류 몰림, 동시 중복 GET, 큰 응답, N+1 추정, 캐시 후보). 결과마다 기준값·관찰값·근거 요청을 보여 주고 추정 규칙은 추정이라고 밝힘
+- **내보내기**: HAR 1.2·PULSE JSON을 사용자가 고른 위치에 스트리밍으로 저장(내보낼 때 다시 마스킹), cURL 복사
+- **재실행**(선택, 기본 꺼짐): 허용한 호스트에만, 가려진 자격 증명은 빼고, 상태를 바꾸는 요청은 확인 후 보냄. 리다이렉트도 단계마다 검사. 원본과 결과 비교
+- **모의 응답**(선택, 기본 꺼짐): 직접 붙인 interceptor가 규칙에 맞는 요청에 합성 응답. MOCK으로 따로 기록
+- **보관**: Room DB와 백업 제외 폴더, 건수·기간·본문 용량 상한, 앱이 죽어 끝나지 않은 요청은 "중단"으로 표시
+- **release 빌드**: 같은 API의 `pulse-noop`으로 바꾸면 수집·저장·화면 코드가 들어가지 않음
 
-아직 없는 것: 대시보드·통계, 진단 규칙, HAR/cURL 내보내기, 재실행(replay), 모킹, Maven Central 배포. 순서는 [기획 문서의 백로그](#로드맵)를 따릅니다.
+## 시작하기
 
-## 연동
-
-배포 전이라 지금은 이 저장소의 모듈을 직접 포함해 씁니다.
+배포 전이므로 지금은 `./gradlew publishToMavenLocal`로 로컬 Maven에 올린 뒤 씁니다. 자세한 내용은 [docs/getting-started.md](docs/getting-started.md).
 
 ```kotlin
+// settings.gradle.kts의 repositories에 mavenLocal() 추가
+
 // app/build.gradle.kts
 dependencies {
-    debugImplementation(project(":pulse-bundle"))      // 수집·저장
-    debugImplementation(project(":pulse-ui-compose"))  // 인스펙터 화면(선택)
-    releaseImplementation(project(":pulse-noop"))      // 같은 API, 아무것도 하지 않음
+    debugImplementation("com.naurylab:pulse-bundle:0.1.0-SNAPSHOT")      // 수집·저장
+    debugImplementation("com.naurylab:pulse-ui-compose:0.1.0-SNAPSHOT")  // 인스펙터 화면(선택)
+    releaseImplementation("com.naurylab:pulse-noop:0.1.0-SNAPSHOT")      // 같은 API, 아무것도 하지 않음
 }
 ```
 
@@ -58,52 +61,30 @@ class App : Application() {
 Pulse.open(context)
 ```
 
-- 이미 `EventListener.Factory`를 쓰고 있다면 `pulse.eventListenerFactory(existingFactory)`로 넘기면 두 리스너 모두 이벤트를 받습니다.
-- Compose 화면 안에 넣으려면 `PulseInspectorScreen(inspector = pulse, onClose = { ... })`를 씁니다.
-- Java에서는 `new PulseConfig.Builder()...build()`와 `Pulse.initialize(context, config)`를 씁니다. 예제: [`JavaIntegration.java`](sample-app/src/main/java/com/naury/pulse/sample/JavaIntegration.java).
+Compose 화면 안에 넣으려면 `PulseInspectorScreen(inspector = pulse, onClose = { ... })`, Java는 [docs/java.md](docs/java.md)를 보세요.
 
-### 설정
+## 문서
 
-```kotlin
-PulseConfig.Builder()
-    .captureMode(CaptureMode.METADATA_AND_SAFE_BODIES)       // 기본은 METADATA_ONLY(본문 저장 안 함)
-    .limits(CaptureLimits(maxRequestBodyBytes = 64 * 1024, maxResponseBodyBytes = 256 * 1024))
-    .retention(RetentionPolicy(maxTransactions = 5_000, maxAgeMillis = 3L * 24 * 60 * 60 * 1000))
-    .redaction(RedactionPolicy.strict().withHeaders("X-Tenant-Id").withSensitiveNames("card_number"))
-    .build()
-```
-
-같은 설정으로 다시 `initialize`하면 기존 핸들을 돌려주고, 다른 설정이면 `PulseConfigurationException`을 던집니다. 설정을 바꾸려면 `close()` 후 다시 초기화합니다.
-
-## 개인정보와 안전
-
-- 기본으로 `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`, `X-Api-Key` 헤더와 이름에 token·password·secret·api key·session·auth 등이 들어간 헤더·쿼리·JSON 키의 값을 가립니다. 원래 값은 저장하지 않으므로 다시 볼 수 없습니다.
-- JSON이 아니거나, 해석할 수 없거나, 상한을 넘거나, 끝까지 읽지 않은 본문은 저장하지 않고 이유만 남깁니다(fail closed).
-- 수집이 실패해도 요청은 그대로 진행됩니다(fail open). 큐가 넘치면 본문부터 버리고 버린 수를 화면에 보여 줍니다.
-- 인스펙터 Activity는 `exported=false`라 다른 앱이 열 수 없습니다.
-- 디버깅 권한이 있는 앱·계정에서만 쓰세요. 자세한 내용은 [SECURITY.md](SECURITY.md).
+| 문서 | 내용 |
+| --- | --- |
+| [getting-started.md](docs/getting-started.md) | 설치, 초기화, 기존 EventListener와 함께 쓰기, 화면 열기 |
+| [configuration.md](docs/configuration.md) | `PulseConfig`의 모든 설정과 기본값 |
+| [capture-semantics.md](docs/capture-semantics.md) | 무엇을 언제 기록하는지, 본문 상태, 타이밍의 의미 |
+| [privacy-and-export.md](docs/privacy-and-export.md) | 마스킹 규칙, 저장 위치, 내보내기 |
+| [replay-and-mocks.md](docs/replay-and-mocks.md) | 재실행과 모의 응답의 안전 장치 |
+| [java.md](docs/java.md) | Java에서 쓰기 |
+| [architecture.md](docs/architecture.md) | 모듈 구성과 데이터 흐름 |
+| [benchmarks.md](docs/benchmarks.md) | 측정 방법과 결과(JVM, 기기 측정 전) |
+| [security-audit.md](docs/security-audit.md) | 위협별 대응과 확인하는 테스트 |
+| [adr/](docs/adr) | 설계 결정 |
 
 ## 알려진 제한
 
 - 연결한 `OkHttpClient`의 요청만 기록합니다. WebView, Cronet, `HttpURLConnection`, 다른 앱의 트래픽은 기록하지 않습니다.
-- application interceptor 위치에서 기록하므로 OkHttp가 나중에 붙이는 헤더(`Host`, `Accept-Encoding`, 쿠키 저장소의 쿠키)는 요청 헤더에 보이지 않습니다.
-- 본문은 JSON만 저장합니다. 호스트가 직접 `Accept-Encoding`을 지정해 압축된 채로 받는 응답은 저장하지 않습니다.
-- WebSocket 프레임, 진단 규칙, 내보내기, 재실행, 모킹은 아직 없습니다.
-- 성능 목표(요청당 오버헤드 등)는 아직 측정하지 않았습니다.
-
-## 저장소 구성
-
-| 모듈 | 내용 |
-| --- | --- |
-| `pulse-api` | 설정·모델·`PulseInspector` 계약 (Kotlin JVM, Android·OkHttp 의존 없음) |
-| `pulse-security` | 헤더·URL·JSON 마스킹 |
-| `pulse-core` | 상한 있는 수집 큐, 저장 스레드, 기록 상태 |
-| `pulse-okhttp` | `PulseInterceptor`, `EventListener` 타이밍, 본문 tee |
-| `pulse-storage` | Room 스키마, 본문 파일, 보관 정책, 페이지 조회 |
-| `pulse-bundle` | `Pulse` 진입점과 `PulseHandle` (debug용) |
-| `pulse-noop` | 같은 API의 빈 구현 (release용) |
-| `pulse-ui-compose` | 인스펙터 화면 |
-| `sample-app` | 앱 안 데모 서버로 여러 경우를 재현하는 예제 |
+- application interceptor 위치에서 기록하므로 OkHttp가 나중에 붙이는 헤더(`Host`, `Accept-Encoding`, 쿠키 저장소의 쿠키)는 보이지 않습니다.
+- 본문은 JSON만 저장합니다. WebSocket 프레임은 기록하지 않습니다.
+- 저장 데이터는 암호화하지 않습니다. 스크린샷 차단은 아직 없습니다.
+- 성능은 JVM에서만 쟀고 Android 기기 측정은 아직입니다.
 
 ## 빌드
 
@@ -111,11 +92,7 @@ PulseConfig.Builder()
 ./gradlew check :sample-app:assembleDebug :sample-app:assembleRelease
 ```
 
-`check`는 단위 테스트, Android Lint, ktlint, detekt와 release 런타임에 수집 모듈이 섞이지 않았는지 확인하는 `verifyReleaseClasspath`를 실행합니다. JDK 25(Android Studio 포함 JBR)를 씁니다.
-
-## 로드맵
-
-capture → security → storage → UI(여기까지 기본 흐름) → timing·통계 → 진단 → 내보내기 → 재실행 → 모킹 → 배포 순서로 진행합니다. 변경 내역은 [CHANGELOG.md](CHANGELOG.md), 설계 결정은 [docs/adr](docs/adr)에 있습니다.
+`check`는 단위·Robolectric 테스트, Android Lint, ktlint, detekt, 공개 API 검사(`checkKotlinAbi`, `verifyNoopApi`), release 런타임 검사(`verifyReleaseClasspath`)를 실행합니다. JDK 25(Android Studio 포함 JBR)를 씁니다. 기여 방법은 [CONTRIBUTING.md](CONTRIBUTING.md), 변경 내역은 [CHANGELOG.md](CHANGELOG.md).
 
 ## 라이선스
 
