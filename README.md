@@ -5,6 +5,17 @@
 **PULSE**는 Android 앱의 OkHttp 요청을 기기 안에서 안전하게 기록하고 살펴보는 네트워크 인스펙터 SDK입니다.
 연결한 `OkHttpClient`를 지나는 요청만 기록하며, 비밀 값은 **저장하기 전에** 가립니다. 호스트 앱이 받는 응답·예외·스트리밍 동작은 바뀌지 않습니다.
 
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/images/screen-traffic.png" width="200" alt="트래픽 목록"><br><b>트래픽</b><br>검색·상태 필터</td>
+    <td align="center" width="25%"><img src="docs/images/screen-failed.png" width="200" alt="실패 필터"><br><b>실패</b><br>취소·I/O 실패 구분</td>
+    <td align="center" width="25%"><img src="docs/images/screen-request.png" width="200" alt="요청 상세"><br><b>요청</b><br>저장 전 마스킹</td>
+    <td align="center" width="25%"><img src="docs/images/screen-timeline.png" width="200" alt="타임라인"><br><b>타임라인</b><br>관찰한 단계만</td>
+  </tr>
+</table>
+
+화면은 `sample-app` debug 빌드를 Android 16(API 36) 에뮬레이터에서 실행한 실제 화면입니다.
+
 ## 지금 되는 것 (0.1.0-SNAPSHOT)
 
 - **기록**: 메서드, 마스킹한 URL·헤더, 상태 코드, 실패 종류(I/O 실패·취소·시간 초과와 4xx·5xx 응답을 구분), 크기, 소요 시간
@@ -105,3 +116,7 @@ PulseConfig.Builder()
 ## 로드맵
 
 capture → security → storage → UI(여기까지 기본 흐름) → timing·통계 → 진단 → 내보내기 → 재실행 → 모킹 → 배포 순서로 진행합니다. 변경 내역은 [CHANGELOG.md](CHANGELOG.md), 설계 결정은 [docs/adr](docs/adr)에 있습니다.
+
+## 라이선스
+
+[Apache License 2.0](LICENSE)
