@@ -3,6 +3,9 @@ package com.naury.pulse.sample
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.os.StrictMode
+import com.naury.pulse.api.BodyFormats
+import com.naury.pulse.api.CaptureFilter
+import com.naury.pulse.api.EndpointGrouping
 import com.naury.pulse.api.Pulse
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseHandle
@@ -33,8 +36,12 @@ class SampleApplication : Application() {
             StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
         }
         // 재실행은 앱 안 데모 서버(127.0.0.1)에만 허용한다.
+        // 상태 확인(/health)은 기록하지 않고, form 본문도 마스킹해 저장한다. /items/{id}는 직접 정한 템플릿으로 묶는다.
         val config = PulseConfig.debugDefaults().newBuilder()
             .replay(ReplayPolicy(setOf("127.0.0.1", "localhost"), allowCleartext = true))
+            .filter(CaptureFilter(ignoredPathPrefixes = setOf("/health")))
+            .bodyFormats(BodyFormats(forms = true))
+            .endpoints(EndpointGrouping(templates = listOf("/items/{itemId}")))
             .build()
         pulse = Pulse.initialize(this, config)
     }

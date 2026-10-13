@@ -31,4 +31,8 @@
     <string name="scenario_error_burst_detail">500 응답을 연달아 6번 받아 진단 탭에 오류 몰림이 나옵니다.</string>
     <string name="scenario_repeated_get">같은 GET 반복</string>
     <string name="scenario_repeated_get_detail">인증 없는 같은 GET을 캐시 없이 6번 보내 캐시 후보가 됩니다.</string>
+    <string name="scenario_form_login">form 로그인</string>
+    <string name="scenario_form_login_detail">비밀번호가 든 form 본문. 비밀번호를 가린 채 저장합니다.</string>
+    <string name="scenario_health">상태 확인(기록 제외)</string>
+    <string name="scenario_health_detail">/health는 CaptureFilter로 제외해 PULSE에 나오지 않습니다.</string>
 </resources>

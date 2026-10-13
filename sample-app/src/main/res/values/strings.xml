@@ -31,4 +31,8 @@
     <string name="scenario_error_burst_detail">Six 500 responses in a row, so the Insights tab reports an error burst.</string>
     <string name="scenario_repeated_get">Repeated GET</string>
     <string name="scenario_repeated_get_detail">The same unauthenticated GET six times without a cache, a cache candidate.</string>
+    <string name="scenario_form_login">Form login</string>
+    <string name="scenario_form_login_detail">application/x-www-form-urlencoded with a password. Stored with the password redacted.</string>
+    <string name="scenario_health">Health check (filtered)</string>
+    <string name="scenario_health_detail">/health is excluded by CaptureFilter, so it does not appear in PULSE.</string>
 </resources>
