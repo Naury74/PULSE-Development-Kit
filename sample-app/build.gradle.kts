@@ -43,6 +43,9 @@ dependencies {
     releaseImplementation(project(":pulse-noop"))
 
     implementation(libs.okhttp)
+    // 인터넷 없이 시연하도록 앱 안에서 로컬 서버를 띄운다. 샘플 전용이며 SDK는 의존하지 않는다.
+    implementation(libs.okhttp.mockwebserver)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

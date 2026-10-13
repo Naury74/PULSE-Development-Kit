@@ -1,3 +1,30 @@
 <resources>
     <string name="app_name">PULSE Sample</string>
+    <string name="sample_intro">Each card sends requests to a local demo server inside this app through an OkHttpClient with PULSE attached. Open the inspector to see what was recorded. Values that look like secrets are redacted before storage.</string>
+    <string name="recording_state">PULSE state: %1$s</string>
+    <string name="open_inspector">Open inspector</string>
+    <string name="inspector_unavailable">The inspector is not available in this build (release uses pulse-noop).</string>
+
+    <string name="scenario_get_json">GET JSON</string>
+    <string name="scenario_get_json_detail">200 response with an access token field and an api_key query parameter.</string>
+    <string name="scenario_post_login">POST login</string>
+    <string name="scenario_post_login_detail">JSON body with a password and a Bearer Authorization header.</string>
+    <string name="scenario_not_found">404 Not Found</string>
+    <string name="scenario_not_found_detail">Client error response, recorded as a completed HTTP response.</string>
+    <string name="scenario_server_error">500 Server Error</string>
+    <string name="scenario_server_error_detail">Server error response, separate from I/O failures.</string>
+    <string name="scenario_redirect">Redirect 302 → 200</string>
+    <string name="scenario_redirect_detail">One logical request with two exchanges in the timeline.</string>
+    <string name="scenario_gzip">gzip response</string>
+    <string name="scenario_gzip_detail">OkHttp decompresses it; the decoded JSON is stored after redaction.</string>
+    <string name="scenario_large">Large streamed JSON</string>
+    <string name="scenario_large_detail">Bigger than the 512 KB body limit, so only metadata is stored.</string>
+    <string name="scenario_image">Binary image</string>
+    <string name="scenario_image_detail">Not JSON, so the body is not stored.</string>
+    <string name="scenario_timeout">Read timeout</string>
+    <string name="scenario_timeout_detail">The server answers after 1.5 s but the client waits 300 ms.</string>
+    <string name="scenario_cancel">Cancel</string>
+    <string name="scenario_cancel_detail">The call is canceled 200 ms after it starts.</string>
+    <string name="scenario_burst">20 concurrent requests</string>
+    <string name="scenario_burst_detail">Each request keeps its own ID and response.</string>
 </resources>

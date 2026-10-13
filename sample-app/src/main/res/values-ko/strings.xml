@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">PULSE 샘플</string>
+    <string name="sample_intro">각 카드는 PULSE를 붙인 OkHttpClient로 이 앱 안의 데모 서버에 요청을 보냅니다. 인스펙터를 열어 기록된 내용을 확인하세요. 비밀로 보이는 값은 저장 전에 가려집니다.</string>
+    <string name="recording_state">PULSE 상태: %1$s</string>
+    <string name="open_inspector">인스펙터 열기</string>
+    <string name="inspector_unavailable">이 빌드에는 인스펙터가 없습니다(release는 pulse-noop을 씁니다).</string>
+
+    <string name="scenario_get_json">GET JSON</string>
+    <string name="scenario_get_json_detail">access token 필드와 api_key 쿼리가 있는 200 응답.</string>
+    <string name="scenario_post_login">POST 로그인</string>
+    <string name="scenario_post_login_detail">비밀번호가 든 JSON 본문과 Bearer Authorization 헤더.</string>
+    <string name="scenario_not_found">404 Not Found</string>
+    <string name="scenario_not_found_detail">클라이언트 오류 응답. HTTP 응답을 받은 완료로 기록됩니다.</string>
+    <string name="scenario_server_error">500 서버 오류</string>
+    <string name="scenario_server_error_detail">서버 오류 응답. I/O 실패와 구분됩니다.</string>
+    <string name="scenario_redirect">리다이렉트 302 → 200</string>
+    <string name="scenario_redirect_detail">논리 요청 하나에 타임라인 교환 두 개.</string>
+    <string name="scenario_gzip">gzip 응답</string>
+    <string name="scenario_gzip_detail">OkHttp가 푼 JSON을 마스킹한 뒤 저장합니다.</string>
+    <string name="scenario_large">큰 스트리밍 JSON</string>
+    <string name="scenario_large_detail">본문 상한 512 KB보다 커서 메타데이터만 저장합니다.</string>
+    <string name="scenario_image">바이너리 이미지</string>
+    <string name="scenario_image_detail">JSON이 아니라 본문을 저장하지 않습니다.</string>
+    <string name="scenario_timeout">읽기 시간 초과</string>
+    <string name="scenario_timeout_detail">서버는 1.5초 뒤에 응답하지만 클라이언트는 300ms만 기다립니다.</string>
+    <string name="scenario_cancel">취소</string>
+    <string name="scenario_cancel_detail">요청 시작 200ms 뒤에 취소합니다.</string>
+    <string name="scenario_burst">동시 요청 20개</string>
+    <string name="scenario_burst_detail">각 요청이 자기 ID와 응답을 유지합니다.</string>
+</resources>
