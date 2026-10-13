@@ -216,29 +216,36 @@ internal fun BreakdownCard(stats: TrafficStatistics, filters: DashboardFilters) 
                 val name = groupName(dimension, group.key)
                 val drillable = group.key != GroupStatistics.UNKNOWN_KEY &&
                     dimension in setOf(StatsDimension.HOST, StatsDimension.SCREEN, StatsDimension.LABEL)
-                Column(
-                    if (drillable) Modifier.clickable(role = Role.Button) { filters.drillDown(dimension, group.key) } else Modifier,
-                ) {
-                    ProportionRow(name, group.count, total, MaterialTheme.colorScheme.primary)
-                    Text(
-                        listOfNotNull(
-                            group.p95Nanos?.let { "p95 " + Formatters.duration(it) },
-                            stringResource(R.string.pulse_endpoint_errors, percentText(group.errorCount, group.count)),
-                            Formatters.bytes(group.responseBytes),
-                        ).joinToString(" · "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (group.errorCount >
-                            0
-                        ) {
-                            LocalStatusColors.current.serverError
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.padding(start = Spacing.xs),
-                    )
-                }
+                GroupRow(group, name, total, if (drillable) ({ filters.drillDown(dimension, group.key) }) else null)
             }
         }
+    }
+}
+
+@Composable
+private fun GroupRow(group: GroupStatistics, name: String, total: Int, onClick: (() -> Unit)?) {
+    val errorColor = if (group.errorCount > 0) LocalStatusColors.current.serverError else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(onClick?.let { Modifier.clickable(role = Role.Button, onClick = it) } ?: Modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                name,
+                style = MonospaceStyle,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                listOfNotNull(
+                    group.p95Nanos?.let { "p95 " + Formatters.duration(it) },
+                    stringResource(R.string.pulse_endpoint_errors, percentText(group.errorCount, group.count)),
+                    Formatters.bytes(group.responseBytes),
+                ).joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = errorColor,
+            )
+        }
+        ProportionBar(group.count, total, MaterialTheme.colorScheme.primary)
     }
 }
 

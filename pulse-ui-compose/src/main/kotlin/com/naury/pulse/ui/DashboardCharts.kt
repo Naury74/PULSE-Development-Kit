@@ -93,6 +93,29 @@ private fun binLabel(bin: HistogramBin, previous: HistogramBin?): String {
     }
 }
 
+/** 비율 막대와 개수·비율. 이름은 따로 둔다. */
+@Composable
+internal fun ProportionBar(count: Int, total: Int, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        Bar(if (total == 0) 0f else count.toFloat() / total, color, Modifier.weight(1f))
+        Text(
+            "$count · ${percentText(count, total)}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun Bar(fraction: Float, color: Color, modifier: Modifier) {
+    val track = MaterialTheme.colorScheme.surfaceVariant
+    Canvas(modifier.height(10.dp)) {
+        val radius = CornerRadius(size.height / 2)
+        drawRoundRect(track, cornerRadius = radius)
+        if (fraction > 0f) drawRoundRect(color, size = Size(size.width * fraction, size.height), cornerRadius = radius)
+    }
+}
+
 /** 이름, 비율 막대, 개수·비율을 한 줄에 둔다. */
 @Composable
 internal fun ProportionRow(label: String, count: Int, total: Int, color: Color, trailing: String? = null, modifier: Modifier = Modifier) {
