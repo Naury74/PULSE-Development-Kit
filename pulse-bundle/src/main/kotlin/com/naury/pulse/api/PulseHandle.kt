@@ -38,6 +38,7 @@ public class PulseHandle private constructor(
     override val config: PulseConfig,
     private val storage: PulseStorage,
     private val engine: CaptureEngine,
+    private val appContext: AndroidAppContext,
 ) : PulseInspector {
     // 디스크 정리·삭제 실패는 수집만 못 하게 할 뿐 호스트 앱을 멈추면 안 된다.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, _ -> })
@@ -112,10 +113,16 @@ public class PulseHandle private constructor(
 
     override suspend fun loadBody(id: String, kind: MessageKind): String? = storage.loadBody(id, kind)
 
-    override suspend fun loadStatistics(window: StatsWindow): TrafficStatistics {
+    override suspend fun loadStatistics(window: StatsWindow): TrafficStatistics = loadStatistics(StatsQuery(window))
+
+    override suspend fun loadStatistics(query: StatsQuery): TrafficStatistics {
         val now = System.currentTimeMillis()
-        val (samples, limited) = storage.loadSamples(window.fromEpochMillis(now), TrafficStatistics.MAX_SAMPLES)
-        return withContext(Dispatchers.Default) { StatisticsCalculator.compute(window, samples, now, limited) }
+        val (samples, limited) = storage.loadSamples(
+            query.window.fromEpochMillis(now),
+            TrafficStatistics.MAX_SAMPLES,
+            query.includeSynthetic,
+        )
+        return withContext(Dispatchers.Default) { StatisticsCalculator.compute(query, samples, now, limited, config.endpoints) }
     }
 
     override suspend fun loadInsights(window: StatsWindow): List<Insight> {
@@ -155,6 +162,7 @@ public class PulseHandle private constructor(
     public fun close() {
         Pulse.release(this)
         engine.close()
+        appContext.close()
         scope.cancel()
         storage.close()
     }
@@ -173,8 +181,9 @@ public class PulseHandle private constructor(
 
         fun create(context: Context, config: PulseConfig): PulseHandle {
             val storage = PulseStorage.open(context, config.retention)
-            val engine = CaptureEngine.start(config, storage.sink)
-            return PulseHandle(config, storage, engine).also { handle ->
+            val appContext = AndroidAppContext(context, config.context)
+            val engine = CaptureEngine.start(config, storage.sink, contextSource = appContext)
+            return PulseHandle(config, storage, engine, appContext).also { handle ->
                 handle.scope.launch { storage.startSession(engine.recorder.sessionId, System.currentTimeMillis()) }
             }
         }
