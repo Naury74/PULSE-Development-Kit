@@ -12,6 +12,12 @@
     <td align="center" width="25%"><img src="docs/images/screen-request.png" width="200" alt="요청 상세"><br><b>요청</b><br>저장 전 마스킹</td>
     <td align="center" width="25%"><img src="docs/images/screen-timeline.png" width="200" alt="타임라인"><br><b>타임라인</b><br>관찰한 단계만</td>
   </tr>
+  <tr>
+    <td align="center"><img src="docs/images/screen-overview.png" width="200" alt="개요"><br><b>개요</b><br>오류율·p95·시간별 요청</td>
+    <td align="center"><img src="docs/images/screen-insights.png" width="200" alt="진단"><br><b>진단</b><br>기준값·관찰값·근거 요청</td>
+    <td align="center"><img src="docs/images/screen-replay.png" width="200" alt="재실행"><br><b>재실행</b><br>허용 호스트·위험 확인</td>
+    <td align="center"><img src="docs/images/screen-settings.png" width="200" alt="설정"><br><b>설정</b><br>모의 응답·수집 상태</td>
+  </tr>
 </table>
 
 화면은 `sample-app` debug 빌드를 Android 16(API 36) 에뮬레이터에서 실행한 실제 화면입니다.
@@ -37,9 +43,9 @@
 
 // app/build.gradle.kts
 dependencies {
-    debugImplementation("com.naurylab:pulse-bundle:0.1.0-SNAPSHOT")      // 수집·저장
-    debugImplementation("com.naurylab:pulse-ui-compose:0.1.0-SNAPSHOT")  // 인스펙터 화면(선택)
-    releaseImplementation("com.naurylab:pulse-noop:0.1.0-SNAPSHOT")      // 같은 API, 아무것도 하지 않음
+    debugImplementation("com.naurylab:pulse-bundle:0.1.0-alpha01")      // 수집·저장
+    debugImplementation("com.naurylab:pulse-ui-compose:0.1.0-alpha01")  // 인스펙터 화면(선택)
+    releaseImplementation("com.naurylab:pulse-noop:0.1.0-alpha01")      // 같은 API, 아무것도 하지 않음
 }
 ```
 

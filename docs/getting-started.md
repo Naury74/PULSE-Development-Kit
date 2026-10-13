@@ -6,9 +6,9 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("com.naurylab:pulse-bundle:0.1.0-SNAPSHOT")
-    debugImplementation("com.naurylab:pulse-ui-compose:0.1.0-SNAPSHOT") // 화면이 필요할 때
-    releaseImplementation("com.naurylab:pulse-noop:0.1.0-SNAPSHOT")
+    debugImplementation("com.naurylab:pulse-bundle:0.1.0-alpha01")
+    debugImplementation("com.naurylab:pulse-ui-compose:0.1.0-alpha01") // 화면이 필요할 때
+    releaseImplementation("com.naurylab:pulse-noop:0.1.0-alpha01")
 }
 ```
 
