@@ -91,7 +91,10 @@ private fun DetailTabs(inspector: PulseInspector, detail: TransactionDetail, mod
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
         ) {
             when (tab) {
-                0 -> SummaryTab(detail)
+                0 -> {
+                    SummaryTab(detail)
+                    detail.summary.parentTransactionId?.let { parent -> ParentComparison(inspector, detail, parent, onOpenTransaction) }
+                }
 
                 1 -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {

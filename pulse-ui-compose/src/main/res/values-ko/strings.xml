@@ -207,4 +207,13 @@
     <string name="pulse_replay_blocked_redirect">중단: 서버가 허용하지 않은 호스트로 리다이렉트했습니다: %1$s</string>
     <string name="pulse_replay_blocked_redirects">중단: 리다이렉트가 너무 많습니다. %1$s</string>
     <string name="pulse_replay_blocked_busy">다른 재실행이 진행 중입니다. %1$s</string>
+    <string name="pulse_diff_title">원본과 비교</string>
+    <string name="pulse_diff_open_original">원본 보기</string>
+    <string name="pulse_diff_none">상태·쿼리·헤더·본문에 차이가 없습니다(가려진 값은 비교하지 않습니다).</string>
+    <string name="pulse_diff_note">가려진 값과 응답마다 바뀌는 헤더(Date, Age, Expires)는 비교하지 않습니다.</string>
+    <string name="pulse_diff_added">추가됨</string>
+    <string name="pulse_diff_removed">없어짐</string>
+    <string name="pulse_diff_changed">값 바뀜</string>
+    <string name="pulse_diff_type_changed">종류 바뀜</string>
+    <string name="pulse_diff_reordered">같은 값, 순서만 바뀜</string>
 </resources>

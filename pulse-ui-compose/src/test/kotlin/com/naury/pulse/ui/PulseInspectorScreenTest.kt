@@ -184,6 +184,19 @@ class PulseInspectorScreenTest {
         assertThat(inspector.replayed.single().second).isTrue()
     }
 
+    @Test
+    fun `재실행 결과는 원본과의 차이를 보여 준다`() {
+        val original = FakeInspector.detail("orig", "/users", status = 200)
+        val replayed = FakeInspector.detail("rep", "/users", status = 500, parentId = "orig")
+        show(FakeInspector(listOf(replayed, original)))
+
+        compose.onAllNodesWithText("GET /users")[0].performClick()
+        awaitText("200  →  500")
+
+        compose.onNodeWithText("Compare with original").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("200  →  500").performScrollTo().assertIsDisplayed()
+    }
+
     /** 본문 해석처럼 백그라운드 디스패처에서 끝나는 작업은 시간이 정해지지 않아 텍스트가 나타날 때까지 기다린다. */
     private fun awaitText(text: String, substring: Boolean = false) {
         compose.waitUntil(AWAIT_MILLIS) {

@@ -208,4 +208,13 @@
     <string name="pulse_replay_blocked_redirect">Stopped: the server redirected to a host that is not allowed: %1$s</string>
     <string name="pulse_replay_blocked_redirects">Stopped: too many redirects. %1$s</string>
     <string name="pulse_replay_blocked_busy">Another replay is still running. %1$s</string>
+    <string name="pulse_diff_title">Compare with original</string>
+    <string name="pulse_diff_open_original">Open original</string>
+    <string name="pulse_diff_none">No differences in status, query, headers, or bodies (redacted values are not compared).</string>
+    <string name="pulse_diff_note">Redacted values and headers that change on every response (Date, Age, Expires) are not compared.</string>
+    <string name="pulse_diff_added">added</string>
+    <string name="pulse_diff_removed">removed</string>
+    <string name="pulse_diff_changed">changed</string>
+    <string name="pulse_diff_type_changed">type changed</string>
+    <string name="pulse_diff_reordered">same values, different order</string>
 </resources>

@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     api(project(":pulse-api"))
+    implementation(libs.kotlinx.serialization.json)
 }

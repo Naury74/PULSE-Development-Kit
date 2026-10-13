@@ -109,6 +109,7 @@ class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseI
             state: TransactionState = TransactionState.COMPLETED,
             responseBody: BodyState = BodyState.CAPTURED,
             timings: List<TimingPhase> = listOf(TimingPhase(TimingPhaseType.RESPONSE_HEADERS, 0, 1_000_000, 2_000_000)),
+            parentId: String? = null,
         ) = TransactionDetail(
             summary = TransactionSummary(
                 id = id,
@@ -124,7 +125,8 @@ class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseI
                 failureType = if (state == TransactionState.FAILED) "java.net.SocketTimeoutException" else null,
                 requestBodyBytes = 0,
                 responseBodyBytes = 10,
-                source = CaptureSource.ORIGINAL,
+                source = if (parentId == null) CaptureSource.ORIGINAL else CaptureSource.REPLAY,
+                parentTransactionId = parentId,
             ),
             protocol = "h2",
             responseHeadersNanos = 3_000_000,

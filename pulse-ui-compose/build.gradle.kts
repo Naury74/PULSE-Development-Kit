@@ -10,6 +10,7 @@ android {
 dependencies {
     api(project(":pulse-api"))
     implementation(project(":pulse-export"))
+    implementation(project(":pulse-analytics"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
