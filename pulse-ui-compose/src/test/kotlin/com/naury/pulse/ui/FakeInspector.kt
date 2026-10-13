@@ -52,6 +52,7 @@ class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseI
             summary.url.contains(query.text, ignoreCase = true) &&
                 when (query.status) {
                     StatusFilter.CLIENT_ERROR -> summary.statusCode in 400..499
+                    StatusFilter.SERVER_ERROR -> (summary.statusCode ?: 0) >= 500
                     StatusFilter.ALL -> true
                     else -> false
                 }

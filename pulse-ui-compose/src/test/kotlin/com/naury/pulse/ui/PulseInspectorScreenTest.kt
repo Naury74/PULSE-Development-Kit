@@ -8,11 +8,25 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import com.google.common.truth.Truth.assertThat
 import com.naury.pulse.api.BodyState
+import com.naury.pulse.api.ByteTotals
+import com.naury.pulse.api.DurationPercentiles
+import com.naury.pulse.api.EndpointStatistics
+import com.naury.pulse.api.HostStatistics
+import com.naury.pulse.api.Insight
+import com.naury.pulse.api.InsightCertainty
+import com.naury.pulse.api.InsightRule
+import com.naury.pulse.api.InsightSeverity
+import com.naury.pulse.api.InsightUnit
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.RecordingState
+import com.naury.pulse.api.StatsWindow
+import com.naury.pulse.api.StatusCounts
+import com.naury.pulse.api.TrafficBucket
+import com.naury.pulse.api.TrafficStatistics
 import com.naury.pulse.api.TransactionState
 import java.time.Duration
 import org.junit.Rule
@@ -47,11 +61,76 @@ class PulseInspectorScreenTest {
         }
     }
 
+    @Test
+    fun `개요는 숫자 타일과 차트 요약을 보여 주고 오류 타일을 누르면 거른 트래픽으로 간다`() {
+        val inspector = FakeInspector(listOf(FakeInspector.detail("a", "/users", status = 503)))
+        inspector.statistics = TrafficStatistics(
+            window = StatsWindow.LAST_HOUR,
+            fromEpochMillis = 0,
+            toEpochMillis = 12_000,
+            counts = StatusCounts(total = 4, success = 2, clientError = 1, serverError = 1, failed = 0, inFlight = 0),
+            durations = DurationPercentiles(4, 100_000_000, 900_000_000, 900_000_000),
+            bytes = ByteTotals(0, 2_048, 0),
+            buckets = (0 until 12).map { TrafficBucket(it * 1_000L, (it + 1) * 1_000L, if (it == 3) 4 else 0, if (it == 3) 2 else 0) },
+            topHosts = listOf(HostStatistics("api.test", 4, 2)),
+            slowestEndpoints = listOf(EndpointStatistics("GET", "api.test", "/users", 4, 900_000_000, 900_000_000)),
+            sampleLimitReached = false,
+        )
+        show(inspector)
+
+        compose.onNodeWithText("Overview").performClick()
+        settle()
+        awaitText("p95 duration")
+
+        compose.onNodeWithText("50.0%").assertIsDisplayed()
+        compose.onNodeWithText("900 ms").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Requests in 12 intervals", substring = true).assertExists()
+        compose.onNodeWithText("Error rate").performClick()
+        settle()
+        compose.onNodeWithText("GET /users").assertIsDisplayed()
+    }
+
+    @Test
+    fun `진단은 근거와 추정 여부를 보여 주고 근거 요청을 누르면 상세로 간다`() {
+        val inspector = FakeInspector(listOf(FakeInspector.detail("a", "/users/1")))
+        inspector.insights = listOf(
+            Insight(
+                InsightRule.N_PLUS_ONE_SUSPECTED, 1, InsightSeverity.INFO, InsightCertainty.HEURISTIC, "api.test", "GET /users/{id}",
+                InsightUnit.COUNT, 8, 9, 2_000, listOf("a"), 9,
+            ),
+        )
+        show(inspector)
+
+        compose.onNodeWithText("Insights").performClick()
+        settle()
+        awaitText("GET /users/1", substring = true)
+
+        compose.onNodeWithText("Possible N+1 requests").assertIsDisplayed()
+        compose.onNodeWithText("Heuristic").assertIsDisplayed()
+        compose.onNodeWithText("Threshold 8 · observed 9 · requests: 9 · within 2 s").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("GET /users/1", substring = true).performScrollTo().performClick()
+        settle()
+        compose.onNodeWithText("https://api.test/users/1").assertIsDisplayed()
+    }
+
+    @Test
+    fun `설정은 기록을 끄고 PulseConfig 값을 보여 준다`() {
+        val inspector = FakeInspector()
+        show(inspector)
+
+        compose.onNodeWithText("Settings").performClick()
+        settle()
+        compose.onNodeWithText("Record requests").performClick()
+
+        assertThat(inspector.recordingState.value).isEqualTo(RecordingState.PAUSED)
+        compose.onNodeWithText("Metadata and redacted JSON bodies").assertIsDisplayed()
+    }
+
     /** 본문 해석처럼 백그라운드 디스패처에서 끝나는 작업은 시간이 정해지지 않아 텍스트가 나타날 때까지 기다린다. */
-    private fun awaitText(text: String) {
+    private fun awaitText(text: String, substring: Boolean = false) {
         compose.waitUntil(AWAIT_MILLIS) {
-            shadowOf(Looper.getMainLooper()).idle()
-            compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(SETTLE_STEP_MILLIS))
+            compose.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty()
         }
     }
 
