@@ -6,6 +6,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import com.naury.pulse.analytics.InsightEngine
+import com.naury.pulse.analytics.StatisticsCalculator
 import com.naury.pulse.core.CaptureEngine
 import com.naury.pulse.okhttp.CallTimingRegistry
 import com.naury.pulse.okhttp.PulseEventListenerFactory
@@ -19,6 +21,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.EventListener
 import okhttp3.Interceptor
 
@@ -27,7 +30,7 @@ import okhttp3.Interceptor
  * 모든 메서드는 스레드 안전하다.
  */
 public class PulseHandle private constructor(
-    public val config: PulseConfig,
+    override val config: PulseConfig,
     private val storage: PulseStorage,
     private val engine: CaptureEngine,
 ) : PulseInspector {
@@ -35,6 +38,7 @@ public class PulseHandle private constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, _ -> })
     private val timingRegistry = CallTimingRegistry()
     private val interceptor = PulseInterceptor(engine.recorder, timingRegistry)
+    private val insightEngine = InsightEngine(config.insights)
 
     override val recordingState: StateFlow<RecordingState> = engine.recorder.controller.recordingState
 
@@ -78,6 +82,17 @@ public class PulseHandle private constructor(
 
     override suspend fun loadBody(id: String, kind: MessageKind): String? = storage.loadBody(id, kind)
 
+    override suspend fun loadStatistics(window: StatsWindow): TrafficStatistics {
+        val now = System.currentTimeMillis()
+        val (samples, limited) = storage.loadSamples(window.fromEpochMillis(now), TrafficStatistics.MAX_SAMPLES)
+        return withContext(Dispatchers.Default) { StatisticsCalculator.compute(window, samples, now, limited) }
+    }
+
+    override suspend fun loadInsights(window: StatsWindow): List<Insight> {
+        val (samples, _) = storage.loadSamples(window.fromEpochMillis(System.currentTimeMillis()), TrafficStatistics.MAX_SAMPLES)
+        return withContext(Dispatchers.Default) { insightEngine.evaluate(samples) }
+    }
+
     override fun pause() {
         engine.recorder.controller.pause()
     }
@@ -104,6 +119,8 @@ public class PulseHandle private constructor(
     } catch (_: PackageManager.NameNotFoundException) {
         false
     }
+
+    private fun StatsWindow.fromEpochMillis(now: Long): Long = millis?.let { now - it } ?: Long.MIN_VALUE
 
     internal companion object {
         private const val INSPECTOR_ACTIVITY = "com.naury.pulse.ui.PulseInspectorActivity"

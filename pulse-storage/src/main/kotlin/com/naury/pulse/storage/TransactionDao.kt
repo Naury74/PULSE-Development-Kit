@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.RedactionPolicy
 import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TransactionState
 
@@ -74,6 +75,16 @@ internal interface TransactionDao {
         LIMIT :limit""",
     )
     suspend fun page(text: String, status: String, afterStarted: Long?, afterId: String?, limit: Int): List<TransactionEntity>
+
+    /** 자격 증명 여부는 저장 전에 가려진 요청 헤더가 있는지로 판단한다(값은 이미 남아 있지 않다). */
+    @Query(
+        """SELECT t.id, t.method, t.url, t.host, t.path, t.startedAtEpochMillis, t.durationNanos, t.statusCode, t.state,
+        t.requestBodyBytes, t.responseBodyBytes, t.responseSource,
+        EXISTS(SELECT 1 FROM headers h WHERE h.transactionId = t.id AND h.kind = 'REQUEST' AND h.value = :redacted) AS hasCredentials
+        FROM transactions t WHERE t.startedAtEpochMillis >= :from
+        ORDER BY t.startedAtEpochMillis DESC LIMIT :limit""",
+    )
+    suspend fun samples(from: Long, limit: Int, redacted: String = RedactionPolicy.REDACTED): List<SampleRow>
 
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun transaction(id: String): TransactionEntity?

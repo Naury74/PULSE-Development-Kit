@@ -108,4 +108,20 @@ internal data class TimingEntity(
     val durationNanos: Long?,
 )
 
+internal data class SampleRow(
+    val id: String,
+    val method: String,
+    val url: String,
+    val host: String,
+    val path: String,
+    val startedAtEpochMillis: Long,
+    val durationNanos: Long?,
+    val statusCode: Int?,
+    val state: TransactionState,
+    val requestBodyBytes: Long?,
+    val responseBodyBytes: Long?,
+    val responseSource: ResponseSource?,
+    val hasCredentials: Boolean,
+)
+
 internal data class BlobUsage(val transactionId: String, val blobFile: String?, val storedBodyBytes: Long?)

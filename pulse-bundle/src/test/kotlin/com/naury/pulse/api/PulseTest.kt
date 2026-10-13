@@ -86,6 +86,11 @@ class PulseTest {
         assertThat(summary.url).endsWith("/me?password=$REDACTED")
         assertThat(detail.request.headers.single { it.name == "Cookie" }.value).isEqualTo(REDACTED)
         assertThat(handle.loadBody(summary.id, MessageKind.RESPONSE)).isEqualTo("""{"token":"$REDACTED"}""")
+        val stats = handle.loadStatistics(StatsWindow.LAST_HOUR)
+        assertThat(stats.counts.total).isEqualTo(1)
+        assertThat(stats.counts.success).isEqualTo(1)
+        assertThat(stats.durations.sampleCount).isEqualTo(1)
+        assertThat(handle.loadInsights(StatsWindow.ALL)).isEmpty()
     }
 
     @Test

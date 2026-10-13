@@ -2,6 +2,7 @@ package com.naury.pulse.storage
 
 import android.content.Context
 import androidx.room.Room
+import com.naury.pulse.analytics.TrafficSample
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PageCursor
 import com.naury.pulse.api.RetentionPolicy
@@ -42,6 +43,10 @@ public class PulseStorage private constructor(
     public suspend fun loadTransaction(id: String): TransactionDetail? = reader.detail(id)
 
     public suspend fun loadBody(id: String, kind: MessageKind): String? = reader.body(id, kind)
+
+    /** [fromEpochMillis] 이후 최근 기록을 [limit]개까지 읽는다. 두 번째 값은 상한에 걸렸는지다. */
+    public suspend fun loadSamples(fromEpochMillis: Long, limit: Int): Pair<List<TrafficSample>, Boolean> =
+        reader.samples(fromEpochMillis, limit)
 
     public fun observeChanges(): Flow<Unit> =
         database.invalidationTracker.createFlow("transactions", "messages", "timing_phases", emitInitialState = false).map { }

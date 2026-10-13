@@ -13,6 +13,9 @@ public interface PulseInspector {
 
     public val captureHealth: StateFlow<CaptureHealth>
 
+    /** 초기화에 쓴 설정. 화면의 설정 탭이 보여 준다. */
+    public val config: PulseConfig
+
     /**
      * [query]에 맞는 트랜잭션을 최신순으로 [limit]개까지 읽는다.
      *
@@ -29,6 +32,12 @@ public interface PulseInspector {
 
     /** 저장한(마스킹된) 본문. [BodyState.CAPTURED]가 아니거나 파일이 지워졌으면 null. */
     public suspend fun loadBody(id: String, kind: MessageKind): String?
+
+    /** [window] 기간의 트래픽 집계. */
+    public suspend fun loadStatistics(window: StatsWindow): TrafficStatistics
+
+    /** [window] 기간 기록에 진단 규칙을 적용한 결과. 심각도가 높은 순, 같은 심각도는 근거가 많은 순이다. */
+    public suspend fun loadInsights(window: StatsWindow): List<Insight>
 
     /** 기록을 멈춘다. 이미 진행 중인 요청은 끝까지 기록한다. */
     public fun pause()

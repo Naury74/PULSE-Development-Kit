@@ -11,6 +11,7 @@ package com.naury.pulse.api
  * @property redaction 저장 전에 가릴 헤더·쿼리·JSON 키.
  * @property queueCapacity 저장을 기다리는 수집 이벤트 최대 개수(16..100,000). 넘치면 이벤트를 버리고 [CaptureHealth]에 센다.
  * @property startRecording `false`면 초기화 후 [RecordingState.PAUSED]로 시작한다.
+ * @property insights 진단 규칙의 임계값.
  */
 public class PulseConfig private constructor(
     public val captureMode: CaptureMode,
@@ -19,6 +20,7 @@ public class PulseConfig private constructor(
     public val redaction: RedactionPolicy,
     public val queueCapacity: Int,
     public val startRecording: Boolean,
+    public val insights: InsightThresholds,
 ) {
     public fun newBuilder(): Builder = Builder(this)
 
@@ -28,12 +30,13 @@ public class PulseConfig private constructor(
         retention == other.retention &&
         redaction == other.redaction &&
         queueCapacity == other.queueCapacity &&
-        startRecording == other.startRecording
+        startRecording == other.startRecording &&
+        insights == other.insights
 
-    override fun hashCode(): Int = listOf(captureMode, limits, retention, redaction, queueCapacity, startRecording).hashCode()
+    override fun hashCode(): Int = listOf(captureMode, limits, retention, redaction, queueCapacity, startRecording, insights).hashCode()
 
     override fun toString(): String = "PulseConfig(captureMode=$captureMode, limits=$limits, retention=$retention, " +
-        "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording)"
+        "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording, insights=$insights)"
 
     /** [PulseConfig]를 만든다. 값 검증은 [build]에서 하고, 범위를 벗어나면 [IllegalArgumentException]을 던진다. */
     public class Builder() {
@@ -43,6 +46,7 @@ public class PulseConfig private constructor(
         private var redaction = RedactionPolicy.strict()
         private var queueCapacity = DEFAULT_QUEUE_CAPACITY
         private var startRecording = true
+        private var insights = InsightThresholds()
 
         internal constructor(config: PulseConfig) : this() {
             captureMode = config.captureMode
@@ -51,6 +55,7 @@ public class PulseConfig private constructor(
             redaction = config.redaction
             queueCapacity = config.queueCapacity
             startRecording = config.startRecording
+            insights = config.insights
         }
 
         public fun captureMode(mode: CaptureMode): Builder = apply { captureMode = mode }
@@ -65,11 +70,13 @@ public class PulseConfig private constructor(
 
         public fun startRecording(start: Boolean): Builder = apply { startRecording = start }
 
+        public fun insights(thresholds: InsightThresholds): Builder = apply { insights = thresholds }
+
         public fun build(): PulseConfig {
             require(queueCapacity in MIN_QUEUE_CAPACITY..MAX_QUEUE_CAPACITY) {
                 "queueCapacity는 $MIN_QUEUE_CAPACITY..$MAX_QUEUE_CAPACITY 범위여야 합니다: $queueCapacity"
             }
-            return PulseConfig(captureMode, limits, retention, redaction, queueCapacity, startRecording)
+            return PulseConfig(captureMode, limits, retention, redaction, queueCapacity, startRecording, insights)
         }
     }
 

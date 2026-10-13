@@ -1,18 +1,25 @@
 package com.naury.pulse.ui
 
 import com.naury.pulse.api.BodyState
+import com.naury.pulse.api.ByteTotals
 import com.naury.pulse.api.CaptureHealth
 import com.naury.pulse.api.CaptureSource
+import com.naury.pulse.api.DurationPercentiles
 import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.HttpMessage
+import com.naury.pulse.api.Insight
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PageCursor
+import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.RecordingState
 import com.naury.pulse.api.ResponseSource
+import com.naury.pulse.api.StatsWindow
+import com.naury.pulse.api.StatusCounts
 import com.naury.pulse.api.StatusFilter
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TimingPhaseType
+import com.naury.pulse.api.TrafficStatistics
 import com.naury.pulse.api.TransactionDetail
 import com.naury.pulse.api.TransactionPage
 import com.naury.pulse.api.TransactionQuery
@@ -23,6 +30,17 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseInspector {
+    override val config: PulseConfig = PulseConfig.debugDefaults()
+    var statistics: TrafficStatistics? = null
+    var insights: List<Insight> = emptyList()
+
+    override suspend fun loadStatistics(window: StatsWindow): TrafficStatistics = statistics ?: TrafficStatistics(
+        window, null, 0, StatusCounts(0, 0, 0, 0, 0, 0), DurationPercentiles(0, null, null, null), ByteTotals(0, 0, 0),
+        emptyList(), emptyList(), emptyList(), false,
+    )
+
+    override suspend fun loadInsights(window: StatsWindow): List<Insight> = insights
+
     override val recordingState = MutableStateFlow(RecordingState.RECORDING)
     override val captureHealth = MutableStateFlow(CaptureHealth())
     private val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 8)

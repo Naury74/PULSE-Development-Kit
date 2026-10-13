@@ -228,6 +228,23 @@ class PulseStorageTest {
     }
 
     @Test
+    fun `집계용 기록은 기간 안의 최신 순이고 가려진 요청 헤더로 자격 증명 여부를 안다`() {
+        val storage = storage()
+        capture(storage) {
+            transaction("old", startedAt = 10)
+            transaction("new", startedAt = 20)
+            requestStarted("plain", 30, "GET", "https://api.test/p", "https", "api.test", "/p", listOf("Accept" to "*/*"), null, null)
+        }
+
+        val (samples, limited) = runBlocking { storage.loadSamples(fromEpochMillis = 15, limit = 1) }
+        val (all, _) = runBlocking { storage.loadSamples(fromEpochMillis = 0, limit = 10) }
+
+        assertThat(samples.map { it.id }).containsExactly("plain")
+        assertThat(limited).isTrue()
+        assertThat(all.associate { it.id to it.hasCredentials }).containsExactly("plain", false, "new", true, "old", true)
+    }
+
+    @Test
     fun `전체 삭제는 행과 본문 파일을 모두 지운다`() {
         val storage = storage()
         capture(storage) { transaction("t1", 1) }

@@ -1,5 +1,6 @@
 package com.naury.pulse.storage
 
+import com.naury.pulse.analytics.TrafficSample
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.HttpMessage
@@ -52,6 +53,29 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
         if (message.bodyState != BodyState.CAPTURED) return null
         val file = message.blobFile ?: return null
         return withContext(Dispatchers.IO) { blobs.read(file) }
+    }
+
+    /** 기간 안의 최근 기록을 [limit]개까지 읽는다. 상한에 걸렸는지 함께 돌려준다. */
+    suspend fun samples(fromEpochMillis: Long, limit: Int): Pair<List<TrafficSample>, Boolean> {
+        val rows = dao.samples(fromEpochMillis, limit + 1)
+        val samples = rows.take(limit).map {
+            TrafficSample(
+                id = it.id,
+                method = it.method,
+                url = it.url,
+                host = it.host,
+                path = it.path,
+                startedAtEpochMillis = it.startedAtEpochMillis,
+                durationNanos = it.durationNanos,
+                statusCode = it.statusCode,
+                state = it.state,
+                requestBodyBytes = it.requestBodyBytes,
+                responseBodyBytes = it.responseBodyBytes,
+                hasCredentials = it.hasCredentials,
+                responseSource = it.responseSource,
+            )
+        }
+        return samples to (rows.size > limit)
     }
 
     private fun TransactionEntity.toSummary() = TransactionSummary(

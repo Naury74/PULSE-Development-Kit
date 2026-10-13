@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":pulse-security"))
     implementation(project(":pulse-okhttp"))
     implementation(project(":pulse-storage"))
+    implementation(project(":pulse-analytics"))
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.robolectric)

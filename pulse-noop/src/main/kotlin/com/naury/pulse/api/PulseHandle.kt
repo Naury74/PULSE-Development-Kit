@@ -16,7 +16,7 @@ import okhttp3.Interceptor
  * 기록하지 않는 핸들. [interceptor]는 요청을 그대로 넘기고, [eventListenerFactory]는 넘겨받은 팩토리를 그대로 돌려준다.
  * 조회 결과는 항상 비어 있고 [recordingState]는 [RecordingState.DISABLED]다.
  */
-public class PulseHandle internal constructor(public val config: PulseConfig) : PulseInspector {
+public class PulseHandle internal constructor(override val config: PulseConfig) : PulseInspector {
     override val recordingState: StateFlow<RecordingState> = MutableStateFlow(RecordingState.DISABLED).asStateFlow()
 
     override val captureHealth: StateFlow<CaptureHealth> = MutableStateFlow(CaptureHealth()).asStateFlow()
@@ -36,6 +36,21 @@ public class PulseHandle internal constructor(public val config: PulseConfig) : 
     override suspend fun loadTransaction(id: String): TransactionDetail? = null
 
     override suspend fun loadBody(id: String, kind: MessageKind): String? = null
+
+    override suspend fun loadStatistics(window: StatsWindow): TrafficStatistics = TrafficStatistics(
+        window = window,
+        fromEpochMillis = null,
+        toEpochMillis = System.currentTimeMillis(),
+        counts = StatusCounts(0, 0, 0, 0, 0, 0),
+        durations = DurationPercentiles(0, null, null, null),
+        bytes = ByteTotals(0, 0, 0),
+        buckets = emptyList(),
+        topHosts = emptyList(),
+        slowestEndpoints = emptyList(),
+        sampleLimitReached = false,
+    )
+
+    override suspend fun loadInsights(window: StatsWindow): List<Insight> = emptyList()
 
     override fun pause(): Unit = Unit
 

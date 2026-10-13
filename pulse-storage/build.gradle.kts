@@ -22,6 +22,7 @@ dependencies {
     api(project(":pulse-api"))
     implementation(project(":pulse-core"))
     implementation(project(":pulse-security"))
+    api(project(":pulse-analytics"))
     implementation(libs.androidx.room.runtime)
     implementation(libs.kotlinx.coroutines.android)
     ksp(libs.androidx.room.compiler)
