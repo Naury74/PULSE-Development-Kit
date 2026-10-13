@@ -80,6 +80,7 @@ public class CaptureRecorder internal constructor(
         contentType: String?,
         declaredContentLength: Long?,
         responseHeadersNanos: Long,
+        mockRuleId: String? = null,
     ) {
         enqueue {
             ResponseRecord(
@@ -90,6 +91,7 @@ public class CaptureRecorder internal constructor(
                 contentType = contentType,
                 declaredContentLength = declaredContentLength,
                 responseHeadersNanos = responseHeadersNanos,
+                mockRuleId = mockRuleId,
             )
         }
     }

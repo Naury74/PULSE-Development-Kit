@@ -139,6 +139,7 @@ internal class CaptureWriter(
 
     private fun insertResponse(record: ResponseRecord) {
         if (dao.updateResponse(record.transactionId, record.statusCode, record.protocol, record.responseHeadersNanos) == 0) return
+        if (record.mockRuleId != null) dao.markMock(record.transactionId)
         dao.insertMessage(
             MessageEntity(record.transactionId, MessageKind.RESPONSE, record.contentType, record.declaredContentLength, BodyState.PENDING),
         )

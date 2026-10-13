@@ -6,6 +6,7 @@ import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.TransactionState
 import com.naury.pulse.core.CaptureRecorder
 import com.naury.pulse.core.CaptureTag
+import com.naury.pulse.core.MockMarker
 import com.naury.pulse.security.BodySanitizer
 import java.io.IOException
 import java.net.HttpURLConnection.HTTP_NOT_MODIFIED
@@ -91,6 +92,7 @@ internal class TransactionCapture(
             contentType = contentType,
             declaredContentLength = declaredLength,
             responseHeadersNanos = headersNanos,
+            mockRuleId = response.header(MockMarker.HEADER),
         )
         if (!response.promisesBody() || safeContentLength { body.contentLength() } == 0L) {
             recorder.bodyNotCaptured(transactionId, MessageKind.RESPONSE, BodyState.EMPTY, 0)

@@ -7,9 +7,11 @@ import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.HttpMessage
 import com.naury.pulse.api.Insight
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.MockRule
 import com.naury.pulse.api.PageCursor
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseInspector
+import com.naury.pulse.api.PulseMocks
 import com.naury.pulse.api.RecordingState
 import com.naury.pulse.api.ReplayBlockReason
 import com.naury.pulse.api.ReplayDraft
@@ -53,6 +55,7 @@ internal class PagedInspector(private val details: List<TransactionDetail>, priv
     override val recordingState = MutableStateFlow(RecordingState.RECORDING)
     override val captureHealth = MutableStateFlow(CaptureHealth())
     override val config: PulseConfig = PulseConfig.debugDefaults()
+    override val mocks: PulseMocks = FakeMocks()
 
     override suspend fun loadTransactions(query: TransactionQuery, after: PageCursor?, limit: Int): TransactionPage {
         pagesRead++
@@ -81,4 +84,25 @@ internal class PagedInspector(private val details: List<TransactionDetail>, priv
     override fun resume() = Unit
 
     override fun clear() = Unit
+}
+
+class FakeMocks : PulseMocks {
+    override val enabled = MutableStateFlow(false)
+    override val rules = MutableStateFlow<List<MockRule>>(emptyList())
+
+    override fun setEnabled(enabled: Boolean) {
+        this.enabled.value = enabled
+    }
+
+    override fun upsert(rule: MockRule) {
+        rules.value = rules.value.filterNot { it.id == rule.id } + rule
+    }
+
+    override fun remove(ruleId: String) {
+        rules.value = rules.value.filterNot { it.id == ruleId }
+    }
+
+    override fun disableAll() {
+        enabled.value = false
+    }
 }

@@ -9,9 +9,11 @@ import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.HttpMessage
 import com.naury.pulse.api.Insight
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.MockRule
 import com.naury.pulse.api.PageCursor
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseInspector
+import com.naury.pulse.api.PulseMocks
 import com.naury.pulse.api.RecordingState
 import com.naury.pulse.api.ReplayBlockReason
 import com.naury.pulse.api.ReplayDraft
@@ -34,6 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseInspector {
     override var config: PulseConfig = PulseConfig.debugDefaults()
+    override val mocks: PulseMocks = FakeMocks()
     var statistics: TrafficStatistics? = null
     var insights: List<Insight> = emptyList()
 
@@ -139,5 +142,26 @@ class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseI
             responseSource = ResponseSource.NETWORK,
             connectionReused = true,
         )
+    }
+}
+
+class FakeMocks : PulseMocks {
+    override val enabled = MutableStateFlow(false)
+    override val rules = MutableStateFlow<List<MockRule>>(emptyList())
+
+    override fun setEnabled(enabled: Boolean) {
+        this.enabled.value = enabled
+    }
+
+    override fun upsert(rule: MockRule) {
+        rules.value = rules.value.filterNot { it.id == rule.id } + rule
+    }
+
+    override fun remove(ruleId: String) {
+        rules.value = rules.value.filterNot { it.id == ruleId }
+    }
+
+    override fun disableAll() {
+        enabled.value = false
     }
 }

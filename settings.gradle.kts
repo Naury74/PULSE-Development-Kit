@@ -27,6 +27,6 @@ rootProject.name = "PULSE"
 
 include(":sample-app")
 include(":pulse-api", ":pulse-core", ":pulse-security", ":pulse-okhttp")
-include(":pulse-storage", ":pulse-analytics", ":pulse-export", ":pulse-replay")
+include(":pulse-storage", ":pulse-analytics", ":pulse-export", ":pulse-replay", ":pulse-mock")
 include(":pulse-bundle", ":pulse-noop")
 include(":pulse-ui-compose")

@@ -44,6 +44,8 @@ public class ResponseRecord internal constructor(
     public val contentType: String?,
     public val declaredContentLength: Long?,
     public val responseHeadersNanos: Long,
+    /** 모의 응답이면 규칙 ID. */
+    public val mockRuleId: String?,
 ) : CaptureRecord
 
 public class BodyRecord internal constructor(

@@ -21,7 +21,11 @@ public class PulseHandle internal constructor(override val config: PulseConfig) 
 
     override val captureHealth: StateFlow<CaptureHealth> = MutableStateFlow(CaptureHealth()).asStateFlow()
 
+    override val mocks: PulseMocks = NoMocks
+
     public fun interceptor(): Interceptor = PassThroughInterceptor
+
+    public fun mockInterceptor(): Interceptor = PassThroughInterceptor
 
     @JvmOverloads
     public fun eventListenerFactory(delegate: EventListener.Factory? = null): EventListener.Factory = delegate ?: NoEvents
@@ -68,6 +72,19 @@ public class PulseHandle internal constructor(override val config: PulseConfig) 
 
     private object PassThroughInterceptor : Interceptor {
         override fun intercept(chain: Interceptor.Chain) = chain.proceed(chain.request())
+    }
+
+    private object NoMocks : PulseMocks {
+        override val enabled: StateFlow<Boolean> = MutableStateFlow(false).asStateFlow()
+        override val rules: StateFlow<List<MockRule>> = MutableStateFlow(emptyList<MockRule>()).asStateFlow()
+
+        override fun setEnabled(enabled: Boolean): Unit = Unit
+
+        override fun upsert(rule: MockRule): Unit = Unit
+
+        override fun remove(ruleId: String): Unit = Unit
+
+        override fun disableAll(): Unit = Unit
     }
 
     private object NoEvents : EventListener.Factory {

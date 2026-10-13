@@ -251,6 +251,18 @@ class PulseStorageTest {
     }
 
     @Test
+    fun `모의 응답 표시가 있으면 출처를 MOCK으로 바꾸고 집계에서 뺀다`() {
+        val storage = storage()
+        capture(storage) {
+            requestStarted("m", 1, "GET", "https://api.test/m", "https", "api.test", "/m", emptyList(), null, null)
+            responseReceived("m", 200, "http/1.1", emptyList(), null, null, 1, mockRuleId = "rule-1")
+        }
+
+        assertThat(runBlocking { storage.loadTransaction("m") }!!.summary.source).isEqualTo(CaptureSource.MOCK)
+        assertThat(runBlocking { storage.loadSamples(0, 10) }.first).isEmpty()
+    }
+
+    @Test
     fun `전체 삭제는 행과 본문 파일을 모두 지운다`() {
         val storage = storage()
         capture(storage) { transaction("t1", 1) }

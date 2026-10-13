@@ -36,6 +36,9 @@ internal interface TransactionDao {
     )
     fun updateBody(id: String, kind: MessageKind, state: BodyState, blobFile: String?, storedBytes: Long?, redactedCount: Int): Int
 
+    @Query("UPDATE transactions SET source = 'MOCK' WHERE id = :id")
+    fun markMock(id: String)
+
     @Query("UPDATE transactions SET responseSource = :source, connectionReused = :reused WHERE id = :id")
     fun updateNetworkEvidence(id: String, source: ResponseSource?, reused: Boolean?)
 

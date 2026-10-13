@@ -9,6 +9,8 @@ import android.content.pm.PackageManager
 import com.naury.pulse.analytics.InsightEngine
 import com.naury.pulse.analytics.StatisticsCalculator
 import com.naury.pulse.core.CaptureEngine
+import com.naury.pulse.mock.MockInterceptor
+import com.naury.pulse.mock.MockRegistry
 import com.naury.pulse.okhttp.CallTimingRegistry
 import com.naury.pulse.okhttp.PulseEventListenerFactory
 import com.naury.pulse.okhttp.PulseInterceptor
@@ -42,6 +44,10 @@ public class PulseHandle private constructor(
     private val timingRegistry = CallTimingRegistry()
     private val interceptor = PulseInterceptor(engine.recorder, timingRegistry)
     private val insightEngine = InsightEngine(config.insights)
+    private val mockRegistry = MockRegistry()
+    private val mockInterceptor = MockInterceptor(mockRegistry)
+
+    override val mocks: PulseMocks = mockRegistry
 
     @Volatile
     private var replayAuthorizer: ReplayAuthorizer? = null
@@ -64,6 +70,12 @@ public class PulseHandle private constructor(
      * 다른 interceptor보다 먼저 넣으면 호스트가 보낸 그대로를, 나중에 넣으면 앞선 interceptor가 바꾼 요청을 기록한다.
      */
     public fun interceptor(): Interceptor = interceptor
+
+    /**
+     * 모의 응답 interceptor. 모의 응답을 쓰려면 개발자가 직접 붙여야 하며, [interceptor] **뒤에** 붙여야 모의 응답이 MOCK으로 기록된다.
+     * 전체 스위치([PulseMocks.enabled])가 꺼져 있으면(기본) 요청을 그대로 넘긴다.
+     */
+    public fun mockInterceptor(): Interceptor = mockInterceptor
 
     /**
      * `OkHttpClient.Builder.eventListenerFactory`에 넣는 팩토리. DNS·연결·TLS·요청·응답 단계 시간을 기록한다.

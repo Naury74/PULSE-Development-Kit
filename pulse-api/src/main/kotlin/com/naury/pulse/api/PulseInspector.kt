@@ -16,6 +16,9 @@ public interface PulseInspector {
     /** 초기화에 쓴 설정. 화면의 설정 탭이 보여 준다. */
     public val config: PulseConfig
 
+    /** 모의 응답 규칙. no-op에서는 항상 꺼져 있고 바꿀 수 없다. */
+    public val mocks: PulseMocks
+
     /**
      * [query]에 맞는 트랜잭션을 최신순으로 [limit]개까지 읽는다.
      *
