@@ -1,5 +1,6 @@
 package com.naury.pulse.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,21 +41,23 @@ internal fun SettingsPane(inspector: PulseInspector, onClear: () -> Unit, modifi
             .verticalScroll(rememberScrollState())
             .padding(horizontal = Spacing.l, vertical = Spacing.s),
     ) {
-        RecordingSwitch(inspector, recording)
-        Notice(stringResource(R.string.pulse_settings_readonly))
+        PulseCard { RecordingSwitch(inspector, recording) }
+        Box(Modifier.padding(top = Spacing.s)) { Notice(stringResource(R.string.pulse_settings_readonly)) }
 
         ConfigSections(config)
         SectionTitle(stringResource(R.string.pulse_settings_health))
-        Field(
-            stringResource(R.string.pulse_settings_health),
-            stringResource(
-                R.string.pulse_settings_health_value,
-                health.droppedEvents,
-                health.droppedBodies,
-                health.writeFailures,
-                health.queueHighWater,
-            ),
-        )
+        PulseCard {
+            Field(
+                stringResource(R.string.pulse_settings_health),
+                stringResource(
+                    R.string.pulse_settings_health_value,
+                    health.droppedEvents,
+                    health.droppedBodies,
+                    health.writeFailures,
+                    health.queueHighWater,
+                ),
+            )
+        }
 
         MockRulesSection(inspector.mocks)
 
@@ -92,41 +95,47 @@ private fun RecordingSwitch(inspector: PulseInspector, recording: RecordingState
 @Composable
 private fun ConfigSections(config: PulseConfig) {
     SectionTitle(stringResource(R.string.pulse_settings_capture))
-    Field(
-        stringResource(R.string.pulse_settings_mode),
-        stringResource(
-            if (config.captureMode ==
-                CaptureMode.METADATA_ONLY
-            ) {
-                R.string.pulse_settings_mode_metadata
-            } else {
-                R.string.pulse_settings_mode_bodies
-            },
-        ),
-    )
-    Field(
-        stringResource(R.string.pulse_settings_limits),
-        stringResource(
-            R.string.pulse_settings_limits_value,
-            Formatters.bytes(config.limits.maxRequestBodyBytes),
-            Formatters.bytes(config.limits.maxResponseBodyBytes),
-        ),
-    )
-    Field(stringResource(R.string.pulse_settings_queue), config.queueCapacity.toString())
+    PulseCard {
+        Field(
+            stringResource(R.string.pulse_settings_mode),
+            stringResource(
+                if (config.captureMode ==
+                    CaptureMode.METADATA_ONLY
+                ) {
+                    R.string.pulse_settings_mode_metadata
+                } else {
+                    R.string.pulse_settings_mode_bodies
+                },
+            ),
+        )
+        Field(
+            stringResource(R.string.pulse_settings_limits),
+            stringResource(
+                R.string.pulse_settings_limits_value,
+                Formatters.bytes(config.limits.maxRequestBodyBytes),
+                Formatters.bytes(config.limits.maxResponseBodyBytes),
+            ),
+        )
+        Field(stringResource(R.string.pulse_settings_queue), config.queueCapacity.toString())
+    }
 
     SectionTitle(stringResource(R.string.pulse_settings_retention))
-    Field(
-        stringResource(R.string.pulse_settings_retention),
-        stringResource(
-            R.string.pulse_settings_retention_value,
-            config.retention.maxTransactions,
-            config.retention.maxAgeMillis / MILLIS_PER_HOUR,
-            Formatters.bytes(config.retention.maxBodyBytes),
-        ),
-    )
+    PulseCard {
+        Field(
+            stringResource(R.string.pulse_settings_retention),
+            stringResource(
+                R.string.pulse_settings_retention_value,
+                config.retention.maxTransactions,
+                config.retention.maxAgeMillis / MILLIS_PER_HOUR,
+                Formatters.bytes(config.retention.maxBodyBytes),
+            ),
+        )
+    }
 
     SectionTitle(stringResource(R.string.pulse_settings_privacy))
-    Field(stringResource(R.string.pulse_settings_headers), config.redaction.headers.sorted().joinToString(", "), monospace = true)
-    Field(stringResource(R.string.pulse_settings_query), config.redaction.queryParameters.sorted().joinToString(", "), monospace = true)
-    Field(stringResource(R.string.pulse_settings_names), config.redaction.sensitiveNames.sorted().joinToString(", "), monospace = true)
+    PulseCard {
+        Field(stringResource(R.string.pulse_settings_headers), config.redaction.headers.sorted().joinToString(", "), monospace = true)
+        Field(stringResource(R.string.pulse_settings_query), config.redaction.queryParameters.sorted().joinToString(", "), monospace = true)
+        Field(stringResource(R.string.pulse_settings_names), config.redaction.sensitiveNames.sorted().joinToString(", "), monospace = true)
+    }
 }

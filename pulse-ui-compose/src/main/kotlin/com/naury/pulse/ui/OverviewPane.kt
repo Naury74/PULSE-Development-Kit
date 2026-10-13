@@ -2,6 +2,7 @@ package com.naury.pulse.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -20,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -82,6 +86,37 @@ private fun OverviewContent(stats: TrafficStatistics, onOpenTraffic: (StatusFilt
         return
     }
     if (stats.sampleLimitReached) Notice(stringResource(R.string.pulse_overview_sample_limit, TrafficStatistics.MAX_SAMPLES))
+    StatTiles(stats, onOpenTraffic)
+    SectionTitle(stringResource(R.string.pulse_chart_title))
+    PulseCard { RequestsChart(stats.buckets) }
+    if (stats.slowestEndpoints.isNotEmpty()) {
+        SectionTitle(stringResource(R.string.pulse_slowest_title))
+        PulseCard {
+            stats.slowestEndpoints.forEachIndexed { index, endpoint ->
+                if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                RankRow(
+                    endpoint.path,
+                    endpoint.host,
+                    stringResource(R.string.pulse_slowest_value, Formatters.duration(endpoint.p95Nanos), endpoint.count),
+                    method = endpoint.method,
+                )
+            }
+        }
+    }
+    if (stats.topHosts.isNotEmpty()) {
+        SectionTitle(stringResource(R.string.pulse_hosts_title))
+        PulseCard {
+            stats.topHosts.forEachIndexed { index, host ->
+                if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                RankRow(host.host, null, stringResource(R.string.pulse_hosts_value, host.count, host.errorCount))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatTiles(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit) {
+    val counts = stats.counts
     val errors = counts.clientError + counts.serverError + counts.failed
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.padding(top = Spacing.s)) {
         StatTile(stringResource(R.string.pulse_stat_requests), counts.total.toString(), Modifier.weight(1f)) {
@@ -92,6 +127,7 @@ private fun OverviewContent(stats: TrafficStatistics, onOpenTraffic: (StatusFilt
             String.format(java.util.Locale.ROOT, "%.1f%%", errors * PERCENT / counts.total),
             Modifier.weight(1f),
             detail = stringResource(R.string.pulse_stat_errors_detail, counts.clientError, counts.serverError, counts.failed),
+            valueColor = if (errors > 0) LocalStatusColors.current.serverError else Color.Unspecified,
         ) { onOpenTraffic(if (counts.serverError > 0) StatusFilter.SERVER_ERROR else StatusFilter.FAILED) }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.padding(top = Spacing.s)) {
@@ -115,24 +151,6 @@ private fun OverviewContent(stats: TrafficStatistics, onOpenTraffic: (StatusFilt
             },
         )
     }
-    SectionTitle(stringResource(R.string.pulse_chart_title))
-    RequestsChart(stats.buckets)
-    if (stats.slowestEndpoints.isNotEmpty()) {
-        SectionTitle(stringResource(R.string.pulse_slowest_title))
-        stats.slowestEndpoints.forEach { endpoint ->
-            RankRow(
-                "${endpoint.method} ${endpoint.path}",
-                endpoint.host,
-                stringResource(R.string.pulse_slowest_value, Formatters.duration(endpoint.p95Nanos), endpoint.count),
-            )
-        }
-    }
-    if (stats.topHosts.isNotEmpty()) {
-        SectionTitle(stringResource(R.string.pulse_hosts_title))
-        stats.topHosts.forEach { host ->
-            RankRow(host.host, null, stringResource(R.string.pulse_hosts_value, host.count, host.errorCount))
-        }
-    }
 }
 
 @Composable
@@ -145,26 +163,48 @@ internal fun WindowSelector(window: StatsWindow, onChange: (StatsWindow) -> Unit
     )
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.horizontalScroll(rememberScrollState())) {
         StatsWindow.entries.forEach { option ->
-            FilterChip(selected = option == window, onClick = {
-                onChange(option)
-            }, label = { Text(stringResource(labels.getValue(option))) })
+            FilterChip(
+                selected = option == window,
+                onClick = { onChange(option) },
+                label = { Text(stringResource(labels.getValue(option))) },
+                shape = MaterialTheme.shapes.small,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = option == window,
+                    borderColor = MaterialTheme.colorScheme.outlineVariant,
+                ),
+            )
         }
     }
 }
 
 @Composable
-private fun StatTile(label: String, value: String, modifier: Modifier = Modifier, detail: String? = null, onClick: (() -> Unit)? = null) {
+private fun StatTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    detail: String? = null,
+    valueColor: Color = Color.Unspecified,
+    onClick: (() -> Unit)? = null,
+) {
     val base = modifier
-        .heightIn(min = 96.dp)
-        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+        .heightIn(min = 104.dp)
+        .clip(CardShape)
+        .background(MaterialTheme.colorScheme.surfaceContainerLow)
+        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CardShape)
     Column(
         (if (onClick != null) base.clickable(role = Role.Button, onClick = onClick) else base)
             .semantics(mergeDescendants = true) {}
-            .padding(Spacing.m),
+            .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = valueColor)
         detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
@@ -251,19 +291,22 @@ private fun LegendItem(color: Color, label: String) {
 }
 
 @Composable
-private fun RankRow(title: String, subtitle: String?, value: String) {
+private fun RankRow(title: String, subtitle: String?, value: String, method: String? = null) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = Spacing.xs)
+            .padding(vertical = Spacing.s)
             .semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MonospaceStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                method?.let { MethodTag(it) }
+                Text(title, style = MonospaceStyle, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
             subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

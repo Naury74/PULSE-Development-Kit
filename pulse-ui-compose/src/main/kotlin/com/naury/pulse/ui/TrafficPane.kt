@@ -6,11 +6,15 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -24,11 +28,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +50,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,6 +70,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 private const val CHANGE_DEBOUNCE_MILLIS = 300L
+private const val NANOS_PER_MILLI = 1_000_000L
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -92,6 +100,7 @@ internal fun TrafficPane(
     }
 
     Column(modifier) {
+        NotificationPrompt()
         SearchField(searchText, viewModel::search)
         StatusFilters(status, viewModel::filter)
         if (health.droppedEvents > 0 || health.droppedBodies > 0) {
@@ -121,7 +130,17 @@ internal fun TrafficPane(
             ) { Text(stringResource(R.string.pulse_new_items)) }
         }
         Box(Modifier.weight(1f)) {
-            TransactionList(items, listState, selectedId, onSelect, isFiltered = searchText.isNotBlank() || status != StatusFilter.ALL)
+            // 진단의 느린 요청 기준을 넘은 요청은 목록에서도 소요 시간을 눈에 띄게 보여 준다.
+            val slowNanos = inspector.config.insights.slowRequestMillis * NANOS_PER_MILLI
+            TransactionList(
+                items,
+                listState,
+                selectedId,
+                onSelect,
+                slowNanos,
+                isFiltered =
+                    searchText.isNotBlank() || status != StatusFilter.ALL,
+            )
         }
     }
 }
@@ -144,9 +163,15 @@ private fun SearchField(text: String, onChange: (String) -> Unit) {
         placeholder = { Text(stringResource(R.string.pulse_search_hint)) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+        shape = MaterialTheme.shapes.medium,
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.l, vertical = Spacing.s),
+            .padding(start = Spacing.l, end = Spacing.l, top = Spacing.s, bottom = Spacing.xs),
     )
 }
 
@@ -164,10 +189,25 @@ private fun StatusFilters(selected: StatusFilter, onSelect: (StatusFilter) -> Un
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         modifier = Modifier
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.l),
+            .padding(horizontal = Spacing.l, vertical = Spacing.xs),
     ) {
         filters.forEach { (filter, label) ->
-            FilterChip(selected = filter == selected, onClick = { onSelect(filter) }, label = { Text(stringResource(label)) })
+            FilterChip(
+                selected = filter == selected,
+                onClick = { onSelect(filter) },
+                label = { Text(stringResource(label)) },
+                shape = MaterialTheme.shapes.small,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = filter == selected,
+                    borderColor = MaterialTheme.colorScheme.outlineVariant,
+                ),
+            )
         }
     }
 }
@@ -178,6 +218,7 @@ private fun TransactionList(
     listState: LazyListState,
     selectedId: String?,
     onSelect: (TransactionSummary) -> Unit,
+    slowNanos: Long,
     isFiltered: Boolean,
 ) {
     val focusManager = LocalFocusManager.current
@@ -198,11 +239,11 @@ private fun TransactionList(
         else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
             items(count = items.itemCount, key = items.itemKey { it.id }) { index ->
                 items[index]?.let { summary ->
-                    TransactionRow(summary, selected = summary.id == selectedId, onClick = {
+                    TransactionRow(summary, selected = summary.id == selectedId, slowNanos = slowNanos, onClick = {
                         focusManager.clearFocus()
                         onSelect(summary)
                     })
-                    HorizontalDivider()
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
@@ -210,47 +251,79 @@ private fun TransactionList(
 }
 
 @Composable
-private fun TransactionRow(summary: TransactionSummary, selected: Boolean, onClick: () -> Unit) {
-    val background = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface
+private fun TransactionRow(summary: TransactionSummary, selected: Boolean, slowNanos: Long, onClick: () -> Unit) {
+    val background = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
+    val (_, statusColor) = statusLabelAndColor(summary)
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .height(IntrinsicSize.Min)
+            .heightIn(min = 64.dp)
             .background(background)
             .clickable(role = Role.Button, onClick = onClick)
-            .semantics(mergeDescendants = true) { this.selected = selected }
-            .padding(horizontal = Spacing.l, vertical = Spacing.s),
+            .semantics(mergeDescendants = true) { this.selected = selected },
     ) {
-        StatusBadge(summary)
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = "${summary.method} ${summary.path}",
-                style = MonospaceStyle,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (summary.source != CaptureSource.ORIGINAL) {
-                Text(
-                    stringResource(if (summary.source == CaptureSource.MOCK) R.string.pulse_source_mock else R.string.pulse_source_replay),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+        Box(
+            Modifier
+                .width(3.dp)
+                .fillMaxHeight()
+                .background(statusColor),
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = Spacing.m, end = Spacing.l, top = Spacing.m, bottom = Spacing.m),
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    MethodTag(summary.method)
+                    Text(
+                        text = summary.path,
+                        style = MonospaceStyle,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    SourceTag(summary)
+                    Text(
+                        text = summary.host + " · " + Formatters.clockTime(summary.startedAtEpochMillis),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
-            Text(
-                text = listOfNotNull(
-                    summary.host,
-                    Formatters.clockTime(summary.startedAtEpochMillis),
-                    summary.durationNanos?.let(Formatters::duration),
-                    summary.responseBodyBytes?.let(Formatters::bytes),
-                ).joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            RowTrailing(summary, slowNanos)
         }
+    }
+}
+
+/** 행 오른쪽의 결과·소요 시간·크기. 느린 요청은 소요 시간 색을 바꾼다. */
+@Composable
+private fun RowTrailing(summary: TransactionSummary, slowNanos: Long) {
+    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        StatusBadge(summary)
+        val duration = summary.durationNanos
+        Text(
+            text = listOfNotNull(
+                duration?.let(Formatters::duration),
+                summary.responseBodyBytes?.let(Formatters::bytes),
+            ).joinToString(" · "),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (duration != null &&
+                duration >= slowNanos
+            ) {
+                LocalStatusColors.current.slow
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            maxLines = 1,
+        )
     }
 }
 

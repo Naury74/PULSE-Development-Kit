@@ -2,12 +2,18 @@ package com.naury.pulse.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
@@ -29,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -37,11 +44,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -259,7 +271,17 @@ private fun InspectorTopBar(
 ) {
     val recording by inspector.recordingState.collectAsStateWithLifecycle()
     TopAppBar(
-        title = { Text(stringResource(R.string.pulse_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+        title = {
+            Text(
+                stringResource(R.string.pulse_title),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.sp,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        },
         navigationIcon = {
             if (detailOnly) {
                 IconButton(onClick = { navigation.selectedId = null }) {
@@ -278,23 +300,43 @@ private fun InspectorTopBar(
     )
 }
 
-/** 현재 상태를 글자로 함께 보여 주는 기록 전환 버튼. */
+/** 현재 상태를 글자로 함께 보여 주는 기록 전환 버튼. 누르면 멈추거나 다시 기록한다. */
 @Composable
 private fun RecordingToggle(state: RecordingState, onPause: () -> Unit, onResume: () -> Unit) {
-    when (state) {
-        RecordingState.RECORDING -> TextButton(onClick = onPause) {
-            Text("● " + stringResource(R.string.pulse_state_recording) + " · " + stringResource(R.string.pulse_pause))
+    val colors = LocalStatusColors.current
+    val recording = state == RecordingState.RECORDING
+    val label = stringResource(
+        when (state) {
+            RecordingState.RECORDING -> R.string.pulse_state_recording
+            RecordingState.PAUSED -> R.string.pulse_state_paused
+            RecordingState.DISABLED -> R.string.pulse_state_disabled
+            RecordingState.UNINITIALIZED -> R.string.pulse_state_uninitialized
+        },
+    )
+    val toggles = state == RecordingState.RECORDING || state == RecordingState.PAUSED
+    val actionLabel = stringResource(if (recording) R.string.pulse_pause else R.string.pulse_resume)
+    val base = Modifier
+        .padding(end = Spacing.xs)
+        .clip(CircleShape)
+        .background(MaterialTheme.colorScheme.surfaceContainerLow)
+        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+    val modifier = if (toggles) {
+        base.clickable(onClickLabel = actionLabel, role = Role.Button) {
+            if (recording) onPause() else onResume()
         }
-
-        RecordingState.PAUSED -> TextButton(onClick = onResume) {
-            Text(stringResource(R.string.pulse_state_paused) + " · " + stringResource(R.string.pulse_resume))
-        }
-
-        RecordingState.DISABLED -> Text(stringResource(R.string.pulse_state_disabled), style = MaterialTheme.typography.labelLarge)
-
-        RecordingState.UNINITIALIZED -> Text(
-            stringResource(R.string.pulse_state_uninitialized),
-            style = MaterialTheme.typography.labelLarge,
+    } else {
+        base
+    }
+    Row(
+        modifier.padding(horizontal = Spacing.m, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            Modifier
+                .size(8.dp)
+                .background(if (recording) colors.serverError else colors.pending, CircleShape),
         )
+        Text(label, style = MaterialTheme.typography.labelLarge)
     }
 }

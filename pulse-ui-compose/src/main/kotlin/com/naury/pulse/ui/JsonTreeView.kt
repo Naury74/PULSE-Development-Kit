@@ -19,9 +19,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.naury.pulse.api.RedactionPolicy.Companion.REDACTED
 
 private const val MAX_VISIBLE_ROWS = 1_500
 private const val VALUE_MAX_LINES = 4
@@ -51,7 +51,8 @@ internal fun JsonTreeView(tree: JsonTree) {
 
 @Composable
 private fun JsonRow(node: JsonNode, isExpanded: Boolean, onToggle: () -> Unit) {
-    val colors = LocalStatusColors.current
+    val accents = LocalAccentColors.current
+    val redactedColor = LocalStatusColors.current.clientError
     val expandedLabel = stringResource(R.string.pulse_tree_expanded)
     val collapsedLabel = stringResource(R.string.pulse_tree_collapsed)
     val base = Modifier
@@ -72,11 +73,11 @@ private fun JsonRow(node: JsonNode, isExpanded: Boolean, onToggle: () -> Unit) {
             else -> "▸ "
         }
         Text(marker, style = MonospaceStyle, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        node.label?.let { Text("$it: ", style = MonospaceStyle, fontWeight = FontWeight.SemiBold) }
+        node.label?.let { Text("$it: ", style = MonospaceStyle, color = accents.jsonKey) }
         val valueColor = when (node.kind) {
-            JsonNode.Kind.STRING -> colors.success
-            JsonNode.Kind.NUMBER, JsonNode.Kind.BOOLEAN -> colors.redirect
-            JsonNode.Kind.NULL -> colors.pending
+            JsonNode.Kind.STRING -> if (node.summary == "\"$REDACTED\"") redactedColor else accents.jsonString
+            JsonNode.Kind.NUMBER -> accents.jsonNumber
+            JsonNode.Kind.BOOLEAN, JsonNode.Kind.NULL -> accents.jsonLiteral
             else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
         Text(node.summary, style = MonospaceStyle, color = valueColor, maxLines = VALUE_MAX_LINES, overflow = TextOverflow.Ellipsis)

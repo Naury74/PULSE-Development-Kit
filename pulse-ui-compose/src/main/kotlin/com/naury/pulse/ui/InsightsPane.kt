@@ -2,6 +2,7 @@ package com.naury.pulse.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,9 +26,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.naury.pulse.api.Insight
 import com.naury.pulse.api.InsightCertainty
@@ -88,17 +92,14 @@ private fun InsightCard(inspector: PulseInspector, insight: Insight, onOpenTrans
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
-            .padding(Spacing.m),
+            .clip(CardShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CardShape)
+            .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text(
-                stringResource(insight.severity.label()),
-                color = severityColor,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Pill(stringResource(insight.severity.label()), severityColor)
             Text(
                 stringResource(
                     if (insight.certainty ==
@@ -113,7 +114,7 @@ private fun InsightCard(inspector: PulseInspector, insight: Insight, onOpenTrans
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(stringResource(insight.rule.title()), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(insight.rule.title()), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         listOfNotNull(insight.endpoint, insight.host).firstOrNull()?.let { Text(it, style = MonospaceStyle) }
         Text(evidence(insight), style = MaterialTheme.typography.bodyMedium)
         Text(
@@ -132,20 +133,35 @@ private fun EvidenceRequests(inspector: PulseInspector, insight: Insight, onOpen
         insight.transactionIds.take(PREVIEW_TRANSACTIONS).mapNotNull { inspector.loadTransaction(it)?.summary }
     }
     previews?.forEach { summary ->
-        Text(
-            listOfNotNull(
-                "${summary.method} ${summary.path}",
-                summary.statusCode?.toString() ?: summary.state.name,
-                summary.durationNanos?.let(Formatters::duration),
-            ).joinToString(" · "),
-            style = MonospaceStyle,
-            color = MaterialTheme.colorScheme.primary,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 40.dp)
+                .heightIn(min = 44.dp)
+                .clip(MaterialTheme.shapes.small)
                 .clickable(role = Role.Button) { onOpenTransaction(summary.id) }
-                .padding(vertical = Spacing.s),
-        )
+                .semantics(mergeDescendants = true) {}
+                .padding(vertical = Spacing.xs),
+        ) {
+            MethodTag(summary.method)
+            Text(
+                summary.path,
+                style = MonospaceStyle,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            StatusBadge(summary)
+            summary.durationNanos?.let {
+                Text(
+                    Formatters.duration(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
     if (insight.matchCount > PREVIEW_TRANSACTIONS) {
         Text(

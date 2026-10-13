@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 호스트 앱의 res/values에 같은 이름으로 false를 넣으면 끈다. -->
+    <bool name="pulse_launcher_icon_enabled">true</bool>
+    <bool name="pulse_notification_enabled">true</bool>
+    <color name="pulse_brand">#3B5BDB</color>
+</resources>

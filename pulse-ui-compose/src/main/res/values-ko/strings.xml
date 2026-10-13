@@ -241,4 +241,22 @@
     <string name="pulse_mocks_uses_value">남은 횟수 %1$d</string>
     <string name="pulse_mocks_delay_value">지연 %1$d ms</string>
     <string name="pulse_select_transaction">왼쪽에서 요청을 고르면 자세한 내용이 보입니다.</string>
+    <string name="pulse_field_ttfb_short">첫 응답</string>
+    <string name="pulse_field_response_size_short">응답 크기</string>
+    <string name="pulse_section_general">일반</string>
+    <string name="pulse_headers_count">헤더 (%1$d)</string>
+    <string name="pulse_share">공유</string>
+    <string name="pulse_share_title">요청 공유</string>
+    <string name="pulse_timeline_total">전체</string>
+    <string name="pulse_timeline_connection">연결</string>
+    <string name="pulse_notification_channel">PULSE 네트워크 기록</string>
+    <string name="pulse_notification_channel_description">debug 빌드에서 PULSE가 기록한 최근 요청을 보여 줍니다.</string>
+    <string name="pulse_notification_counts">요청 %1$d · 오류 %2$d</string>
+    <string name="pulse_notification_idle">네트워크 요청을 기록하는 중</string>
+    <string name="pulse_notification_paused">기록 멈춤</string>
+    <string name="pulse_notification_open">눌러서 인스펙터 열기</string>
+    <string name="pulse_notification_prompt">알림을 켜면 앱 어디서든 PULSE를 열고 오류를 바로 볼 수 있습니다.</string>
+    <string name="pulse_notification_enable">켜기</string>
+    <string name="pulse_notification_later">나중에</string>
+    <string name="pulse_phase_waiting">응답 대기</string>
 </resources>

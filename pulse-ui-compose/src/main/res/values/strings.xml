@@ -242,4 +242,23 @@
     <string name="pulse_mocks_uses_value">uses left: %1$d</string>
     <string name="pulse_mocks_delay_value">delay %1$d ms</string>
     <string name="pulse_select_transaction">Select a request on the left to see its details.</string>
+    <string name="pulse_field_ttfb_short">TTFB</string>
+    <string name="pulse_field_response_size_short">Size</string>
+    <string name="pulse_section_general">General</string>
+    <string name="pulse_headers_count">Headers (%1$d)</string>
+    <string name="pulse_share">Share</string>
+    <string name="pulse_share_title">Share request</string>
+    <string name="pulse_timeline_total">total</string>
+    <string name="pulse_timeline_connection">Connection</string>
+    <string name="pulse_launcher_label" translatable="false">PULSE</string>
+    <string name="pulse_notification_channel">PULSE network activity</string>
+    <string name="pulse_notification_channel_description">Shows recent requests recorded by PULSE in debug builds.</string>
+    <string name="pulse_notification_counts">%1$d requests · %2$d errors</string>
+    <string name="pulse_notification_idle">Recording network requests</string>
+    <string name="pulse_notification_paused">Recording paused</string>
+    <string name="pulse_notification_open">Tap to open the inspector</string>
+    <string name="pulse_notification_prompt">Turn on notifications to open PULSE from anywhere in your app and see errors as they happen.</string>
+    <string name="pulse_notification_enable">Turn on</string>
+    <string name="pulse_notification_later">Not now</string>
+    <string name="pulse_phase_waiting">Waiting for response</string>
 </resources>

@@ -1,12 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 기록 상태 알림. 사용자가 인스펙터에서 켤 때만 요청한다. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application>
+        <!-- 앱과 다른 작업으로 열어 최근 앱 목록에서 따로 보이게 한다. -->
         <activity
             android:name="com.naury.pulse.ui.PulseInspectorActivity"
             android:exported="false"
             android:label="@string/pulse_title"
+            android:taskAffinity="${applicationId}.pulse"
             android:theme="@style/pulse_InspectorTheme" />
+
+        <!-- 런처의 PULSE 아이콘. 호스트 앱이 pulse_launcher_icon_enabled를 false로 덮어쓰면 사라진다. -->
+        <activity-alias
+            android:name="com.naury.pulse.ui.PulseLauncher"
+            android:enabled="@bool/pulse_launcher_icon_enabled"
+            android:exported="true"
+            android:icon="@drawable/pulse_ic_launcher"
+            android:label="@string/pulse_launcher_label"
+            android:targetActivity="com.naury.pulse.ui.PulseInspectorActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <receiver
+            android:name="com.naury.pulse.ui.PulseNotificationReceiver"
+            android:exported="false" />
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="com.naury.pulse.ui.PulseUiInitializer"
+                android:value="androidx.startup" />
+        </provider>
     </application>
 
 </manifest>

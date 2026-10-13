@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":pulse-export"))
     implementation(project(":pulse-analytics"))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

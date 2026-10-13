@@ -4,6 +4,8 @@ import android.os.Looper
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -92,7 +94,7 @@ class PulseInspectorScreenTest {
         compose.onNodeWithContentDescription("Requests in 12 intervals", substring = true).assertExists()
         compose.onNodeWithText("Error rate").performClick()
         settle()
-        compose.onNodeWithText("GET /users").assertIsDisplayed()
+        compose.onNodeWithText("/users").assertIsDisplayed()
     }
 
     @Test
@@ -108,12 +110,12 @@ class PulseInspectorScreenTest {
 
         compose.onNodeWithText("Insights").performClick()
         settle()
-        awaitText("GET /users/1", substring = true)
+        awaitText("/users/1")
 
         compose.onNodeWithText("Possible N+1 requests").assertIsDisplayed()
         compose.onNodeWithText("Heuristic").assertIsDisplayed()
         compose.onNodeWithText("Threshold 8 · observed 9 · requests: 9 · within 2 s").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("GET /users/1", substring = true).performScrollTo().performClick()
+        compose.onNodeWithText("/users/1").performScrollTo().performClick()
         settle()
         compose.onNodeWithText("https://api.test/users/1").assertIsDisplayed()
     }
@@ -149,7 +151,7 @@ class PulseInspectorScreenTest {
     fun `요청 탭에 cURL 복사가 있다`() {
         show(FakeInspector(listOf(FakeInspector.detail("a", "/users"))))
 
-        compose.onNodeWithText("GET /users").performClick()
+        compose.onNodeWithText("/users").performClick()
         settle()
         compose.onNodeWithText("Request").performClick()
         settle()
@@ -164,7 +166,7 @@ class PulseInspectorScreenTest {
         inspector.replayOutcome = ReplayOutcome.Completed("replayed", 201, 0)
         show(inspector)
 
-        compose.onNodeWithText("GET /users").performClick()
+        compose.onNodeWithText("/users").performClick()
         settle()
         compose.onNodeWithText("Request").performClick()
         settle()
@@ -173,7 +175,7 @@ class PulseInspectorScreenTest {
 
         compose.onNodeWithText("Allowed host: api.test").assertIsDisplayed()
         compose.onNodeWithText("Removed because their values were redacted: Authorization", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("GET").performTextReplacement("DELETE")
+        compose.onNode(hasSetTextAction() and hasText("GET")).performTextReplacement("DELETE")
         settle()
         compose.onNodeWithText("Send").assertIsNotEnabled()
         compose.onNodeWithText("I understand this request may change server data").performScrollTo().performClick()
@@ -190,7 +192,7 @@ class PulseInspectorScreenTest {
         val replayed = FakeInspector.detail("rep", "/users", status = 500, parentId = "orig")
         show(FakeInspector(listOf(replayed, original)))
 
-        compose.onAllNodesWithText("GET /users")[0].performClick()
+        compose.onAllNodesWithText("/users")[0].performClick()
         awaitText("200  →  500")
 
         compose.onNodeWithText("Compare with original").performScrollTo().assertIsDisplayed()
@@ -234,7 +236,7 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("Traffic").performClick()
         settle()
 
-        compose.onNodeWithText("GET /orders").assertIsDisplayed()
+        compose.onNodeWithText("/orders").assertIsDisplayed()
     }
 
     @Test
@@ -243,7 +245,7 @@ class PulseInspectorScreenTest {
         show(FakeInspector(listOf(FakeInspector.detail("a", "/users"))))
 
         compose.onNodeWithText("Select a request on the left", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("GET /users").performClick()
+        compose.onNodeWithText("/users").performClick()
         settle()
         compose.onNodeWithText("https://api.test/users").assertIsDisplayed()
     }
@@ -283,7 +285,7 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("404").assertIsDisplayed()
         // 필터 칩과 실패한 요청의 상태 표시 두 곳에 나온다.
         compose.onAllNodesWithText("Failed").assertCountEquals(2)
-        compose.onNodeWithText("GET /users").performClick()
+        compose.onNodeWithText("/users").performClick()
         settle()
 
         compose.onNodeWithText("https://api.test/users").assertIsDisplayed()
@@ -297,14 +299,14 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("\"error\": \"[REDACTED]\"", substring = true).assertIsDisplayed()
         compose.onNodeWithContentDescription("Back").performClick()
         settle()
-        compose.onNodeWithText("GET /orders").assertIsDisplayed()
+        compose.onNodeWithText("/orders").assertIsDisplayed()
     }
 
     @Test
     fun `저장하지 않은 본문은 이유를 보여 준다`() {
         show(FakeInspector(listOf(FakeInspector.detail("a", "/big", responseBody = BodyState.TOO_LARGE))))
 
-        compose.onNodeWithText("GET /big").performClick()
+        compose.onNodeWithText("/big").performClick()
         settle()
         compose.onNodeWithText("Response").performClick()
         settle()
@@ -316,7 +318,7 @@ class PulseInspectorScreenTest {
     fun `타임라인은 관찰하지 못한 연결 단계를 알려 준다`() {
         show(FakeInspector(listOf(FakeInspector.detail("a", "/reuse"))))
 
-        compose.onNodeWithText("GET /reuse").performClick()
+        compose.onNodeWithText("/reuse").performClick()
         settle()
         compose.onNodeWithText("Timeline").performClick()
         settle()
@@ -341,7 +343,7 @@ class PulseInspectorScreenTest {
         val inspector = FakeInspector(listOf(FakeInspector.detail("a", "/users")))
         show(inspector)
 
-        compose.onNodeWithText("Pause", substring = true).performClick()
+        compose.onNodeWithText("Recording").performClick()
         assertThat(inspector.recordingState.value).isEqualTo(RecordingState.PAUSED)
 
         compose.onNodeWithContentDescription("Clear").performClick()
