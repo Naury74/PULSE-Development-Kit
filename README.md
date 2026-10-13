@@ -13,10 +13,10 @@
     <td align="center" width="25%"><img src="docs/images/screen-timeline.png" width="200" alt="타임라인"><br><b>타임라인</b><br>단계·응답 대기</td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/images/screen-overview.png" width="200" alt="개요"><br><b>개요</b><br>오류율·p95·시간별 요청</td>
+    <td align="center"><img src="docs/images/screen-overview.png" width="200" alt="대시보드"><br><b>대시보드</b><br>필터·지표 8개·추이</td>
     <td align="center"><img src="docs/images/screen-insights.png" width="200" alt="진단"><br><b>진단</b><br>기준값·관찰값·근거 요청</td>
     <td align="center"><img src="docs/images/screen-replay.png" width="200" alt="재실행"><br><b>재실행</b><br>허용 호스트·위험 확인</td>
-    <td align="center"><img src="docs/images/screen-settings.png" width="200" alt="설정"><br><b>설정</b><br>기록·수집 설정</td>
+    <td align="center"><img src="docs/images/screen-endpoints.png" width="200" alt="엔드포인트와 분류"><br><b>엔드포인트·분류</b><br>템플릿 묶음·화면·라벨별</td>
   </tr>
 </table>
 
