@@ -128,6 +128,10 @@ internal class CaptureWriter(
                 path = record.path,
                 startedAtEpochMillis = record.startedAtEpochMillis,
                 state = TransactionState.IN_FLIGHT,
+                screen = record.context?.screen,
+                foreground = record.context?.foreground,
+                networkType = record.context?.networkType,
+                label = record.context?.label,
             ),
         )
         if (inserted == -1L) return

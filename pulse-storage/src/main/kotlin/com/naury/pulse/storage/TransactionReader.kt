@@ -5,7 +5,9 @@ import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.HttpMessage
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.NetworkType
 import com.naury.pulse.api.PageCursor
+import com.naury.pulse.api.RequestContext
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TransactionDetail
 import com.naury.pulse.api.TransactionPage
@@ -56,8 +58,8 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
     }
 
     /** 기간 안의 최근 기록을 [limit]개까지 읽는다. 상한에 걸렸는지 함께 돌려준다. */
-    suspend fun samples(fromEpochMillis: Long, limit: Int): Pair<List<TrafficSample>, Boolean> {
-        val rows = dao.samples(fromEpochMillis, limit + 1)
+    suspend fun samples(fromEpochMillis: Long, limit: Int, includeSynthetic: Boolean = false): Pair<List<TrafficSample>, Boolean> {
+        val rows = dao.samples(fromEpochMillis, limit + 1, includeSynthetic)
         val samples = rows.take(limit).map {
             TrafficSample(
                 id = it.id,
@@ -73,6 +75,15 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
                 responseBodyBytes = it.responseBodyBytes,
                 hasCredentials = it.hasCredentials,
                 responseSource = it.responseSource,
+                source = it.source,
+                protocol = it.protocol,
+                responseHeadersNanos = it.responseHeadersNanos,
+                failureType = it.failureType,
+                connectionReused = it.connectionReused,
+                context = context(it.screen, it.foreground, it.networkType, it.label),
+                dnsNanos = it.dnsNanos,
+                connectNanos = it.connectNanos,
+                tlsNanos = it.tlsNanos,
             )
         }
         return samples to (rows.size > limit)
@@ -94,7 +105,11 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
         responseBodyBytes = responseBodyBytes,
         source = source,
         parentTransactionId = parentTransactionId,
+        context = context(screen, foreground, networkType, label),
     )
+
+    private fun context(screen: String?, foreground: Boolean?, networkType: NetworkType?, label: String?) =
+        RequestContext(screen, foreground, networkType, label).takeUnless { it.isEmpty }
 
     private fun MessageEntity.toHttpMessage(headers: List<HeaderField>) =
         HttpMessage(headers, contentType, declaredContentLength, bodyState, storedBodyBytes, redactedValueCount)

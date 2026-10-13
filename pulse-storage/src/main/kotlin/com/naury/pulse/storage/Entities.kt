@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.NetworkType
 import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhaseType
 import com.naury.pulse.api.TransactionState
@@ -48,6 +49,10 @@ internal data class TransactionEntity(
     @ColumnInfo(defaultValue = "NULL") val responseSource: ResponseSource? = null,
     @ColumnInfo(defaultValue = "NULL") val connectionReused: Boolean? = null,
     @ColumnInfo(defaultValue = "NULL") val parentTransactionId: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val screen: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val foreground: Boolean? = null,
+    @ColumnInfo(defaultValue = "NULL") val networkType: NetworkType? = null,
+    @ColumnInfo(defaultValue = "NULL") val label: String? = null,
 )
 
 @Entity(
@@ -123,6 +128,18 @@ internal data class SampleRow(
     val responseBodyBytes: Long?,
     val responseSource: ResponseSource?,
     val hasCredentials: Boolean,
+    val source: CaptureSource,
+    val protocol: String?,
+    val responseHeadersNanos: Long?,
+    val failureType: String?,
+    val connectionReused: Boolean?,
+    val screen: String?,
+    val foreground: Boolean?,
+    val networkType: NetworkType?,
+    val label: String?,
+    val dnsNanos: Long?,
+    val connectNanos: Long?,
+    val tlsNanos: Long?,
 )
 
 internal data class BlobUsage(val transactionId: String, val blobFile: String?, val storedBodyBytes: Long?)

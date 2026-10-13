@@ -6,9 +6,9 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [SessionEntity::class, TransactionEntity::class, MessageEntity::class, HeaderEntity::class, TimingEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
 )
 internal abstract class PulseDatabase : RoomDatabase() {
     abstract fun transactions(): TransactionDao

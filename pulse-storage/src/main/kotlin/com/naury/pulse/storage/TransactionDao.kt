@@ -85,12 +85,21 @@ internal interface TransactionDao {
      */
     @Query(
         """SELECT t.id, t.method, t.url, t.host, t.path, t.startedAtEpochMillis, t.durationNanos, t.statusCode, t.state,
-        t.requestBodyBytes, t.responseBodyBytes, t.responseSource,
-        EXISTS(SELECT 1 FROM headers h WHERE h.transactionId = t.id AND h.kind = 'REQUEST' AND h.value = :redacted) AS hasCredentials
-        FROM transactions t WHERE t.startedAtEpochMillis >= :from AND t.source = 'ORIGINAL'
+        t.requestBodyBytes, t.responseBodyBytes, t.responseSource, t.source, t.protocol, t.responseHeadersNanos, t.failureType,
+        t.connectionReused, t.screen, t.foreground, t.networkType, t.label,
+        EXISTS(SELECT 1 FROM headers h WHERE h.transactionId = t.id AND h.kind = 'REQUEST' AND h.value = :redacted) AS hasCredentials,
+        (SELECT SUM(p.durationNanos) FROM timing_phases p WHERE p.transactionId = t.id AND p.phase = 'DNS') AS dnsNanos,
+        (SELECT SUM(p.durationNanos) FROM timing_phases p WHERE p.transactionId = t.id AND p.phase = 'CONNECT') AS connectNanos,
+        (SELECT SUM(p.durationNanos) FROM timing_phases p WHERE p.transactionId = t.id AND p.phase = 'TLS') AS tlsNanos
+        FROM transactions t WHERE t.startedAtEpochMillis >= :from AND (:includeSynthetic OR t.source = 'ORIGINAL')
         ORDER BY t.startedAtEpochMillis DESC LIMIT :limit""",
     )
-    suspend fun samples(from: Long, limit: Int, redacted: String = RedactionPolicy.REDACTED): List<SampleRow>
+    suspend fun samples(
+        from: Long,
+        limit: Int,
+        includeSynthetic: Boolean = false,
+        redacted: String = RedactionPolicy.REDACTED,
+    ): List<SampleRow>
 
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun transaction(id: String): TransactionEntity?

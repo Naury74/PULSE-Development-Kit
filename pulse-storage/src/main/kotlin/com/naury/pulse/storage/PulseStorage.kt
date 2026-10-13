@@ -51,8 +51,11 @@ public class PulseStorage private constructor(
     public suspend fun loadBody(id: String, kind: MessageKind): String? = withContext(Dispatchers.IO) { reader.body(id, kind) }
 
     /** [fromEpochMillis] 이후 최근 기록을 [limit]개까지 읽는다. 두 번째 값은 상한에 걸렸는지다. */
-    public suspend fun loadSamples(fromEpochMillis: Long, limit: Int): Pair<List<TrafficSample>, Boolean> =
-        withContext(Dispatchers.IO) { reader.samples(fromEpochMillis, limit) }
+    public suspend fun loadSamples(
+        fromEpochMillis: Long,
+        limit: Int,
+        includeSynthetic: Boolean = false,
+    ): Pair<List<TrafficSample>, Boolean> = withContext(Dispatchers.IO) { reader.samples(fromEpochMillis, limit, includeSynthetic) }
 
     public fun observeChanges(): Flow<Unit> = flow {
         emitAll(database.invalidationTracker.createFlow("transactions", "messages", "timing_phases", emitInitialState = false))
