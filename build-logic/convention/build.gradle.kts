@@ -18,6 +18,14 @@ gradlePlugin {
             id = "pulse.android.library"
             implementationClass = "AndroidLibraryConventionPlugin"
         }
+        register("publicApi") {
+            id = "pulse.public.api"
+            implementationClass = "PublicApiConventionPlugin"
+        }
+        register("noopApi") {
+            id = "pulse.noop.api"
+            implementationClass = "NoopApiConventionPlugin"
+        }
         register("quality") {
             id = "pulse.quality"
             implementationClass = "QualityConventionPlugin"

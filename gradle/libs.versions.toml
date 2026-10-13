@@ -75,3 +75,5 @@ pulse-jvm-library = { id = "pulse.jvm.library" }
 pulse-android-library = { id = "pulse.android.library" }
 pulse-android-compose = { id = "pulse.android.compose" }
 pulse-quality = { id = "pulse.quality" }
+pulse-public-api = { id = "pulse.public.api" }
+pulse-noop-api = { id = "pulse.noop.api" }

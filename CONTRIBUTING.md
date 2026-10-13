@@ -9,7 +9,12 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew check :sample-app:assembleDebug :sample-app:assembleRelease
 ```
 
-PR 전에 위 명령이 통과해야 합니다. 같은 명령이 CI(`.github/workflows/ci.yml`)에서 실행됩니다. 형식은 `./gradlew ktlintFormat`으로 고칩니다.
+PR 전에 위 명령이 통과해야 합니다. `check`에는 다음 공개 API 검사가 들어 있습니다.
+
+- `pulse-api`의 공개 ABI는 `pulse-api/api/pulse-api.api`에 고정되어 있습니다. 의도한 변경이면 `./gradlew :pulse-api:updateKotlinAbi`로 갱신해 함께 커밋합니다(0.x 동안에도 변경 내역을 CHANGELOG에 적습니다).
+- `verifyNoopApi`는 `pulse-noop`의 `Pulse`·`PulseHandle`이 `pulse-bundle`과 같은 공개 시그니처인지 확인합니다. 한쪽에 공개 멤버를 더하면 다른 쪽에도 더해야 합니다.
+
+ 같은 명령이 CI(`.github/workflows/ci.yml`)에서 실행됩니다. 형식은 `./gradlew ktlintFormat`으로 고칩니다.
 
 ## 작업 흐름
 
