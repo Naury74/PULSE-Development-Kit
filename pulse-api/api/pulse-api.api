@@ -1,3 +1,7 @@
+public abstract interface class com/naury/pulse/api/BlockingReplayAuthorizer {
+	public abstract fun headersFor (Lcom/naury/pulse/api/ReplayDraft;)Ljava/util/List;
+}
+
 public final class com/naury/pulse/api/BodyState : java/lang/Enum {
 	public static final field CAPTURED Lcom/naury/pulse/api/BodyState;
 	public static final field DECODE_FAILED Lcom/naury/pulse/api/BodyState;
@@ -399,7 +403,13 @@ public final class com/naury/pulse/api/RedactionPolicy$Companion {
 }
 
 public abstract interface class com/naury/pulse/api/ReplayAuthorizer {
+	public static final field Companion Lcom/naury/pulse/api/ReplayAuthorizer$Companion;
+	public static fun blocking (Lcom/naury/pulse/api/BlockingReplayAuthorizer;)Lcom/naury/pulse/api/ReplayAuthorizer;
 	public abstract fun headersFor (Lcom/naury/pulse/api/ReplayDraft;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/naury/pulse/api/ReplayAuthorizer$Companion {
+	public final fun blocking (Lcom/naury/pulse/api/BlockingReplayAuthorizer;)Lcom/naury/pulse/api/ReplayAuthorizer;
 }
 
 public final class com/naury/pulse/api/ReplayBlockReason : java/lang/Enum {

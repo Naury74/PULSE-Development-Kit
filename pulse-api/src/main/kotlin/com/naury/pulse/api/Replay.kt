@@ -1,5 +1,8 @@
 package com.naury.pulse.api
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 /**
  * 재실행 정책. [PulseConfig.replay]에 넣어야 재실행할 수 있으며 기본은 꺼져 있다.
  *
@@ -115,4 +118,16 @@ public enum class ReplayBlockReason {
  */
 public fun interface ReplayAuthorizer {
     public suspend fun headersFor(draft: ReplayDraft): List<HeaderField>
+
+    public companion object {
+        /** Java처럼 suspend 함수를 구현하기 어려운 곳에서 쓴다. [authorizer]는 I/O 스레드에서 불리므로 막아도 된다. */
+        @JvmStatic
+        public fun blocking(authorizer: BlockingReplayAuthorizer): ReplayAuthorizer =
+            ReplayAuthorizer { draft -> withContext(Dispatchers.IO) { authorizer.headersFor(draft) } }
+    }
+}
+
+/** 막는 방식으로 자격 증명 헤더를 돌려주는 [ReplayAuthorizer]. [ReplayAuthorizer.blocking]으로 감싸 쓴다. */
+public fun interface BlockingReplayAuthorizer {
+    public fun headersFor(draft: ReplayDraft): List<HeaderField>
 }
