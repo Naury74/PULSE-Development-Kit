@@ -53,12 +53,15 @@ public class PulseHandle private constructor(
     private var replayAuthorizer: ReplayAuthorizer? = null
 
     // 재실행은 호스트 클라이언트와 분리된 클라이언트로 보내며, 같은 수집 파이프라인에 REPLAY로 기록된다.
-    private val replayEngine = config.replay?.let { policy ->
-        val client = OkHttpClient.Builder()
-            .addInterceptor(interceptor)
-            .eventListenerFactory(PulseEventListenerFactory(engine.recorder, timingRegistry))
-            .build()
-        ReplayEngine(policy, client) { replayAuthorizer }
+    // TLS 설정을 만드는 비용이 있어 첫 재실행 때(I/O 스레드) 만든다.
+    private val replayEngine by lazy {
+        config.replay?.let { policy ->
+            val client = OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .eventListenerFactory(PulseEventListenerFactory(engine.recorder, timingRegistry))
+                .build()
+            ReplayEngine(policy, client) { replayAuthorizer }
+        }
     }
 
     override val recordingState: StateFlow<RecordingState> = engine.recorder.controller.recordingState
@@ -121,14 +124,15 @@ public class PulseHandle private constructor(
     }
 
     override suspend fun replayDraft(transactionId: String): ReplayDraft? {
-        if (replayEngine == null) return null
+        if (config.replay == null) return null
         val detail = storage.loadTransaction(transactionId) ?: return null
         val body = if (detail.request.bodyState == BodyState.CAPTURED) storage.loadBody(transactionId, MessageKind.REQUEST) else null
         return ReplayDrafts.from(detail, body)
     }
 
-    override suspend fun replay(draft: ReplayDraft, confirmed: Boolean): ReplayOutcome =
+    override suspend fun replay(draft: ReplayDraft, confirmed: Boolean): ReplayOutcome = withContext(Dispatchers.IO) {
         replayEngine?.execute(draft, confirmed) ?: ReplayOutcome.Blocked(ReplayBlockReason.DISABLED)
+    }
 
     /** 재실행에 자격 증명을 붙이는 콜백을 정한다. null이면 자격 증명 없이 보낸다. [PulseConfig.replay]가 없으면 쓰이지 않는다. */
     public fun setReplayAuthorizer(authorizer: ReplayAuthorizer?) {
