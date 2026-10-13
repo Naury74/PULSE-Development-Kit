@@ -173,4 +173,16 @@
     <string name="pulse_settings_health">수집 상태</string>
     <string name="pulse_settings_health_value">버린 이벤트 %1$d · 버린 본문 %2$d · 저장 실패 %3$d · 큐 최대 %4$d</string>
     <string name="pulse_settings_data">데이터</string>
+    <string name="pulse_copy_curl">cURL로 복사</string>
+    <string name="pulse_export">내보내기</string>
+    <string name="pulse_export_title">요청 내보내기</string>
+    <string name="pulse_export_warning">현재 검색·필터에 맞는 요청을 최신순으로 최대 10,000개 내보냅니다. 쓰기 전에 다시 마스킹하지만 파일에 개인정보가 남을 수 있으니 공유하기 전에 확인하세요.</string>
+    <string name="pulse_export_har">HAR 1.2(브라우저 도구, Charles, Proxyman)</string>
+    <string name="pulse_export_json">PULSE JSON(본문 상태·마스킹 정보 포함)</string>
+    <string name="pulse_export_confirm">파일 선택</string>
+    <string name="pulse_export_started">내보내는 중…</string>
+    <string name="pulse_export_failed">내보내지 못했습니다. 쓰다 만 파일은 지웠습니다.</string>
+    <string name="pulse_export_done">요청 %1$d개를 내보냈습니다.</string>
+    <string name="pulse_export_truncated">상한 때문에 최신 요청만 넣었습니다.</string>
+    <string name="pulse_export_dropped">다시 마스킹할 수 없어 뺀 본문: %1$d개.</string>
 </resources>

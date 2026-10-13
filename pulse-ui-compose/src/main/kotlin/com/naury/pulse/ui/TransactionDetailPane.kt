@@ -1,10 +1,5 @@
 package com.naury.pulse.ui
 
-import android.content.ClipData
-import android.content.ClipDescription
-import android.os.Build
-import android.os.PersistableBundle
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +11,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -25,24 +19,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.HttpMessage
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.TransactionDetail
+import com.naury.pulse.export.CurlFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val PREVIEW_CHARACTERS = 32 * 1024
@@ -97,7 +87,10 @@ private fun DetailTabs(inspector: PulseInspector, detail: TransactionDetail, mod
             when (tab) {
                 0 -> SummaryTab(detail)
 
-                1 -> MessageTab(inspector, detail.summary.id, MessageKind.REQUEST, detail.request)
+                1 -> {
+                    CurlButton(inspector, detail)
+                    MessageTab(inspector, detail.summary.id, MessageKind.REQUEST, detail.request)
+                }
 
                 2 -> detail.response?.let { MessageTab(inspector, detail.summary.id, MessageKind.RESPONSE, it) }
                     ?: Notice(stringResource(R.string.pulse_no_response))
@@ -176,7 +169,7 @@ private fun BodyViewer(inspector: PulseInspector, transactionId: String, kind: M
 private fun LoadedBody(body: BodyLoad.Loaded) {
     var showTree by rememberSaveable { mutableStateOf(body.tree != null) }
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-        CopyButton(body.full)
+        CopyButton { body.full }
         if (body.tree != null) {
             FilterChip(selected = showTree, onClick = { showTree = true }, label = { Text(stringResource(R.string.pulse_view_tree)) })
             FilterChip(selected = !showTree, onClick = { showTree = false }, label = { Text(stringResource(R.string.pulse_view_raw)) })
@@ -191,23 +184,11 @@ private fun LoadedBody(body: BodyLoad.Loaded) {
     }
 }
 
+/** 요청을 cURL 명령으로 복사한다. 가려진 헤더는 넣지 않으며, 누를 때만 만든다. */
 @Composable
-private fun CopyButton(text: String) {
-    val clipboard = LocalClipboard.current
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val copied = stringResource(R.string.pulse_copied)
-    OutlinedButton(
-        onClick = {
-            val clip = ClipData.newPlainText("PULSE", text)
-            // 마스킹했더라도 개인 정보가 남을 수 있어 Android 13+의 클립보드 미리보기에서 내용을 숨긴다.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                clip.description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
-            }
-            scope.launch {
-                clipboard.setClipEntry(ClipEntry(clip))
-                Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-            }
-        },
-    ) { Text(stringResource(R.string.pulse_copy)) }
+private fun CurlButton(inspector: PulseInspector, detail: TransactionDetail) {
+    CopyButton(label = stringResource(R.string.pulse_copy_curl)) {
+        val body = if (detail.request.bodyState == BodyState.CAPTURED) inspector.loadBody(detail.summary.id, MessageKind.REQUEST) else null
+        CurlFormatter(inspector.config.redaction).format(detail, body)
+    }
 }

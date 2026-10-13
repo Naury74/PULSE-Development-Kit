@@ -31,8 +31,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -48,6 +50,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.RecordingState
 import com.naury.pulse.api.StatsWindow
+import com.naury.pulse.api.TransactionQuery
 
 private val TwoPaneMinWidth = 840.dp
 private const val LIST_PANE_WEIGHT = 0.42f
@@ -70,62 +73,102 @@ public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, 
             key = "pulse-traffic",
             factory = viewModelFactory { initializer { TrafficViewModel(inspector, createSavedStateHandle()) } },
         )
-        var destination by rememberSaveable { mutableStateOf(Destination.TRAFFIC) }
-        var window by rememberSaveable { mutableStateOf(StatsWindow.LAST_HOUR) }
-        var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
-        var confirmClear by rememberSaveable { mutableStateOf(false) }
+        val navigation = rememberSaveable(saver = InspectorNavigation.Saver) { InspectorNavigation() }
 
         BoxWithConstraints(modifier.fillMaxSize()) {
             val wide = maxWidth >= TwoPaneMinWidth
-            val showingDetailOnly = !wide && destination == Destination.TRAFFIC && selectedId != null
-            BackHandler(enabled = showingDetailOnly) { selectedId = null }
-            BackHandler(enabled = !showingDetailOnly && destination != Destination.TRAFFIC) { destination = Destination.TRAFFIC }
-
+            val detailOnly = !wide && navigation.destination == Destination.TRAFFIC && navigation.selectedId != null
+            BackHandler(enabled = detailOnly) { navigation.selectedId = null }
+            BackHandler(enabled = !detailOnly && navigation.destination != Destination.TRAFFIC) {
+                navigation.destination =
+                    Destination.TRAFFIC
+            }
+            val exportQuery = if (navigation.destination == Destination.TRAFFIC && !detailOnly) {
+                { TransactionQuery(trafficViewModel.searchText.value, trafficViewModel.status.value) }
+            } else {
+                null
+            }
             Scaffold(
-                topBar = {
-                    InspectorTopBar(inspector, showingDetailOnly, onBack = {
-                        selectedId = null
-                    }, onClear = { confirmClear = true }, onClose)
-                },
-                bottomBar = {
-                    if (!wide && !showingDetailOnly) DestinationBar(destination) { destination = it }
-                },
+                topBar = { InspectorTopBar(inspector, detailOnly, navigation, onClose, exportQuery) },
+                bottomBar = { if (!wide && !detailOnly) DestinationBar(navigation.destination) { navigation.destination = it } },
             ) { padding ->
                 Row(Modifier.padding(padding).fillMaxSize()) {
                     if (wide) {
-                        DestinationRail(destination) { destination = it }
+                        DestinationRail(navigation.destination) { navigation.destination = it }
                         VerticalDivider()
                     }
-                    val content = Modifier.weight(1f).fillMaxHeight()
-                    when (destination) {
-                        Destination.OVERVIEW -> OverviewPane(inspector, window, { window = it }, onOpenTraffic = { filter ->
-                            trafficViewModel.filter(filter)
-                            selectedId = null
-                            destination = Destination.TRAFFIC
-                        }, content)
-
-                        Destination.TRAFFIC -> TrafficDestination(inspector, trafficViewModel, wide, selectedId, {
-                            selectedId = it
-                        }, content)
-
-                        Destination.INSIGHTS -> InsightsPane(inspector, window, { window = it }, onOpenTransaction = {
-                            selectedId = it
-                            destination = Destination.TRAFFIC
-                        }, content)
-
-                        Destination.SETTINGS -> SettingsPane(inspector, onClear = { confirmClear = true }, modifier = content)
-                    }
+                    DestinationContent(navigation, inspector, trafficViewModel, wide, Modifier.weight(1f).fillMaxHeight())
                 }
             }
         }
 
-        if (confirmClear) {
-            ClearDialog(onDismiss = { confirmClear = false }) {
-                confirmClear = false
-                selectedId = null
+        if (navigation.confirmClear) {
+            ClearDialog(onDismiss = { navigation.confirmClear = false }) {
+                navigation.confirmClear = false
+                navigation.selectedId = null
                 inspector.clear()
             }
         }
+    }
+}
+
+/** 탭·선택·기간·지우기 확인 상태. 화면 회전과 프로세스 재시작 뒤에도 유지한다. */
+@Stable
+private class InspectorNavigation(
+    destination: Destination = Destination.TRAFFIC,
+    window: StatsWindow = StatsWindow.LAST_HOUR,
+    selectedId: String? = null,
+    confirmClear: Boolean = false,
+) {
+    var destination by mutableStateOf(destination)
+    var window by mutableStateOf(window)
+    var selectedId by mutableStateOf(selectedId)
+    var confirmClear by mutableStateOf(confirmClear)
+
+    fun open(target: Destination, transactionId: String?) {
+        selectedId = transactionId
+        destination = target
+    }
+
+    companion object {
+        val Saver = listSaver<InspectorNavigation, Any?>(
+            save = { listOf(it.destination.name, it.window.name, it.selectedId, it.confirmClear) },
+            restore = {
+                InspectorNavigation(
+                    Destination.valueOf(it[0] as String),
+                    StatsWindow.valueOf(it[1] as String),
+                    it[2] as String?,
+                    it[3] as Boolean,
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun DestinationContent(
+    navigation: InspectorNavigation,
+    inspector: PulseInspector,
+    trafficViewModel: TrafficViewModel,
+    wide: Boolean,
+    modifier: Modifier,
+) {
+    val changeWindow: (StatsWindow) -> Unit = { navigation.window = it }
+    when (navigation.destination) {
+        Destination.OVERVIEW -> OverviewPane(inspector, navigation.window, changeWindow, onOpenTraffic = { filter ->
+            trafficViewModel.filter(filter)
+            navigation.open(Destination.TRAFFIC, null)
+        }, modifier)
+
+        Destination.TRAFFIC -> TrafficDestination(inspector, trafficViewModel, wide, navigation.selectedId, {
+            navigation.selectedId = it
+        }, modifier)
+
+        Destination.INSIGHTS -> InsightsPane(inspector, navigation.window, changeWindow, onOpenTransaction = {
+            navigation.open(Destination.TRAFFIC, it)
+        }, modifier)
+
+        Destination.SETTINGS -> SettingsPane(inspector, onClear = { navigation.confirmClear = true }, modifier = modifier)
     }
 }
 
@@ -183,7 +226,7 @@ private fun TrafficDestination(
     viewModel: TrafficViewModel,
     wide: Boolean,
     selectedId: String?,
-    onSelect: (String) -> Unit,
+    onSelect: (String?) -> Unit,
     modifier: Modifier,
 ) {
     when {
@@ -203,20 +246,29 @@ private fun TrafficDestination(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun InspectorTopBar(inspector: PulseInspector, detailOnly: Boolean, onBack: () -> Unit, onClear: () -> Unit, onClose: () -> Unit) {
+private fun InspectorTopBar(
+    inspector: PulseInspector,
+    detailOnly: Boolean,
+    navigation: InspectorNavigation,
+    onClose: () -> Unit,
+    exportQuery: (() -> TransactionQuery)?,
+) {
     val recording by inspector.recordingState.collectAsStateWithLifecycle()
     TopAppBar(
         title = { Text(stringResource(R.string.pulse_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         navigationIcon = {
             if (detailOnly) {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = { navigation.selectedId = null }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.pulse_back))
                 }
             }
         },
         actions = {
             RecordingToggle(recording, onPause = inspector::pause, onResume = inspector::resume)
-            IconButton(onClick = onClear) { Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.pulse_clear)) }
+            exportQuery?.let { ExportAction(inspector, it) }
+            IconButton(onClick = {
+                navigation.confirmClear = true
+            }) { Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.pulse_clear)) }
             IconButton(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.pulse_close)) }
         },
     )

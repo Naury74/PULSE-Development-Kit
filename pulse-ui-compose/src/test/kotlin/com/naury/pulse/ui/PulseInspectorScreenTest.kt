@@ -126,6 +126,32 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("Metadata and redacted JSON bodies").assertIsDisplayed()
     }
 
+    @Test
+    fun `내보내기는 경고와 형식을 먼저 보여 주고 취소할 수 있다`() {
+        show(FakeInspector(listOf(FakeInspector.detail("a", "/users"))))
+
+        compose.onNodeWithContentDescription("Export").performClick()
+        settle()
+
+        compose.onNodeWithText("can still contain personal data", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("HAR 1.2", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Cancel").performClick()
+        settle()
+        compose.onNodeWithText("Export requests").assertDoesNotExist()
+    }
+
+    @Test
+    fun `요청 탭에 cURL 복사가 있다`() {
+        show(FakeInspector(listOf(FakeInspector.detail("a", "/users"))))
+
+        compose.onNodeWithText("GET /users").performClick()
+        settle()
+        compose.onNodeWithText("Request").performClick()
+        settle()
+
+        compose.onNodeWithText("Copy as cURL").assertIsDisplayed()
+    }
+
     /** 본문 해석처럼 백그라운드 디스패처에서 끝나는 작업은 시간이 정해지지 않아 텍스트가 나타날 때까지 기다린다. */
     private fun awaitText(text: String, substring: Boolean = false) {
         compose.waitUntil(AWAIT_MILLIS) {

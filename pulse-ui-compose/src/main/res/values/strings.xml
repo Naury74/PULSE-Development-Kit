@@ -174,4 +174,16 @@
     <string name="pulse_settings_health">Capture health</string>
     <string name="pulse_settings_health_value">dropped events: %1$d · dropped bodies: %2$d · write failures: %3$d · queue peak: %4$d</string>
     <string name="pulse_settings_data">Data</string>
+    <string name="pulse_copy_curl">Copy as cURL</string>
+    <string name="pulse_export">Export</string>
+    <string name="pulse_export_title">Export requests</string>
+    <string name="pulse_export_warning">Exports the requests that match the current search and filter (newest first, up to 10,000). Values are redacted again before writing, but the file can still contain personal data. Check it before sharing.</string>
+    <string name="pulse_export_har">HAR 1.2 (browser tools, Charles, Proxyman)</string>
+    <string name="pulse_export_json">PULSE JSON (body states and redaction details)</string>
+    <string name="pulse_export_confirm">Choose file</string>
+    <string name="pulse_export_started">Exporting…</string>
+    <string name="pulse_export_failed">Export failed. The partial file was deleted.</string>
+    <string name="pulse_export_done">Exported requests: %1$d.</string>
+    <string name="pulse_export_truncated">Only the newest requests were included because of the limit.</string>
+    <string name="pulse_export_dropped">Bodies left out because they could not be redacted again: %1$d.</string>
 </resources>
