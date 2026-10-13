@@ -63,7 +63,7 @@ internal fun ExportAction(inspector: PulseInspector, query: () -> TransactionQue
         started = stringResource(R.string.pulse_export_started),
         failed = stringResource(R.string.pulse_export_failed),
     )
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(format.mimeType)) { uri ->
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(documentMimeType(format))) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         Toast.makeText(context, messages.started, Toast.LENGTH_SHORT).show()
         scope.launch {
@@ -87,6 +87,9 @@ internal fun ExportAction(inspector: PulseInspector, query: () -> TransactionQue
         )
     }
 }
+
+/** HAR은 JSON MIME으로 만들면 문서 공급자가 `.har.json`처럼 확장자를 덧붙이므로 일반 바이너리로 만든다. */
+private fun documentMimeType(format: ExportFormat): String = if (format == ExportFormat.HAR) "application/octet-stream" else format.mimeType
 
 private class ExportMessages(val started: String, val failed: String)
 

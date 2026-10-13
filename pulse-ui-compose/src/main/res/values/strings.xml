@@ -241,4 +241,5 @@
     <string name="pulse_mocks_priority_value">priority %1$d</string>
     <string name="pulse_mocks_uses_value">uses left: %1$d</string>
     <string name="pulse_mocks_delay_value">delay %1$d ms</string>
+    <string name="pulse_select_transaction">Select a request on the left to see its details.</string>
 </resources>

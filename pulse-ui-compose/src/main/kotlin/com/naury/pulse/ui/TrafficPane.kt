@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -37,10 +39,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,6 +59,7 @@ import com.naury.pulse.api.StatusFilter
 import com.naury.pulse.api.TransactionSummary
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 private const val CHANGE_DEBOUNCE_MILLIS = 300L
@@ -76,9 +81,12 @@ internal fun TrafficPane(
     val scope = rememberCoroutineScope()
     var hasNewItems by rememberSaveable { mutableStateOf(false) }
 
+    val focusManager = LocalFocusManager.current
+
     // 사용자가 맨 위에 있으면 바로 새로고침하고, 아래를 보고 있으면 위치를 빼앗지 않고 알림만 띄운다.
+    // 다른 탭에 있는 동안 바뀐 내용도 보이도록 화면에 들어올 때 한 번 새로고침한다.
     LaunchedEffect(items, inspector) {
-        inspector.observeChanges().debounce(CHANGE_DEBOUNCE_MILLIS).collect {
+        inspector.observeChanges().debounce(CHANGE_DEBOUNCE_MILLIS).onStart { emit(Unit) }.collect {
             if (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) items.refresh() else hasNewItems = true
         }
     }
@@ -120,6 +128,7 @@ internal fun TrafficPane(
 
 @Composable
 private fun SearchField(text: String, onChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = text,
         onValueChange = onChange,
@@ -133,6 +142,8 @@ private fun SearchField(text: String, onChange: (String) -> Unit) {
             }
         },
         placeholder = { Text(stringResource(R.string.pulse_search_hint)) },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Spacing.l, vertical = Spacing.s),
@@ -169,6 +180,7 @@ private fun TransactionList(
     onSelect: (TransactionSummary) -> Unit,
     isFiltered: Boolean,
 ) {
+    val focusManager = LocalFocusManager.current
     val refresh = items.loadState.refresh
     when {
         refresh is LoadState.Error && items.itemCount == 0 -> CenteredMessage(stringResource(R.string.pulse_load_failed)) {
@@ -186,7 +198,10 @@ private fun TransactionList(
         else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
             items(count = items.itemCount, key = items.itemKey { it.id }) { index ->
                 items[index]?.let { summary ->
-                    TransactionRow(summary, selected = summary.id == selectedId, onClick = { onSelect(summary) })
+                    TransactionRow(summary, selected = summary.id == selectedId, onClick = {
+                        focusManager.clearFocus()
+                        onSelect(summary)
+                    })
                     HorizontalDivider()
                 }
             }

@@ -240,4 +240,5 @@
     <string name="pulse_mocks_priority_value">우선순위 %1$d</string>
     <string name="pulse_mocks_uses_value">남은 횟수 %1$d</string>
     <string name="pulse_mocks_delay_value">지연 %1$d ms</string>
+    <string name="pulse_select_transaction">왼쪽에서 요청을 고르면 자세한 내용이 보입니다.</string>
 </resources>

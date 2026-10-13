@@ -223,6 +223,31 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("Mock responses are on", substring = true).assertIsDisplayed()
     }
 
+    @Test
+    fun `다른 탭에 있는 동안 생긴 요청은 트래픽 탭으로 돌아오면 보인다`() {
+        val inspector = FakeInspector(listOf(FakeInspector.detail("a", "/users")))
+        show(inspector)
+
+        compose.onNodeWithText("Overview").performClick()
+        settle()
+        inspector.details = inspector.details + FakeInspector.detail("b", "/orders")
+        compose.onNodeWithText("Traffic").performClick()
+        settle()
+
+        compose.onNodeWithText("GET /orders").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w900dp-h700dp")
+    fun `넓은 화면에서 요청을 고르기 전에는 안내를 보여 준다`() {
+        show(FakeInspector(listOf(FakeInspector.detail("a", "/users"))))
+
+        compose.onNodeWithText("Select a request on the left", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("GET /users").performClick()
+        settle()
+        compose.onNodeWithText("https://api.test/users").assertIsDisplayed()
+    }
+
     /** 본문 해석처럼 백그라운드 디스패처에서 끝나는 작업은 시간이 정해지지 않아 텍스트가 나타날 때까지 기다린다. */
     private fun awaitText(text: String, substring: Boolean = false) {
         compose.waitUntil(AWAIT_MILLIS) {
