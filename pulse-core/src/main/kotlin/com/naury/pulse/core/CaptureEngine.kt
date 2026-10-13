@@ -30,11 +30,12 @@ public class CaptureEngine private constructor(
             sink: CaptureSink,
             clock: CaptureClock = SystemCaptureClock,
             sessionId: String = UUID.randomUUID().toString(),
+            contextSource: AppContextSource? = null,
         ): CaptureEngine {
             val redactor = Redactor(config.redaction)
             val queue = CaptureQueue(config.queueCapacity, pendingBodyBudget(config))
-            val recorder = CaptureRecorder(config, clock, queue, redactor, sessionId)
-            val pipeline = CapturePipeline(queue, BodySanitizer(redactor), sink)
+            val recorder = CaptureRecorder(config, clock, queue, redactor, sessionId, contextSource)
+            val pipeline = CapturePipeline(queue, BodySanitizer(redactor, config.bodyFormats), sink)
             pipeline.start()
             return CaptureEngine(recorder, queue, pipeline)
         }

@@ -82,8 +82,8 @@ public class PulseExporter(policy: RedactionPolicy, private val generator: Strin
         }
 
         fun write(entry: ExportEntry) {
-            val requestBody = sanitizer.body(entry.requestBody)
-            val responseBody = sanitizer.body(entry.responseBody)
+            val requestBody = sanitizer.body(entry.requestBody, entry.detail.request.contentType)
+            val responseBody = sanitizer.body(entry.responseBody, entry.detail.response?.contentType)
             if (entry.requestBody != null && requestBody == null) droppedBodies++
             if (entry.responseBody != null && responseBody == null) droppedBodies++
             entryWriter.entry(

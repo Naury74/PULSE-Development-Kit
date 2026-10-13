@@ -4,6 +4,7 @@ import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.RequestContext
 import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TransactionState
@@ -34,6 +35,8 @@ public class RequestRecord internal constructor(
     public val headers: List<HeaderField>,
     public val contentType: String?,
     public val declaredContentLength: Long?,
+    /** 화면·앱 상태·네트워크·라벨. 기록하지 않았으면 null. */
+    public val context: RequestContext? = null,
 ) : CaptureRecord
 
 public class ResponseRecord internal constructor(

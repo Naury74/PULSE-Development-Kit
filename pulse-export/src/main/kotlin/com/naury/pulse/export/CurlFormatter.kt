@@ -14,7 +14,7 @@ public class CurlFormatter(policy: RedactionPolicy) {
         val summary = detail.summary
         val headers = sanitizer.headers(detail.request.headers)
         val (omitted, kept) = headers.partition { it.value == RedactionPolicy.REDACTED }
-        val body = sanitizer.body(requestBody)
+        val body = sanitizer.body(requestBody, detail.request.contentType)
         val lines = mutableListOf<String>()
         if (summary.method !in safeMethods) lines += "# PULSE: 이 요청은 서버 상태를 바꿀 수 있습니다. 실행 전에 대상 서버를 확인하세요."
         if (omitted.isNotEmpty()) lines += "# PULSE: 가려진 헤더는 넣지 않았습니다: ${omitted.joinToString { it.name }}"

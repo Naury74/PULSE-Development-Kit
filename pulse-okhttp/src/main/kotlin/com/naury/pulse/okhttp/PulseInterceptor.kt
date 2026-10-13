@@ -15,10 +15,12 @@ public class PulseInterceptor(private val recorder: CaptureRecorder, private val
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         if (!recorder.isRecording) return chain.proceed(request)
+        val tag = request.tag(CaptureTag::class.java)
+        // 재실행·모의 응답처럼 PULSE가 직접 만든 요청은 필터와 상관없이 기록한다.
+        if (tag == null && !accepts(request)) return chain.proceed(request)
 
         val capture = runCatchingCapture {
             val startNanos = recorder.clock.monoNanos()
-            val tag = request.tag(CaptureTag::class.java)
             TransactionCapture(recorder, chain.call(), tag?.transactionId ?: recorder.newTransactionId(), startNanos).also {
                 it.recordRequest(request, recorder.clock.wallMillis(), tag)
                 timings.attach(chain.call(), it.transactionId, startNanos)
@@ -34,6 +36,9 @@ public class PulseInterceptor(private val recorder: CaptureRecorder, private val
         }
         return capture?.let { runCatchingCapture { it.observeResponse(response) } } ?: response
     }
+
+    private fun accepts(request: okhttp3.Request): Boolean =
+        runCatchingCapture { recorder.accepts(request.url.host, request.url.encodedPath) } ?: true
 
     @Suppress("TooGenericExceptionCaught")
     private inline fun <T> runCatchingCapture(block: () -> T): T? = try {

@@ -3,11 +3,11 @@ package com.naury.pulse.okhttp
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.PulseLabel
 import com.naury.pulse.api.TransactionState
 import com.naury.pulse.core.CaptureRecorder
 import com.naury.pulse.core.CaptureTag
 import com.naury.pulse.core.MockMarker
-import com.naury.pulse.security.BodySanitizer
 import java.io.IOException
 import java.net.HttpURLConnection.HTTP_NOT_MODIFIED
 import java.net.HttpURLConnection.HTTP_NO_CONTENT
@@ -42,6 +42,7 @@ internal class TransactionCapture(
             declaredContentLength = body?.let { safeContentLength { it.contentLength() } },
             source = tag?.source ?: CaptureSource.ORIGINAL,
             parentTransactionId = tag?.parentTransactionId,
+            label = request.tag(PulseLabel::class.java)?.name,
         )
     }
 
@@ -72,7 +73,7 @@ internal class TransactionCapture(
         !recorder.capturesBodies -> BodyState.OMITTED_BY_POLICY
         body.isDuplex() -> BodyState.DUPLEX_UNSUPPORTED
         body.isOneShot() -> BodyState.ONE_SHOT_UNSUPPORTED
-        !BodySanitizer.isJson(contentType) -> BodyState.UNSUPPORTED_CONTENT
+        !recorder.supportsBody(contentType) -> BodyState.UNSUPPORTED_CONTENT
         declaredLength != null && declaredLength > recorder.maxRequestBodyBytes -> BodyState.TOO_LARGE
         else -> null
     }
@@ -101,7 +102,7 @@ internal class TransactionCapture(
         }
         val skipReason = when {
             !recorder.capturesBodies -> BodyState.OMITTED_BY_POLICY
-            !BodySanitizer.isJson(contentType) || response.isEncoded() -> BodyState.UNSUPPORTED_CONTENT
+            !recorder.supportsBody(contentType) || response.isEncoded() -> BodyState.UNSUPPORTED_CONTENT
             declaredLength != null && declaredLength > recorder.maxResponseBodyBytes -> BodyState.TOO_LARGE
             else -> null
         }

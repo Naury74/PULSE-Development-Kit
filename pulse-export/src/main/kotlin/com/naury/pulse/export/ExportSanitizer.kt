@@ -1,5 +1,6 @@
 package com.naury.pulse.export
 
+import com.naury.pulse.api.BodyFormats
 import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.RedactionPolicy
 import com.naury.pulse.security.BodySanitizeResult
@@ -12,7 +13,9 @@ import com.naury.pulse.security.Redactor
  */
 internal class ExportSanitizer(policy: RedactionPolicy) {
     private val redactor = Redactor(policy)
-    private val bodies = BodySanitizer(redactor)
+
+    // 저장할 때 켠 형식이 무엇이었든 저장된 본문은 내보낼 수 있어야 하므로 모든 형식을 받는다.
+    private val bodies = BodySanitizer(redactor, BodyFormats(forms = true, text = true))
 
     fun url(url: String): String = redactor.sanitizeUrl(url)
 
@@ -20,10 +23,11 @@ internal class ExportSanitizer(policy: RedactionPolicy) {
 
     fun message(message: String?): String? = redactor.sanitizeMessage(message)
 
-    /** 다시 마스킹한 본문. 마스킹할 수 없으면 null. */
-    fun body(text: String?): String? {
+    /** 다시 마스킹한 본문. 마스킹할 수 없으면 null. [contentType]이 없거나 저장할 수 없는 형식이면 JSON으로 본다. */
+    fun body(text: String?, contentType: String? = null): String? {
         if (text == null) return null
-        return (bodies.sanitize(text.toByteArray(Charsets.UTF_8), JSON) as? BodySanitizeResult.Captured)?.text
+        val type = contentType?.takeIf { bodies.supports(it) }?.substringBefore(';')?.let { "$it; charset=utf-8" } ?: JSON
+        return (bodies.sanitize(text.toByteArray(Charsets.UTF_8), type) as? BodySanitizeResult.Captured)?.text
     }
 
     private companion object {

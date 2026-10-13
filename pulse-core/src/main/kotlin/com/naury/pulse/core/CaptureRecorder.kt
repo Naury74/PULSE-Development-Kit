@@ -3,11 +3,14 @@ package com.naury.pulse.core
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureMode
 import com.naury.pulse.api.CaptureSource
+import com.naury.pulse.api.ContextCapture
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PulseConfig
+import com.naury.pulse.api.RequestContext
 import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TransactionState
+import com.naury.pulse.security.BodySanitizer
 import com.naury.pulse.security.Redactor
 import java.util.UUID
 
@@ -23,7 +26,12 @@ public class CaptureRecorder internal constructor(
     private val queue: CaptureQueue,
     private val redactor: Redactor,
     public val sessionId: String,
+    private val contextSource: AppContextSource? = null,
 ) {
+    private val filter = config.filter
+    private val contextOptions = config.context
+    private val bodySupport = BodySanitizer(redactor, config.bodyFormats)
+
     public val controller: RecordingController = RecordingController(config.startRecording)
 
     public val isRecording: Boolean
@@ -36,6 +44,12 @@ public class CaptureRecorder internal constructor(
     public val maxResponseBodyBytes: Long = config.limits.maxResponseBodyBytes
 
     public fun newTransactionId(): String = UUID.randomUUID().toString()
+
+    /** [PulseConfig.filter]에 따라 이 요청을 기록할지. */
+    public fun accepts(host: String, path: String): Boolean = filter.accepts(host, path)
+
+    /** 이 형식의 본문을 저장할 수 있는지([PulseConfig.bodyFormats]). */
+    public fun supportsBody(contentType: String?): Boolean = bodySupport.supports(contentType)
 
     @Suppress("LongParameterList")
     public fun requestStarted(
@@ -51,7 +65,9 @@ public class CaptureRecorder internal constructor(
         declaredContentLength: Long?,
         source: CaptureSource = CaptureSource.ORIGINAL,
         parentTransactionId: String? = null,
+        label: String? = null,
     ) {
+        val context = snapshotContext(contextSource, contextOptions, label)
         enqueue {
             RequestRecord(
                 transactionId = transactionId,
@@ -67,6 +83,7 @@ public class CaptureRecorder internal constructor(
                 headers = redactor.redactHeaders(headers),
                 contentType = contentType,
                 declaredContentLength = declaredContentLength,
+                context = context,
             )
         }
     }
@@ -141,4 +158,20 @@ public class CaptureRecorder internal constructor(
         fun droppedBody(body: RawBody): BodyRecord =
             BodyRecord(body.transactionId, body.kind, BodyState.DROPPED, text = null, redactedValueCount = 0, body.transferredBytes)
     }
+}
+
+/** 요청 시작 순간의 맥락. 맥락을 읽다 실패해도 요청 기록은 계속하도록 라벨만 남긴다. */
+@Suppress("TooGenericExceptionCaught")
+private fun snapshotContext(source: AppContextSource?, options: ContextCapture, label: String?): RequestContext? {
+    val context = try {
+        RequestContext(
+            screen = if (options.screen) source?.screen else null,
+            foreground = if (options.appState) source?.foreground else null,
+            networkType = if (options.networkType) source?.networkType else null,
+            label = label,
+        )
+    } catch (_: RuntimeException) {
+        RequestContext(null, null, null, label)
+    }
+    return context.takeUnless { it.isEmpty }
 }
