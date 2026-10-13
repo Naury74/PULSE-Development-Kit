@@ -358,6 +358,7 @@ public abstract interface class com/naury/pulse/api/PulseInspector {
 public final class com/naury/pulse/api/PulseInspectorRegistry {
 	public static final field INSTANCE Lcom/naury/pulse/api/PulseInspectorRegistry;
 	public static final fun getCurrent ()Lcom/naury/pulse/api/PulseInspector;
+	public static final fun getUpdates ()Lkotlinx/coroutines/flow/StateFlow;
 	public static final fun register (Lcom/naury/pulse/api/PulseInspector;)V
 }
 
