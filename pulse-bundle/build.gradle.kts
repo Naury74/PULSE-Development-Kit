@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":pulse-okhttp"))
     implementation(project(":pulse-storage"))
     implementation(project(":pulse-analytics"))
+    implementation(project(":pulse-replay"))
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.robolectric)

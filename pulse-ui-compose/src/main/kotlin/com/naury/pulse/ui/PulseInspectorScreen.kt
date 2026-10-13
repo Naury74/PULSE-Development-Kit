@@ -234,11 +234,11 @@ private fun TrafficDestination(
             TrafficPane(inspector, viewModel, selectedId, { onSelect(it.id) }, Modifier.weight(LIST_PANE_WEIGHT))
             VerticalDivider()
             Box(Modifier.weight(DETAIL_PANE_WEIGHT).fillMaxHeight()) {
-                selectedId?.let { TransactionDetailPane(inspector, it) }
+                selectedId?.let { TransactionDetailPane(inspector, it, onOpenTransaction = onSelect) }
             }
         }
 
-        selectedId != null -> TransactionDetailPane(inspector, selectedId, modifier)
+        selectedId != null -> TransactionDetailPane(inspector, selectedId, modifier, onOpenTransaction = onSelect)
 
         else -> TrafficPane(inspector, viewModel, null, { onSelect(it.id) }, modifier)
     }

@@ -39,6 +39,15 @@ public interface PulseInspector {
     /** [window] 기간 기록에 진단 규칙을 적용한 결과. 심각도가 높은 순, 같은 심각도는 근거가 많은 순이다. */
     public suspend fun loadInsights(window: StatsWindow): List<Insight>
 
+    /** 저장된 요청으로 재실행 초안을 만든다. 재실행이 꺼져 있거나 요청이 없으면 null. */
+    public suspend fun replayDraft(transactionId: String): ReplayDraft?
+
+    /**
+     * [draft]를 다시 보낸다. 정책([PulseConfig.replay])을 먼저 검사하고, 상태를 바꿀 수 있는 요청이나 자격 증명을 붙이는 요청은
+     * [confirmed]가 `true`여야 보낸다. 결과는 [CaptureSource.REPLAY]로 따로 기록된다.
+     */
+    public suspend fun replay(draft: ReplayDraft, confirmed: Boolean): ReplayOutcome
+
     /** 기록을 멈춘다. 이미 진행 중인 요청은 끝까지 기록한다. */
     public fun pause()
 

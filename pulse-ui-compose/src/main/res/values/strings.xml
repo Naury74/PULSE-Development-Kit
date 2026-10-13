@@ -186,4 +186,26 @@
     <string name="pulse_export_done">Exported requests: %1$d.</string>
     <string name="pulse_export_truncated">Only the newest requests were included because of the limit.</string>
     <string name="pulse_export_dropped">Bodies left out because they could not be redacted again: %1$d.</string>
+    <string name="pulse_replay">Replay</string>
+    <string name="pulse_replay_title">Replay request</string>
+    <string name="pulse_replay_host_allowed">Allowed host: %1$s</string>
+    <string name="pulse_replay_host_blocked">Host not in the replay allowlist: %1$s</string>
+    <string name="pulse_replay_removed_headers">Removed because their values were redacted: %1$s. If the request needs credentials, the app can add them with ReplayAuthorizer.</string>
+    <string name="pulse_replay_headers">Headers (one "Name: value" per line)</string>
+    <string name="pulse_replay_redacted_body">The body still contains redacted values ([REDACTED]). Edit them before sending.</string>
+    <string name="pulse_replay_mutation_warning">This method can change data on the server (create, update, delete, or charge). Replay only against a development server.</string>
+    <string name="pulse_replay_acknowledge">I understand this request may change server data</string>
+    <string name="pulse_replay_send">Send</string>
+    <string name="pulse_replay_completed">Response: HTTP %1$d · redirects followed: %2$d</string>
+    <string name="pulse_replay_open_result">Open result</string>
+    <string name="pulse_replay_failed">Failed: %1$s %2$s</string>
+    <string name="pulse_replay_blocked_disabled">Replay is not enabled. Set PulseConfig.replay to allow it. %1$s</string>
+    <string name="pulse_replay_blocked_invalid">The method or URL is not valid. %1$s</string>
+    <string name="pulse_replay_blocked_scheme">Only https is allowed by the replay policy. %1$s</string>
+    <string name="pulse_replay_blocked_host">Not sent: host not in the replay allowlist: %1$s</string>
+    <string name="pulse_replay_blocked_confirmation">Confirmation is required before sending. %1$s</string>
+    <string name="pulse_replay_blocked_body">The body is larger than the replay limit. %1$s</string>
+    <string name="pulse_replay_blocked_redirect">Stopped: the server redirected to a host that is not allowed: %1$s</string>
+    <string name="pulse_replay_blocked_redirects">Stopped: too many redirects. %1$s</string>
+    <string name="pulse_replay_blocked_busy">Another replay is still running. %1$s</string>
 </resources>

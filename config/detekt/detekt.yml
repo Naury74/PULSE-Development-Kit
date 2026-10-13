@@ -19,6 +19,8 @@ complexity:
     ignoreOverridden: true
     # Room DAO는 쿼리 하나가 함수 하나다.
     ignoreAnnotated: ['Dao']
+    # PulseInspector는 화면이 쓰는 단일 계약이라 조회·제어·재실행 함수가 한곳에 모인다.
+    thresholdInInterfaces: 16
   LongParameterList:
     # 공개 모델은 data class 대신(이진 호환) 일반 클래스로 두므로 생성자 인자가 필드 수만큼 길다.
     constructorThreshold: 16

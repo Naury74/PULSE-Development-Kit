@@ -52,6 +52,12 @@ public class PulseHandle internal constructor(override val config: PulseConfig) 
 
     override suspend fun loadInsights(window: StatsWindow): List<Insight> = emptyList()
 
+    override suspend fun replayDraft(transactionId: String): ReplayDraft? = null
+
+    override suspend fun replay(draft: ReplayDraft, confirmed: Boolean): ReplayOutcome = ReplayOutcome.Blocked(ReplayBlockReason.DISABLED)
+
+    public fun setReplayAuthorizer(authorizer: ReplayAuthorizer?): Unit = Unit
+
     override fun pause(): Unit = Unit
 
     override fun resume(): Unit = Unit

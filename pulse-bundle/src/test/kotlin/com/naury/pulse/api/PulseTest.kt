@@ -102,4 +102,58 @@ class PulseTest {
         handle.resume()
         assertThat(handle.recordingState.value).isEqualTo(RecordingState.RECORDING)
     }
+
+    @Test
+    fun `재실행은 정책이 없으면 꺼져 있고, 있으면 별도 출처로 원본과 연결해 기록한다`() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            repeat(2) { server.enqueue(MockResponse.Builder().setHeader("Content-Type", "application/json").body("{}").build()) }
+            val disabled = Pulse.initialize(context)
+            assertThat(
+                (
+                    disabled.replay(
+                        ReplayDraft("x", "GET", server.url("/").toString(), emptyList(), null, null),
+                        true,
+                    ) as ReplayOutcome.Blocked
+                    ).reason,
+            )
+                .isEqualTo(ReplayBlockReason.DISABLED)
+            disabled.close()
+
+            val handle = Pulse.initialize(
+                context,
+                PulseConfig.debugDefaults().newBuilder().replay(ReplayPolicy(setOf(server.hostName), allowCleartext = true)).build(),
+            )
+            val client = OkHttpClient.Builder().addInterceptor(handle.interceptor()).build()
+            client.newCall(Request.Builder().url(server.url("/items")).header("Authorization", "Bearer secret").build()).execute().close()
+            val original = awaitCompleted(handle)
+
+            val draft = requireNotNull(handle.replayDraft(original.id))
+            val outcome = handle.replay(draft, confirmed = true) as ReplayOutcome.Completed
+
+            assertThat(draft.removedHeaders).containsExactly("Authorization")
+            assertThat(server.takeRequest().headers["Authorization"]).isEqualTo("Bearer secret")
+            assertThat(server.takeRequest().headers["Authorization"]).isNull()
+            val replayed = withTimeout(10_000) {
+                var found: TransactionDetail? = null
+                while (found?.summary?.state != TransactionState.COMPLETED) {
+                    found = handle.loadTransaction(outcome.transactionId)
+                    if (found?.summary?.state != TransactionState.COMPLETED) delay(20)
+                }
+                requireNotNull(found)
+            }
+            assertThat(replayed.summary.source).isEqualTo(CaptureSource.REPLAY)
+            assertThat(replayed.summary.parentTransactionId).isEqualTo(original.id)
+            assertThat(handle.loadStatistics(StatsWindow.ALL).counts.total).isEqualTo(1)
+        }
+    }
+
+    private suspend fun awaitCompleted(handle: PulseHandle): TransactionSummary = withTimeout(10_000) {
+        var found: TransactionSummary? = null
+        while (found?.state != TransactionState.COMPLETED) {
+            found = handle.loadTransactions(TransactionQuery(), null, 10).items.firstOrNull()
+            if (found?.state != TransactionState.COMPLETED) delay(20)
+        }
+        requireNotNull(found)
+    }
 }

@@ -13,6 +13,9 @@ import com.naury.pulse.api.PageCursor
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.RecordingState
+import com.naury.pulse.api.ReplayBlockReason
+import com.naury.pulse.api.ReplayDraft
+import com.naury.pulse.api.ReplayOutcome
 import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.StatsWindow
 import com.naury.pulse.api.StatusCounts
@@ -30,7 +33,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseInspector {
-    override val config: PulseConfig = PulseConfig.debugDefaults()
+    override var config: PulseConfig = PulseConfig.debugDefaults()
     var statistics: TrafficStatistics? = null
     var insights: List<Insight> = emptyList()
 
@@ -40,6 +43,24 @@ class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseI
     )
 
     override suspend fun loadInsights(window: StatsWindow): List<Insight> = insights
+
+    var replayOutcome: ReplayOutcome = ReplayOutcome.Blocked(ReplayBlockReason.DISABLED)
+    val replayed = mutableListOf<Pair<ReplayDraft, Boolean>>()
+
+    override suspend fun replayDraft(transactionId: String): ReplayDraft? = loadTransaction(transactionId)?.let {
+        if (config.replay ==
+            null
+        ) {
+            null
+        } else {
+            ReplayDraft(transactionId, it.summary.method, it.summary.url, emptyList(), null, null, listOf("Authorization"))
+        }
+    }
+
+    override suspend fun replay(draft: ReplayDraft, confirmed: Boolean): ReplayOutcome {
+        replayed += draft to confirmed
+        return replayOutcome
+    }
 
     override val recordingState = MutableStateFlow(RecordingState.RECORDING)
     override val captureHealth = MutableStateFlow(CaptureHealth())

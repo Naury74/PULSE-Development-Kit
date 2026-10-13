@@ -3,6 +3,7 @@ package com.naury.pulse.ui
 import android.os.Looper
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import com.google.common.truth.Truth.assertThat
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.ByteTotals
@@ -22,7 +24,10 @@ import com.naury.pulse.api.InsightRule
 import com.naury.pulse.api.InsightSeverity
 import com.naury.pulse.api.InsightUnit
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.RecordingState
+import com.naury.pulse.api.ReplayOutcome
+import com.naury.pulse.api.ReplayPolicy
 import com.naury.pulse.api.StatsWindow
 import com.naury.pulse.api.StatusCounts
 import com.naury.pulse.api.TrafficBucket
@@ -150,6 +155,33 @@ class PulseInspectorScreenTest {
         settle()
 
         compose.onNodeWithText("Copy as cURL").assertIsDisplayed()
+    }
+
+    @Test
+    fun `재실행은 정책이 있을 때만 보이고 상태를 바꾸는 요청은 확인란을 체크해야 보낸다`() {
+        val inspector = FakeInspector(listOf(FakeInspector.detail("a", "/users")))
+        inspector.config = PulseConfig.debugDefaults().newBuilder().replay(ReplayPolicy(setOf("api.test"))).build()
+        inspector.replayOutcome = ReplayOutcome.Completed("replayed", 201, 0)
+        show(inspector)
+
+        compose.onNodeWithText("GET /users").performClick()
+        settle()
+        compose.onNodeWithText("Request").performClick()
+        settle()
+        compose.onNodeWithText("Replay").performClick()
+        awaitText("Replay request")
+
+        compose.onNodeWithText("Allowed host: api.test").assertIsDisplayed()
+        compose.onNodeWithText("Removed because their values were redacted: Authorization", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("GET").performTextReplacement("DELETE")
+        settle()
+        compose.onNodeWithText("Send").assertIsNotEnabled()
+        compose.onNodeWithText("I understand this request may change server data").performScrollTo().performClick()
+        compose.onNodeWithText("Send").performScrollTo().performClick()
+        awaitText("Response: HTTP 201 · redirects followed: 0")
+
+        assertThat(inspector.replayed.single().first.method).isEqualTo("DELETE")
+        assertThat(inspector.replayed.single().second).isTrue()
     }
 
     /** 본문 해석처럼 백그라운드 디스패처에서 끝나는 작업은 시간이 정해지지 않아 텍스트가 나타날 때까지 기다린다. */

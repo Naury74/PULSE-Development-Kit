@@ -12,7 +12,7 @@ ktlint·detekt는 Gradle plugin 대신 CLI를 `JavaExec`로 실행한다(`build-
 | --- | --- | --- |
 | `ReturnCount` | 최대 3, 가드 절 제외 | 조기 반환 가드 절은 읽기 쉽다 |
 | `LongParameterList` | 생성자 16, `@Composable`·Room `@Query` 제외, 테스트 제외 | 공개 모델은 이진 호환을 위해 data class 대신 일반 클래스이고, Room 쿼리 인자는 SQL 바인딩과 일대일이다 |
-| `TooManyFunctions` | 재정의 함수 제외, `@Dao` 제외 | `EventListener` 콜백 수와 DAO 쿼리 수는 계약이 정한다 |
+| `TooManyFunctions` | 재정의 함수 제외, `@Dao` 제외, 인터페이스 16 | `EventListener` 콜백 수와 DAO 쿼리 수는 계약이 정한다. `PulseInspector`는 화면이 쓰는 단일 계약이다 |
 | `FunctionNaming` | `@Composable` 제외 | Compose 관례(PascalCase) |
 | `MagicNumber` | 속성·이름 있는 인자 제외, 테스트 제외 | 상수 선언 자체와 테스트 데이터 |
 

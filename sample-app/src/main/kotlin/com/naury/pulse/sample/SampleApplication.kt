@@ -4,6 +4,7 @@ import android.app.Application
 import com.naury.pulse.api.Pulse
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseHandle
+import com.naury.pulse.api.ReplayPolicy
 import okhttp3.OkHttpClient
 
 class SampleApplication : Application() {
@@ -18,7 +19,11 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        pulse = Pulse.initialize(this, PulseConfig.debugDefaults())
+        // 재실행은 앱 안 데모 서버(127.0.0.1)에만 허용한다.
+        val config = PulseConfig.debugDefaults().newBuilder()
+            .replay(ReplayPolicy(setOf("127.0.0.1", "localhost"), allowCleartext = true))
+            .build()
+        pulse = Pulse.initialize(this, config)
         client = OkHttpClient.Builder()
             .addInterceptor(pulse.interceptor())
             .eventListenerFactory(pulse.eventListenerFactory())

@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -54,7 +55,12 @@ private sealed interface BodyLoad {
 }
 
 @Composable
-internal fun TransactionDetailPane(inspector: PulseInspector, transactionId: String, modifier: Modifier = Modifier) {
+internal fun TransactionDetailPane(
+    inspector: PulseInspector,
+    transactionId: String,
+    modifier: Modifier = Modifier,
+    onOpenTransaction: (String) -> Unit = {},
+) {
     // 진행 중인 요청은 응답·본문이 도착할 때마다 다시 읽는다.
     val load by produceState<DetailLoad>(DetailLoad.Loading, inspector, transactionId) {
         inspector.observeChanges().onStart { emit(Unit) }.conflate().collect {
@@ -64,12 +70,12 @@ internal fun TransactionDetailPane(inspector: PulseInspector, transactionId: Str
     when (val current = load) {
         DetailLoad.Loading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         DetailLoad.Missing -> Box(modifier.padding(Spacing.l)) { Notice(stringResource(R.string.pulse_detail_missing)) }
-        is DetailLoad.Loaded -> DetailTabs(inspector, current.detail, modifier)
+        is DetailLoad.Loaded -> DetailTabs(inspector, current.detail, modifier, onOpenTransaction)
     }
 }
 
 @Composable
-private fun DetailTabs(inspector: PulseInspector, detail: TransactionDetail, modifier: Modifier) {
+private fun DetailTabs(inspector: PulseInspector, detail: TransactionDetail, modifier: Modifier, onOpenTransaction: (String) -> Unit) {
     var tab by rememberSaveable(detail.summary.id) { mutableIntStateOf(0) }
     val tabs = listOf(R.string.pulse_tab_summary, R.string.pulse_tab_request, R.string.pulse_tab_response, R.string.pulse_tab_timeline)
     Column(modifier) {
@@ -88,7 +94,10 @@ private fun DetailTabs(inspector: PulseInspector, detail: TransactionDetail, mod
                 0 -> SummaryTab(detail)
 
                 1 -> {
-                    CurlButton(inspector, detail)
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                        CurlButton(inspector, detail)
+                        ReplayButton(inspector, detail.summary.id, onOpenTransaction)
+                    }
                     MessageTab(inspector, detail.summary.id, MessageKind.REQUEST, detail.request)
                 }
 
@@ -190,5 +199,19 @@ private fun CurlButton(inspector: PulseInspector, detail: TransactionDetail) {
     CopyButton(label = stringResource(R.string.pulse_copy_curl)) {
         val body = if (detail.request.bodyState == BodyState.CAPTURED) inspector.loadBody(detail.summary.id, MessageKind.REQUEST) else null
         CurlFormatter(inspector.config.redaction).format(detail, body)
+    }
+}
+
+/** 재실행이 켜져 있을 때만 보인다([com.naury.pulse.api.PulseConfig.replay]). */
+@Composable
+private fun ReplayButton(inspector: PulseInspector, transactionId: String, onOpenTransaction: (String) -> Unit) {
+    if (inspector.config.replay == null) return
+    var open by rememberSaveable(transactionId) { mutableStateOf(false) }
+    OutlinedButton(onClick = { open = true }) { Text(stringResource(R.string.pulse_replay)) }
+    if (open) {
+        ReplayDialog(inspector, transactionId, onDismiss = { open = false }) {
+            open = false
+            onOpenTransaction(it)
+        }
     }
 }

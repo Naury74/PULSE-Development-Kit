@@ -11,6 +11,9 @@ import com.naury.pulse.api.PageCursor
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.RecordingState
+import com.naury.pulse.api.ReplayBlockReason
+import com.naury.pulse.api.ReplayDraft
+import com.naury.pulse.api.ReplayOutcome
 import com.naury.pulse.api.StatsWindow
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TrafficStatistics
@@ -68,6 +71,10 @@ internal class PagedInspector(private val details: List<TransactionDetail>, priv
     override suspend fun loadStatistics(window: StatsWindow): TrafficStatistics = error("사용하지 않음")
 
     override suspend fun loadInsights(window: StatsWindow): List<Insight> = emptyList()
+
+    override suspend fun replayDraft(transactionId: String) = null
+
+    override suspend fun replay(draft: ReplayDraft, confirmed: Boolean): ReplayOutcome = ReplayOutcome.Blocked(ReplayBlockReason.DISABLED)
 
     override fun pause() = Unit
 

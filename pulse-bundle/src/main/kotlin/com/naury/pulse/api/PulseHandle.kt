@@ -12,6 +12,8 @@ import com.naury.pulse.core.CaptureEngine
 import com.naury.pulse.okhttp.CallTimingRegistry
 import com.naury.pulse.okhttp.PulseEventListenerFactory
 import com.naury.pulse.okhttp.PulseInterceptor
+import com.naury.pulse.replay.ReplayDrafts
+import com.naury.pulse.replay.ReplayEngine
 import com.naury.pulse.storage.PulseStorage
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.EventListener
 import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 
 /**
  * 초기화된 PULSE 인스턴스. OkHttpClient에 붙일 [interceptor]·[eventListenerFactory]를 주고, 저장된 기록을 읽는다.
@@ -39,6 +42,18 @@ public class PulseHandle private constructor(
     private val timingRegistry = CallTimingRegistry()
     private val interceptor = PulseInterceptor(engine.recorder, timingRegistry)
     private val insightEngine = InsightEngine(config.insights)
+
+    @Volatile
+    private var replayAuthorizer: ReplayAuthorizer? = null
+
+    // 재실행은 호스트 클라이언트와 분리된 클라이언트로 보내며, 같은 수집 파이프라인에 REPLAY로 기록된다.
+    private val replayEngine = config.replay?.let { policy ->
+        val client = OkHttpClient.Builder()
+            .addInterceptor(interceptor)
+            .eventListenerFactory(PulseEventListenerFactory(engine.recorder, timingRegistry))
+            .build()
+        ReplayEngine(policy, client) { replayAuthorizer }
+    }
 
     override val recordingState: StateFlow<RecordingState> = engine.recorder.controller.recordingState
 
@@ -91,6 +106,21 @@ public class PulseHandle private constructor(
     override suspend fun loadInsights(window: StatsWindow): List<Insight> {
         val (samples, _) = storage.loadSamples(window.fromEpochMillis(System.currentTimeMillis()), TrafficStatistics.MAX_SAMPLES)
         return withContext(Dispatchers.Default) { insightEngine.evaluate(samples) }
+    }
+
+    override suspend fun replayDraft(transactionId: String): ReplayDraft? {
+        if (replayEngine == null) return null
+        val detail = storage.loadTransaction(transactionId) ?: return null
+        val body = if (detail.request.bodyState == BodyState.CAPTURED) storage.loadBody(transactionId, MessageKind.REQUEST) else null
+        return ReplayDrafts.from(detail, body)
+    }
+
+    override suspend fun replay(draft: ReplayDraft, confirmed: Boolean): ReplayOutcome =
+        replayEngine?.execute(draft, confirmed) ?: ReplayOutcome.Blocked(ReplayBlockReason.DISABLED)
+
+    /** 재실행에 자격 증명을 붙이는 콜백을 정한다. null이면 자격 증명 없이 보낸다. [PulseConfig.replay]가 없으면 쓰이지 않는다. */
+    public fun setReplayAuthorizer(authorizer: ReplayAuthorizer?) {
+        replayAuthorizer = authorizer
     }
 
     override fun pause() {

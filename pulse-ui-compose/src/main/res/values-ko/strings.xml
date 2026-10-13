@@ -185,4 +185,26 @@
     <string name="pulse_export_done">요청 %1$d개를 내보냈습니다.</string>
     <string name="pulse_export_truncated">상한 때문에 최신 요청만 넣었습니다.</string>
     <string name="pulse_export_dropped">다시 마스킹할 수 없어 뺀 본문: %1$d개.</string>
+    <string name="pulse_replay">재실행</string>
+    <string name="pulse_replay_title">요청 재실행</string>
+    <string name="pulse_replay_host_allowed">허용된 호스트: %1$s</string>
+    <string name="pulse_replay_host_blocked">재실행 허용 목록에 없는 호스트: %1$s</string>
+    <string name="pulse_replay_removed_headers">값이 가려져 뺀 헤더: %1$s. 인증이 필요하면 앱이 ReplayAuthorizer로 붙일 수 있습니다.</string>
+    <string name="pulse_replay_headers">헤더(한 줄에 "이름: 값")</string>
+    <string name="pulse_replay_redacted_body">본문에 가려진 값([REDACTED])이 남아 있습니다. 보내기 전에 고치세요.</string>
+    <string name="pulse_replay_mutation_warning">이 메서드는 서버 데이터를 바꿀 수 있습니다(생성·수정·삭제·결제). 개발 서버에서만 재실행하세요.</string>
+    <string name="pulse_replay_acknowledge">이 요청이 서버 데이터를 바꿀 수 있음을 확인했습니다</string>
+    <string name="pulse_replay_send">보내기</string>
+    <string name="pulse_replay_completed">응답: HTTP %1$d · 따라간 리다이렉트: %2$d</string>
+    <string name="pulse_replay_open_result">결과 보기</string>
+    <string name="pulse_replay_failed">실패: %1$s %2$s</string>
+    <string name="pulse_replay_blocked_disabled">재실행이 꺼져 있습니다. PulseConfig.replay를 설정하세요. %1$s</string>
+    <string name="pulse_replay_blocked_invalid">메서드나 URL이 올바르지 않습니다. %1$s</string>
+    <string name="pulse_replay_blocked_scheme">재실행 정책은 https만 허용합니다. %1$s</string>
+    <string name="pulse_replay_blocked_host">보내지 않음: 재실행 허용 목록에 없는 호스트: %1$s</string>
+    <string name="pulse_replay_blocked_confirmation">보내기 전에 확인이 필요합니다. %1$s</string>
+    <string name="pulse_replay_blocked_body">본문이 재실행 상한보다 큽니다. %1$s</string>
+    <string name="pulse_replay_blocked_redirect">중단: 서버가 허용하지 않은 호스트로 리다이렉트했습니다: %1$s</string>
+    <string name="pulse_replay_blocked_redirects">중단: 리다이렉트가 너무 많습니다. %1$s</string>
+    <string name="pulse_replay_blocked_busy">다른 재실행이 진행 중입니다. %1$s</string>
 </resources>
