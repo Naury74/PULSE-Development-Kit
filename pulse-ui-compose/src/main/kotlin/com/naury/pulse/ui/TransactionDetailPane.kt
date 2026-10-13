@@ -5,14 +5,17 @@ import android.content.ClipDescription
 import android.os.Build
 import android.os.PersistableBundle
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -20,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,7 +60,7 @@ private sealed interface BodyLoad {
 
     data object Missing : BodyLoad
 
-    data class Loaded(val full: String, val preview: String, val truncated: Boolean) : BodyLoad
+    data class Loaded(val full: String, val preview: String, val truncated: Boolean, val tree: JsonTree?) : BodyLoad
 }
 
 @Composable
@@ -152,20 +156,38 @@ private fun BodyViewer(inspector: PulseInspector, transactionId: String, kind: M
             BodyLoad.Missing
         } else {
             withContext(Dispatchers.Default) {
-                BodyLoad.Loaded(text, JsonPrettyPrinter.format(text.take(PREVIEW_CHARACTERS)), text.length > PREVIEW_CHARACTERS)
+                BodyLoad.Loaded(
+                    full = text,
+                    preview = JsonPrettyPrinter.format(text.take(PREVIEW_CHARACTERS)),
+                    truncated = text.length > PREVIEW_CHARACTERS,
+                    tree = JsonTreeBuilder.build(text),
+                )
             }
         }
     }
     when (val current = body) {
         BodyLoad.Loading -> Text(stringResource(R.string.pulse_body_loading))
-
         BodyLoad.Missing -> Notice(stringResource(R.string.pulse_body_file_missing))
+        is BodyLoad.Loaded -> LoadedBody(current)
+    }
+}
 
-        is BodyLoad.Loaded -> {
-            CopyButton(current.full)
-            if (current.truncated) Notice(stringResource(R.string.pulse_body_truncated, Formatters.bytes(PREVIEW_CHARACTERS.toLong())))
-            SelectionContainer { Text(current.preview, style = MonospaceStyle, modifier = Modifier.padding(vertical = Spacing.s)) }
+@Composable
+private fun LoadedBody(body: BodyLoad.Loaded) {
+    var showTree by rememberSaveable { mutableStateOf(body.tree != null) }
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+        CopyButton(body.full)
+        if (body.tree != null) {
+            FilterChip(selected = showTree, onClick = { showTree = true }, label = { Text(stringResource(R.string.pulse_view_tree)) })
+            FilterChip(selected = !showTree, onClick = { showTree = false }, label = { Text(stringResource(R.string.pulse_view_raw)) })
         }
+    }
+    val tree = body.tree
+    if (showTree && tree != null) {
+        JsonTreeView(tree)
+    } else {
+        if (body.truncated) Notice(stringResource(R.string.pulse_body_truncated, Formatters.bytes(PREVIEW_CHARACTERS.toLong())))
+        SelectionContainer { Text(body.preview, style = MonospaceStyle, modifier = Modifier.padding(vertical = Spacing.s)) }
     }
 }
 

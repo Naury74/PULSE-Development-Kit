@@ -92,4 +92,10 @@
     <string name="pulse_phase_request_body">Request body</string>
     <string name="pulse_phase_response_headers">Response headers</string>
     <string name="pulse_phase_response_body">Response body</string>
+    <string name="pulse_view_tree">Tree</string>
+    <string name="pulse_view_raw">Raw</string>
+    <string name="pulse_tree_truncated">Large body: the tree shows the first %1$d values. Use Raw to see everything.</string>
+    <string name="pulse_tree_rows_limited">Showing the first %1$d rows. Collapse nodes to see more.</string>
+    <string name="pulse_tree_expanded">Expanded</string>
+    <string name="pulse_tree_collapsed">Collapsed</string>
 </resources>

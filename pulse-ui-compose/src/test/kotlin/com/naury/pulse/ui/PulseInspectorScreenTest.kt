@@ -47,7 +47,16 @@ class PulseInspectorScreenTest {
         }
     }
 
+    /** 본문 해석처럼 백그라운드 디스패처에서 끝나는 작업은 시간이 정해지지 않아 텍스트가 나타날 때까지 기다린다. */
+    private fun awaitText(text: String) {
+        compose.waitUntil(AWAIT_MILLIS) {
+            shadowOf(Looper.getMainLooper()).idle()
+            compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
     private companion object {
+        const val AWAIT_MILLIS = 5_000L
         const val SETTLE_ROUNDS = 4
         const val SETTLE_STEP_MILLIS = 500L
     }
@@ -80,6 +89,10 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("Response").performClick()
         settle()
         compose.onNodeWithText("Values redacted before storage: 1").assertIsDisplayed()
+        awaitText("\"[REDACTED]\"")
+        compose.onNodeWithText("\"[REDACTED]\"").assertIsDisplayed()
+        compose.onNodeWithText("Raw").performClick()
+        settle()
         compose.onNodeWithText("\"error\": \"[REDACTED]\"", substring = true).assertIsDisplayed()
         compose.onNodeWithContentDescription("Back").performClick()
         settle()
