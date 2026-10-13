@@ -26,6 +26,8 @@ class SampleApplication : Application() {
         pulse = Pulse.initialize(this, config)
         client = OkHttpClient.Builder()
             .addInterceptor(pulse.interceptor())
+            // 모의 응답은 PULSE 인터셉터 뒤에 붙여야 MOCK으로 기록된다. 설정 탭에서 켜기 전에는 요청을 그대로 넘긴다.
+            .addInterceptor(pulse.mockInterceptor())
             .eventListenerFactory(pulse.eventListenerFactory())
             .build()
     }

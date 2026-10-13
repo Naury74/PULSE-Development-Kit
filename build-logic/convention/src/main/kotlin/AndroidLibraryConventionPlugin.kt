@@ -23,6 +23,8 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 testOptions.unitTests {
                     isIncludeAndroidResources = true
                     all {
+                        // Robolectric과 Compose UI 테스트는 기본 힙(512MB)으로는 모자라다.
+                        it.maxHeapSize = "2g"
                         // Robolectric은 JDK 내부 API로 FileDescriptor를 다루는데, JDK 17+는 이를 기본으로 export하지 않는다.
                         it.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED", "--enable-native-access=ALL-UNNAMED")
                     }

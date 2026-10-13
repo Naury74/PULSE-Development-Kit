@@ -197,6 +197,32 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("200  →  500").performScrollTo().assertIsDisplayed()
     }
 
+    @Test
+    fun `모의 응답 규칙을 추가·켜면 트래픽에 경고가 뜨고 잘못된 값은 저장하지 않는다`() {
+        val inspector = FakeInspector()
+        show(inspector)
+
+        compose.onNodeWithText("Settings").performClick()
+        settle()
+        compose.onNodeWithText("Add rule").performScrollTo().performClick()
+        settle()
+        compose.onNodeWithText("Status code").performTextReplacement("999")
+        compose.onNodeWithText("Save").performClick()
+        settle()
+        assertThat(inspector.mocks.rules.value).isEmpty()
+        compose.onNodeWithText("Status code").performTextReplacement("503")
+        compose.onNodeWithText("Save").performClick()
+        settle()
+        compose.onNodeWithText("Use mock responses").performScrollTo().performClick()
+        settle()
+
+        assertThat(inspector.mocks.rules.value.single().response.statusCode).isEqualTo(503)
+        assertThat(inspector.mocks.enabled.value).isTrue()
+        compose.onNodeWithText("Traffic").performClick()
+        settle()
+        compose.onNodeWithText("Mock responses are on", substring = true).assertIsDisplayed()
+    }
+
     /** 본문 해석처럼 백그라운드 디스패처에서 끝나는 작업은 시간이 정해지지 않아 텍스트가 나타날 때까지 기다린다. */
     private fun awaitText(text: String, substring: Boolean = false) {
         compose.waitUntil(AWAIT_MILLIS) {

@@ -49,6 +49,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.StatusFilter
 import com.naury.pulse.api.TransactionSummary
@@ -91,6 +92,12 @@ internal fun TrafficPane(
                     stringResource(R.string.pulse_health_warning, health.droppedEvents, health.droppedBodies),
                     color = MaterialTheme.colorScheme.error,
                 )
+            }
+        }
+        val mocksEnabled by inspector.mocks.enabled.collectAsStateWithLifecycle()
+        if (mocksEnabled) {
+            Box(Modifier.padding(horizontal = Spacing.l, vertical = Spacing.xs)) {
+                Notice(stringResource(R.string.pulse_mocks_active_banner), color = MaterialTheme.colorScheme.error)
             }
         }
         if (hasNewItems) {
@@ -209,6 +216,13 @@ private fun TransactionRow(summary: TransactionSummary, selected: Boolean, onCli
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (summary.source != CaptureSource.ORIGINAL) {
+                Text(
+                    stringResource(if (summary.source == CaptureSource.MOCK) R.string.pulse_source_mock else R.string.pulse_source_replay),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Text(
                 text = listOfNotNull(
                     summary.host,
