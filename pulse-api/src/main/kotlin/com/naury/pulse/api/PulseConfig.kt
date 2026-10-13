@@ -13,6 +13,10 @@ package com.naury.pulse.api
  * @property startRecording `false`면 초기화 후 [RecordingState.PAUSED]로 시작한다.
  * @property insights 진단 규칙의 임계값.
  * @property replay 재실행 정책. null(기본)이면 재실행할 수 없다.
+ * @property filter 기록할 요청. 기본은 모두 기록한다.
+ * @property context 요청과 함께 기록할 화면·앱 상태·네트워크 종류.
+ * @property endpoints 통계에서 엔드포인트를 묶는 방법.
+ * @property bodyFormats JSON 말고 더 저장할 본문 형식. 기본은 JSON만.
  */
 public class PulseConfig private constructor(
     public val captureMode: CaptureMode,
@@ -23,6 +27,10 @@ public class PulseConfig private constructor(
     public val startRecording: Boolean,
     public val insights: InsightThresholds,
     public val replay: ReplayPolicy?,
+    public val filter: CaptureFilter,
+    public val context: ContextCapture,
+    public val endpoints: EndpointGrouping,
+    public val bodyFormats: BodyFormats,
 ) {
     public fun newBuilder(): Builder = Builder(this)
 
@@ -34,15 +42,22 @@ public class PulseConfig private constructor(
         queueCapacity == other.queueCapacity &&
         startRecording == other.startRecording &&
         insights == other.insights &&
-        replay == other.replay
+        replay == other.replay &&
+        filter == other.filter &&
+        context == other.context &&
+        endpoints == other.endpoints &&
+        bodyFormats == other.bodyFormats
 
-    override fun hashCode(): Int =
-        listOf(captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay).hashCode()
+    override fun hashCode(): Int = listOf(
+        captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints, bodyFormats,
+    ).hashCode()
 
     override fun toString(): String = "PulseConfig(captureMode=$captureMode, limits=$limits, retention=$retention, " +
-        "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording, insights=$insights, replay=$replay)"
+        "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording, insights=$insights, replay=$replay, " +
+        "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats)"
 
     /** [PulseConfig]를 만든다. 값 검증은 [build]에서 하고, 범위를 벗어나면 [IllegalArgumentException]을 던진다. */
+    @Suppress("TooManyFunctions")
     public class Builder() {
         private var captureMode = CaptureMode.METADATA_ONLY
         private var limits = CaptureLimits()
@@ -52,6 +67,10 @@ public class PulseConfig private constructor(
         private var startRecording = true
         private var insights = InsightThresholds()
         private var replay: ReplayPolicy? = null
+        private var filter = CaptureFilter.ALL
+        private var context = ContextCapture()
+        private var endpoints = EndpointGrouping()
+        private var bodyFormats = BodyFormats.JSON_ONLY
 
         internal constructor(config: PulseConfig) : this() {
             captureMode = config.captureMode
@@ -62,6 +81,10 @@ public class PulseConfig private constructor(
             startRecording = config.startRecording
             insights = config.insights
             replay = config.replay
+            filter = config.filter
+            context = config.context
+            endpoints = config.endpoints
+            bodyFormats = config.bodyFormats
         }
 
         public fun captureMode(mode: CaptureMode): Builder = apply { captureMode = mode }
@@ -81,11 +104,22 @@ public class PulseConfig private constructor(
         /** 재실행을 켠다. null이면 끈다. */
         public fun replay(policy: ReplayPolicy?): Builder = apply { replay = policy }
 
+        public fun filter(filter: CaptureFilter): Builder = apply { this.filter = filter }
+
+        public fun context(context: ContextCapture): Builder = apply { this.context = context }
+
+        public fun endpoints(grouping: EndpointGrouping): Builder = apply { endpoints = grouping }
+
+        public fun bodyFormats(formats: BodyFormats): Builder = apply { bodyFormats = formats }
+
         public fun build(): PulseConfig {
             require(queueCapacity in MIN_QUEUE_CAPACITY..MAX_QUEUE_CAPACITY) {
                 "queueCapacity는 $MIN_QUEUE_CAPACITY..$MAX_QUEUE_CAPACITY 범위여야 합니다: $queueCapacity"
             }
-            return PulseConfig(captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay)
+            return PulseConfig(
+                captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints,
+                bodyFormats,
+            )
         }
     }
 

@@ -36,8 +36,11 @@ public interface PulseInspector {
     /** 저장한(마스킹된) 본문. [BodyState.CAPTURED]가 아니거나 파일이 지워졌으면 null. */
     public suspend fun loadBody(id: String, kind: MessageKind): String?
 
-    /** [window] 기간의 트래픽 집계. */
+    /** [window] 기간의 트래픽 집계. 앱이 실제로 보낸 요청만 센다. */
     public suspend fun loadStatistics(window: StatsWindow): TrafficStatistics
+
+    /** [query] 조건의 트래픽 집계. 기본 구현은 기간만 쓴다. */
+    public suspend fun loadStatistics(query: StatsQuery): TrafficStatistics = loadStatistics(query.window)
 
     /** [window] 기간 기록에 진단 규칙을 적용한 결과. 심각도가 높은 순, 같은 심각도는 근거가 많은 순이다. */
     public suspend fun loadInsights(window: StatsWindow): List<Insight>

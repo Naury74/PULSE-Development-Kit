@@ -17,6 +17,7 @@ public enum class StatsWindow(
 }
 
 /** 기간 안의 트래픽 집계. 모든 값은 저장된(마스킹된) 기록으로 계산한다. */
+@Suppress("LongParameterList")
 public class TrafficStatistics(
     public val window: StatsWindow,
     /** 계산에 쓴 기간 시작(epoch ms). [StatsWindow.ALL]이면 가장 오래된 기록의 시각, 기록이 없으면 null. */
@@ -33,10 +34,32 @@ public class TrafficStatistics(
     public val slowestEndpoints: List<EndpointStatistics>,
     /** 계산 상한([MAX_SAMPLES])에 걸려 가장 최근 기록만 썼으면 true. */
     public val sampleLimitReached: Boolean,
+    /** 기간 안의 분당 요청 수. 기간을 모르면 null. */
+    public val requestsPerMinute: Double? = null,
+    /** 응답 헤더를 받기까지(첫 응답) 걸린 시간 백분위수. */
+    public val timeToFirstByte: DurationPercentiles = DurationPercentiles(0, null, null, null),
+    /** 끝난 요청의 소요 시간 분포. 구간 경계는 [HistogramBin.LATENCY_BOUNDS_NANOS]. */
+    public val latencyHistogram: List<HistogramBin> = emptyList(),
+    /** 상태 코드별 요청 수. 많은 순. */
+    public val statusCodes: List<CountEntry> = emptyList(),
+    /** 응답 없이 끝난 요청의 예외 종류별 수(짧은 클래스 이름). 많은 순. */
+    public val failureTypes: List<CountEntry> = emptyList(),
+    /** 관찰한 연결 단계(DNS·연결·TLS 등)별 시간. 관찰한 요청이 없는 단계는 빠진다. */
+    public val phases: List<PhaseStatistics> = emptyList(),
+    /** 연결 재사용과 캐시 응답 근거. */
+    public val connections: ConnectionStatistics = ConnectionStatistics(0, 0, 0, 0, 0),
+    /** 엔드포인트(메서드+호스트+경로 템플릿)별 집계. 요청 수가 많은 순, 최대 [MAX_ENDPOINTS]개. */
+    public val endpoints: List<EndpointStatistics> = emptyList(),
+    /** 기준별 나눠 본 집계. 각 목록은 요청 수가 많은 순, 최대 [MAX_GROUPS]개. */
+    public val breakdowns: Map<StatsDimension, List<GroupStatistics>> = emptyMap(),
+    /** 거르기 전 기간 안에 있던 값들. 화면의 필터 선택지로 쓴다. */
+    public val facets: StatsFacets = StatsFacets(emptyList(), emptyList(), emptyList()),
 ) {
     public companion object {
         /** 한 번에 집계하는 최대 기록 수. */
         public const val MAX_SAMPLES: Int = 20_000
+        public const val MAX_ENDPOINTS: Int = 100
+        public const val MAX_GROUPS: Int = 20
     }
 }
 
@@ -55,11 +78,15 @@ public class StatusCounts(
 /**
  * 응답을 받아 끝난 요청의 소요 시간 백분위수(ns, nearest-rank). 그런 요청이 없으면 값은 null이며 0으로 채우지 않는다.
  */
-public class DurationPercentiles(
+public class DurationPercentiles @JvmOverloads constructor(
     public val sampleCount: Int,
     public val p50Nanos: Long?,
     public val p95Nanos: Long?,
     public val p99Nanos: Long?,
+    public val p75Nanos: Long? = null,
+    public val p90Nanos: Long? = null,
+    public val meanNanos: Long? = null,
+    public val maxNanos: Long? = null,
 )
 
 /** 크기를 아는 본문 바이트 합. 응답은 압축 해제 후 크기다. */
@@ -70,24 +97,120 @@ public class ByteTotals(
     public val unknownResponseSizeCount: Int,
 )
 
-public class TrafficBucket(
+public class TrafficBucket @JvmOverloads constructor(
     public val startEpochMillis: Long,
     public val endEpochMillis: Long,
     public val count: Int,
     public val errorCount: Int,
+    /** 구간에서 시작해 끝난 요청의 소요 시간 중앙값(ns). 없으면 null. */
+    public val p50Nanos: Long? = null,
+    public val p95Nanos: Long? = null,
 )
 
 public class HostStatistics(public val host: String, public val count: Int, public val errorCount: Int)
 
-/** 경로는 저장된 그대로 묶는다(경로 안의 ID를 임의로 합치지 않는다). */
-public class EndpointStatistics(
+/**
+ * 엔드포인트별 집계. [path]는 [EndpointGrouping]에 따라 묶은 경로 템플릿이다(`/users/{id}`).
+ * [p95Nanos]·[maxNanos]는 끝난 요청이 없으면 0이다.
+ */
+public class EndpointStatistics @JvmOverloads constructor(
     public val method: String,
     public val host: String,
     public val path: String,
     public val count: Int,
     public val p95Nanos: Long,
     public val maxNanos: Long,
+    public val errorCount: Int = 0,
+    public val p50Nanos: Long? = null,
+    /** 크기를 아는 응답 본문 바이트 합. */
+    public val responseBytes: Long = 0,
 )
+
+/**
+ * 통계 질의. 기간 안의 기록 중 조건에 맞는 것만 집계한다.
+ *
+ * @property host 이 호스트만. null이면 전체.
+ * @property screen 이 화면에서 시작한 요청만.
+ * @property label 이 라벨이 붙은 요청만.
+ * @property includeSynthetic 재실행·모의 응답 기록도 넣을지. 기본은 앱이 실제로 보낸 요청만 센다.
+ */
+public class StatsQuery @JvmOverloads constructor(
+    public val window: StatsWindow = StatsWindow.LAST_HOUR,
+    public val host: String? = null,
+    public val screen: String? = null,
+    public val label: String? = null,
+    public val includeSynthetic: Boolean = false,
+) {
+    public fun copy(
+        window: StatsWindow = this.window,
+        host: String? = this.host,
+        screen: String? = this.screen,
+        label: String? = this.label,
+        includeSynthetic: Boolean = this.includeSynthetic,
+    ): StatsQuery = StatsQuery(window, host, screen, label, includeSynthetic)
+
+    override fun equals(other: Any?): Boolean = other is StatsQuery &&
+        window == other.window &&
+        host == other.host &&
+        screen == other.screen &&
+        label == other.label &&
+        includeSynthetic == other.includeSynthetic
+
+    override fun hashCode(): Int = listOf(window, host, screen, label, includeSynthetic).hashCode()
+
+    override fun toString(): String = "StatsQuery(window=$window, host=$host, screen=$screen, label=$label, synthetic=$includeSynthetic)"
+}
+
+/** 통계를 나눠 보는 기준. */
+public enum class StatsDimension { HOST, SCREEN, LABEL, NETWORK, APP_STATE, METHOD, PROTOCOL }
+
+/** 한 기준 값(호스트 하나, 화면 하나 등)의 집계. 기준 값을 모르는 기록은 [UNKNOWN_KEY]로 묶는다. */
+public class GroupStatistics(
+    public val key: String,
+    public val count: Int,
+    public val errorCount: Int,
+    public val p50Nanos: Long?,
+    public val p95Nanos: Long?,
+    public val responseBytes: Long,
+) {
+    public companion object {
+        public const val UNKNOWN_KEY: String = "?"
+    }
+}
+
+public class CountEntry(public val key: String, public val count: Int)
+
+/** 소요 시간 분포의 한 구간. [upperBoundNanos] 이하(앞 구간 초과). null이면 마지막 구간(위 끝 없음). */
+public class HistogramBin(public val upperBoundNanos: Long?, public val count: Int) {
+    public companion object {
+        /** 100ms, 300ms, 1s, 3s 경계. 마지막 구간은 3s 초과. */
+        @JvmField
+        public val LATENCY_BOUNDS_NANOS: List<Long> = listOf(100_000_000L, 300_000_000L, 1_000_000_000L, 3_000_000_000L)
+    }
+}
+
+/** 단계 하나의 시간. 끝을 관찰한 단계만 센다. */
+public class PhaseStatistics(public val type: TimingPhaseType, public val count: Int, public val p50Nanos: Long, public val p95Nanos: Long)
+
+/**
+ * 연결·캐시 근거. OkHttp가 이벤트로 알려 준 요청만 센다.
+ *
+ * @property reused 기존 연결을 다시 쓴 요청.
+ * @property newConnections 새 연결을 맺은 요청.
+ * @property cacheHits 캐시 응답만으로 끝난 요청.
+ * @property conditionalHits 조건부 요청 뒤 캐시를 쓴 요청(304).
+ * @property network 네트워크 응답을 받은 요청.
+ */
+public class ConnectionStatistics(
+    public val reused: Int,
+    public val newConnections: Int,
+    public val cacheHits: Int,
+    public val conditionalHits: Int,
+    public val network: Int,
+)
+
+/** 기간 안에 나타난 값들. 많은 순. */
+public class StatsFacets(public val hosts: List<String>, public val screens: List<String>, public val labels: List<String>)
 
 /** 진단 규칙. */
 public enum class InsightRule {

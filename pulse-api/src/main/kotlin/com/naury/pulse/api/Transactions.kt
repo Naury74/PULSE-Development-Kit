@@ -44,7 +44,7 @@ public enum class BodyState {
     /** 본문이 없거나 길이가 0이다. */
     EMPTY,
 
-    /** 마스킹한 JSON 본문을 저장했다. */
+    /** 마스킹한 본문을 저장했다(JSON, 또는 [BodyFormats]로 켠 형식). */
     CAPTURED,
 
     /** [CaptureMode.METADATA_ONLY]라 저장하지 않았다. */
@@ -79,6 +79,7 @@ public enum class BodyState {
 }
 
 /** 목록에 보여 줄 트랜잭션 요약. URL과 실패 메시지는 저장 전에 마스킹된 값이다. */
+@Suppress("LongParameterList")
 public class TransactionSummary(
     public val id: String,
     public val sessionId: String,
@@ -101,6 +102,8 @@ public class TransactionSummary(
     public val source: CaptureSource,
     /** [CaptureSource.REPLAY]이면 재실행한 원본 트랜잭션 ID. */
     public val parentTransactionId: String? = null,
+    /** 요청을 시작할 때의 화면·앱 상태·네트워크·라벨. 기록하지 않았으면 null. */
+    public val context: RequestContext? = null,
 )
 
 /** 상세 화면용 트랜잭션. */
