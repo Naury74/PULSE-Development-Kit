@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pulse_title" translatable="false">PULSE</string>
+    <string name="pulse_close">Close</string>
+    <string name="pulse_back">Back</string>
+    <string name="pulse_pause">Pause</string>
+    <string name="pulse_resume">Resume</string>
+    <string name="pulse_clear">Clear</string>
+    <string name="pulse_clear_title">Delete all records?</string>
+    <string name="pulse_clear_message">All stored requests, responses, and bodies on this device will be deleted. This cannot be undone.</string>
+    <string name="pulse_clear_confirm">Delete</string>
+    <string name="pulse_cancel">Cancel</string>
+    <string name="pulse_copy">Copy</string>
+    <string name="pulse_copied">Copied</string>
+    <string name="pulse_retry">Retry</string>
+
+    <string name="pulse_state_recording">Recording</string>
+    <string name="pulse_state_paused">Paused</string>
+    <string name="pulse_state_disabled">Disabled</string>
+    <string name="pulse_state_uninitialized">Not initialized</string>
+    <string name="pulse_not_initialized">PULSE is not initialized. Call Pulse.initialize() in your Application.</string>
+    <string name="pulse_health_warning">The capture queue was full. Dropped events: %1$d, dropped bodies: %2$d.</string>
+
+    <string name="pulse_search_hint">Search URL</string>
+    <string name="pulse_clear_search">Clear search</string>
+    <string name="pulse_filter_all">All</string>
+    <string name="pulse_filter_success">Success</string>
+    <string name="pulse_filter_client_error">4xx</string>
+    <string name="pulse_filter_server_error">5xx</string>
+    <string name="pulse_filter_failed">Failed</string>
+    <string name="pulse_filter_in_flight">In flight</string>
+    <string name="pulse_empty_title">No requests yet</string>
+    <string name="pulse_empty_message">Requests made through an OkHttpClient with interceptor() and eventListenerFactory() appear here.</string>
+    <string name="pulse_no_results">No requests match the search or filter.</string>
+    <string name="pulse_load_failed">Could not load requests.</string>
+    <string name="pulse_new_items">New requests — tap to show</string>
+
+    <string name="pulse_status_in_flight">Pending</string>
+    <string name="pulse_status_failed">Failed</string>
+    <string name="pulse_status_canceled">Canceled</string>
+    <string name="pulse_status_interrupted">Interrupted</string>
+
+    <string name="pulse_tab_summary">Summary</string>
+    <string name="pulse_tab_request">Request</string>
+    <string name="pulse_tab_response">Response</string>
+    <string name="pulse_tab_timeline">Timeline</string>
+    <string name="pulse_detail_missing">This request no longer exists. It may have been deleted by the retention policy.</string>
+
+    <string name="pulse_field_url">URL</string>
+    <string name="pulse_field_method">Method</string>
+    <string name="pulse_field_status">Status</string>
+    <string name="pulse_field_protocol">Protocol</string>
+    <string name="pulse_field_started">Started</string>
+    <string name="pulse_field_duration">Duration</string>
+    <string name="pulse_field_ttfb">Response headers after</string>
+    <string name="pulse_field_request_size">Request body</string>
+    <string name="pulse_field_response_size">Response body</string>
+    <string name="pulse_field_failure">Failure</string>
+    <string name="pulse_field_source">Source</string>
+    <string name="pulse_unknown">Unknown</string>
+    <string name="pulse_not_finished">Not finished</string>
+
+    <string name="pulse_headers">Headers</string>
+    <string name="pulse_headers_empty">No headers</string>
+    <string name="pulse_body">Body</string>
+    <string name="pulse_no_response">No response was received.</string>
+    <string name="pulse_body_redacted_count">Values redacted before storage: %1$d</string>
+    <string name="pulse_body_truncated">Showing the first %1$s. Copy includes the full stored body.</string>
+    <string name="pulse_body_loading">Loading body…</string>
+    <string name="pulse_body_file_missing">The stored body file is missing.</string>
+    <string name="pulse_body_empty">No body.</string>
+    <string name="pulse_body_omitted">Not stored: capture mode is metadata only.</string>
+    <string name="pulse_body_unsupported">Not stored: only JSON bodies are captured (this body is binary, form, multipart, or compressed).</string>
+    <string name="pulse_body_too_large">Not stored: larger than the capture limit. Partial JSON cannot be redacted safely.</string>
+    <string name="pulse_body_one_shot">Not stored: one-shot request bodies are never written twice.</string>
+    <string name="pulse_body_duplex">Not stored: duplex streaming bodies are not captured.</string>
+    <string name="pulse_body_incomplete">Not stored: the app did not read the body to the end.</string>
+    <string name="pulse_body_redaction_failed">Not stored: the JSON could not be parsed, so it could not be redacted.</string>
+    <string name="pulse_body_decode_failed">Not stored: the text encoding could not be decoded.</string>
+    <string name="pulse_body_dropped">Not stored: dropped because the capture queue was full.</string>
+    <string name="pulse_body_pending">Not available yet: the body has not been sent or received.</string>
+
+    <string name="pulse_timeline_note">Only phases observed by OkHttp EventListener are shown. Times are relative to the start of the request.</string>
+    <string name="pulse_timeline_empty">No network phases were observed. The response may have come from the cache, or eventListenerFactory() is not installed.</string>
+    <string name="pulse_timeline_not_observed">Not observed: %1$s. Reused connections and cache hits skip these phases.</string>
+    <string name="pulse_timeline_exchange">Exchange %1$d</string>
+    <string name="pulse_timeline_open_ended">end not observed</string>
+    <string name="pulse_phase_dns">DNS</string>
+    <string name="pulse_phase_connect">Connect</string>
+    <string name="pulse_phase_tls">TLS</string>
+    <string name="pulse_phase_request_headers">Request headers</string>
+    <string name="pulse_phase_request_body">Request body</string>
+    <string name="pulse_phase_response_headers">Response headers</string>
+    <string name="pulse_phase_response_body">Response body</string>
+</resources>

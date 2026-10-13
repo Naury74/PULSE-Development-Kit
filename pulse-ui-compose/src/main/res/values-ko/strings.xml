@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pulse_close">닫기</string>
+    <string name="pulse_back">뒤로</string>
+    <string name="pulse_pause">멈춤</string>
+    <string name="pulse_resume">다시 기록</string>
+    <string name="pulse_clear">지우기</string>
+    <string name="pulse_clear_title">모든 기록을 지울까요?</string>
+    <string name="pulse_clear_message">이 기기에 저장된 요청·응답과 본문을 모두 지웁니다. 되돌릴 수 없습니다.</string>
+    <string name="pulse_clear_confirm">지우기</string>
+    <string name="pulse_cancel">취소</string>
+    <string name="pulse_copy">복사</string>
+    <string name="pulse_copied">복사했습니다</string>
+    <string name="pulse_retry">다시 시도</string>
+
+    <string name="pulse_state_recording">기록 중</string>
+    <string name="pulse_state_paused">멈춤</string>
+    <string name="pulse_state_disabled">사용 안 함</string>
+    <string name="pulse_state_uninitialized">초기화 전</string>
+    <string name="pulse_not_initialized">PULSE가 초기화되지 않았습니다. Application에서 Pulse.initialize()를 호출하세요.</string>
+    <string name="pulse_health_warning">수집 큐가 가득 차 이벤트 %1$d개와 본문 %2$d개를 버렸습니다.</string>
+
+    <string name="pulse_search_hint">URL 검색</string>
+    <string name="pulse_clear_search">검색어 지우기</string>
+    <string name="pulse_filter_all">전체</string>
+    <string name="pulse_filter_success">성공</string>
+    <string name="pulse_filter_client_error">4xx</string>
+    <string name="pulse_filter_server_error">5xx</string>
+    <string name="pulse_filter_failed">실패</string>
+    <string name="pulse_filter_in_flight">진행 중</string>
+    <string name="pulse_empty_title">아직 요청이 없습니다</string>
+    <string name="pulse_empty_message">interceptor()와 eventListenerFactory()를 붙인 OkHttpClient의 요청이 여기에 나타납니다.</string>
+    <string name="pulse_no_results">검색어나 필터에 맞는 요청이 없습니다.</string>
+    <string name="pulse_load_failed">요청 목록을 불러오지 못했습니다.</string>
+    <string name="pulse_new_items">새 요청이 있습니다 — 눌러서 보기</string>
+
+    <string name="pulse_status_in_flight">진행 중</string>
+    <string name="pulse_status_failed">실패</string>
+    <string name="pulse_status_canceled">취소</string>
+    <string name="pulse_status_interrupted">중단</string>
+
+    <string name="pulse_tab_summary">요약</string>
+    <string name="pulse_tab_request">요청</string>
+    <string name="pulse_tab_response">응답</string>
+    <string name="pulse_tab_timeline">타임라인</string>
+    <string name="pulse_detail_missing">이 요청은 더 이상 없습니다. 보관 정책에 따라 지워졌을 수 있습니다.</string>
+
+    <string name="pulse_field_url">URL</string>
+    <string name="pulse_field_method">메서드</string>
+    <string name="pulse_field_status">상태</string>
+    <string name="pulse_field_protocol">프로토콜</string>
+    <string name="pulse_field_started">시작</string>
+    <string name="pulse_field_duration">소요 시간</string>
+    <string name="pulse_field_ttfb">응답 헤더까지</string>
+    <string name="pulse_field_request_size">요청 본문</string>
+    <string name="pulse_field_response_size">응답 본문</string>
+    <string name="pulse_field_failure">실패</string>
+    <string name="pulse_field_source">출처</string>
+    <string name="pulse_unknown">알 수 없음</string>
+    <string name="pulse_not_finished">끝나지 않음</string>
+
+    <string name="pulse_headers">헤더</string>
+    <string name="pulse_headers_empty">헤더 없음</string>
+    <string name="pulse_body">본문</string>
+    <string name="pulse_no_response">응답을 받지 못했습니다.</string>
+    <string name="pulse_body_redacted_count">저장 전에 값 %1$d개를 가렸습니다.</string>
+    <string name="pulse_body_truncated">앞부분 %1$s만 보여 줍니다. 복사하면 저장된 본문 전체가 복사됩니다.</string>
+    <string name="pulse_body_loading">본문을 불러오는 중…</string>
+    <string name="pulse_body_file_missing">저장된 본문 파일이 없습니다.</string>
+    <string name="pulse_body_empty">본문이 없습니다.</string>
+    <string name="pulse_body_omitted">저장 안 함: 메타데이터만 기록하는 모드입니다.</string>
+    <string name="pulse_body_unsupported">저장 안 함: JSON 본문만 저장합니다(바이너리·form·multipart·압축 본문).</string>
+    <string name="pulse_body_too_large">저장 안 함: 수집 상한보다 큽니다. 잘린 JSON은 안전하게 마스킹할 수 없습니다.</string>
+    <string name="pulse_body_one_shot">저장 안 함: 한 번만 쓸 수 있는 요청 본문은 다시 쓰지 않습니다.</string>
+    <string name="pulse_body_duplex">저장 안 함: 양방향 스트리밍 본문은 수집하지 않습니다.</string>
+    <string name="pulse_body_incomplete">저장 안 함: 앱이 본문을 끝까지 읽지 않았습니다.</string>
+    <string name="pulse_body_redaction_failed">저장 안 함: JSON을 해석하지 못해 마스킹할 수 없었습니다.</string>
+    <string name="pulse_body_decode_failed">저장 안 함: 문자 인코딩을 해석하지 못했습니다.</string>
+    <string name="pulse_body_dropped">저장 안 함: 수집 큐가 가득 차 버렸습니다.</string>
+    <string name="pulse_body_pending">아직 없음: 본문을 보내거나 받기 전입니다.</string>
+
+    <string name="pulse_timeline_note">OkHttp EventListener가 관찰한 단계만 보여 줍니다. 시간은 요청 시작 기준입니다.</string>
+    <string name="pulse_timeline_empty">관찰한 네트워크 단계가 없습니다. 캐시에서 응답했거나 eventListenerFactory()를 붙이지 않았을 수 있습니다.</string>
+    <string name="pulse_timeline_not_observed">관찰하지 못함: %1$s. 연결을 재사용하거나 캐시 응답이면 이 단계가 없습니다.</string>
+    <string name="pulse_timeline_exchange">교환 %1$d</string>
+    <string name="pulse_timeline_open_ended">끝을 관찰하지 못함</string>
+    <string name="pulse_phase_dns">DNS</string>
+    <string name="pulse_phase_connect">연결</string>
+    <string name="pulse_phase_tls">TLS</string>
+    <string name="pulse_phase_request_headers">요청 헤더</string>
+    <string name="pulse_phase_request_body">요청 본문</string>
+    <string name="pulse_phase_response_headers">응답 헤더</string>
+    <string name="pulse_phase_response_body">응답 본문</string>
+</resources>
