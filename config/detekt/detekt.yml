@@ -1,0 +1,15 @@
+# 기본 규칙 위에 덮어쓰는 값만 둔다. 규칙을 끄려면 ADR이 필요하다(docs/adr).
+style:
+  MaxLineLength:
+    maxLineLength: 140
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreNamedArgument: true
+    excludes: ['**/test/**', '**/androidTest/**']
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+complexity:
+  LongParameterList:
+    ignoreAnnotated: ['Composable']

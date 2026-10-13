@@ -70,3 +70,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 pulse-jvm-library = { id = "pulse.jvm.library" }
 pulse-android-library = { id = "pulse.android.library" }
 pulse-android-compose = { id = "pulse.android.compose" }
+pulse-quality = { id = "pulse.quality" }

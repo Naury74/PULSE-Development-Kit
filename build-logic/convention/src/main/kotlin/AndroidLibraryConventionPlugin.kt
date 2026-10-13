@@ -9,6 +9,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             pluginManager.apply("com.android.library")
+            pluginManager.apply("pulse.quality")
             extensions.configure<LibraryExtension> {
                 compileSdk = libs.version("compileSdk").toInt()
                 resourcePrefix = "pulse_"

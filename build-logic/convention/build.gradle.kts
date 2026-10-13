@@ -18,6 +18,10 @@ gradlePlugin {
             id = "pulse.android.library"
             implementationClass = "AndroidLibraryConventionPlugin"
         }
+        register("quality") {
+            id = "pulse.quality"
+            implementationClass = "QualityConventionPlugin"
+        }
         register("androidCompose") {
             id = "pulse.android.compose"
             implementationClass = "AndroidComposeConventionPlugin"

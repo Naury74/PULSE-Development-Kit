@@ -1,6 +1,10 @@
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.pulse.quality)
 }
 
 android {
@@ -45,3 +49,35 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
 }
+
+// release 런타임에 수집 엔진·저장소·UI가 들어가지 않았는지 확인한다(no-op 교체 보장).
+fun Configuration.projectDependencyNames(): Provider<Set<String>> = incoming.resolutionResult.rootComponent.map { root ->
+    val seen = mutableSetOf<String>()
+    val pending = ArrayDeque(listOf(root))
+    while (pending.isNotEmpty()) {
+        pending
+            .removeFirst()
+            .dependencies
+            .filterIsInstance<ResolvedDependencyResult>()
+            .map { it.selected }
+            .forEach { component ->
+                val id = component.id
+                if (id is ProjectComponentIdentifier && seen.add(id.projectName)) pending.add(component)
+            }
+    }
+    seen
+}
+
+tasks.register("verifyReleaseClasspath") {
+    group = "verification"
+    description = "release 런타임 classpath에 pulse-noop만 있는지 확인한다."
+    val projects = configurations.named("releaseRuntimeClasspath").flatMap { it.projectDependencyNames() }
+    val forbidden = setOf("pulse-bundle", "pulse-core", "pulse-okhttp", "pulse-security", "pulse-storage", "pulse-ui-compose")
+    doLast {
+        val names = projects.get()
+        val leaked = names.intersect(forbidden)
+        check(leaked.isEmpty()) { "release 런타임에 수집 모듈이 들어갔습니다: $leaked" }
+        check("pulse-noop" in names) { "release 런타임에 pulse-noop이 없습니다." }
+    }
+}
+tasks.named("check") { dependsOn("verifyReleaseClasspath") }
