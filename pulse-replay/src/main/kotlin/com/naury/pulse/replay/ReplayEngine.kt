@@ -13,8 +13,10 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
@@ -27,7 +29,7 @@ import okhttp3.Response
 import okio.Buffer
 
 /**
- * [ReplayPolicy]를 지키며 초안을 보낸다. 동시에 하나만 보내고, 리다이렉트는 직접 따라가며 단계마다 호스트·scheme을 다시 검사한다.
+ * [ReplayPolicy]를 지키며 초안을 보낸다. 네트워크 작업은 I/O 디스패처에서 하므로 어느 스레드에서 불러도 된다. 동시에 하나만 보내고, 리다이렉트는 직접 따라가며 단계마다 호스트·scheme을 다시 검사한다.
  * 자격 증명은 [authorizer]가 준 헤더만 원래 호스트에 붙인다.
  *
  * @param client 호스트 앱과 분리된 클라이언트. PULSE 인터셉터가 붙어 있으면 결과가 [CaptureSource.REPLAY]로 기록된다.
@@ -48,8 +50,11 @@ public class ReplayEngine(private val policy: ReplayPolicy, client: OkHttpClient
         if (blocked != null || url == null) return blocked ?: ReplayOutcome.Blocked(ReplayBlockReason.INVALID_REQUEST)
         if (!running.tryLock()) return ReplayOutcome.Blocked(ReplayBlockReason.BUSY)
         return try {
-            val credentials = auth?.headersFor(draft).orEmpty()
-            follow(draft, Hop(method, url, draft.body?.toByteArray(Charsets.UTF_8)), credentials, originHost = url.host)
+            // 호출한 쪽이 메인 디스패처여도 응답 본문 읽기 같은 네트워크 작업이 메인 스레드에서 돌지 않게 한다.
+            withContext(Dispatchers.IO) {
+                val credentials = auth?.headersFor(draft).orEmpty()
+                follow(draft, Hop(method, url, draft.body?.toByteArray(Charsets.UTF_8)), credentials, originHost = url.host)
+            }
         } finally {
             running.unlock()
         }

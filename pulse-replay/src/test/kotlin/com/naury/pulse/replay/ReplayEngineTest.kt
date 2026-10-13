@@ -23,12 +23,15 @@ import com.naury.pulse.okhttp.CallTimingRegistry
 import com.naury.pulse.okhttp.PulseInterceptor
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
+import okhttp3.ResponseBody.Companion.asResponseBody
+import okio.buffer
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -209,5 +212,31 @@ class ReplayEngineTest {
         assertThat(wildcard.allowsHost("api.example.com")).isTrue()
         assertThat(wildcard.allowsHost("example.com")).isFalse()
         assertThat(wildcard.allowsHost("evilexample.com")).isFalse()
+    }
+
+    @Test
+    fun `메인 스레드처럼 쓰는 단일 스레드에서 불러도 응답 본문은 그 스레드에서 읽지 않는다`() = runBlocking {
+        server.enqueue(MockResponse.Builder().code(200).body("x".repeat(10_000)).build())
+        val readers = java.util.concurrent.CopyOnWriteArraySet<String>()
+        val client = OkHttpClient.Builder().addNetworkInterceptor { chain ->
+            val response = chain.proceed(chain.request())
+            val source = object : okio.ForwardingSource(response.body.source()) {
+                override fun read(sink: okio.Buffer, byteCount: Long): Long {
+                    readers += Thread.currentThread().name
+                    return super.read(sink, byteCount)
+                }
+            }
+            response.newBuilder().body(
+                source.buffer().asResponseBody(response.body.contentType(), response.body.contentLength()),
+            ).build()
+        }.build()
+        val main = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "fake-main") }.asCoroutineDispatcher()
+
+        val outcome = kotlinx.coroutines.withContext(main) { engine(client = client).execute(draft(), confirmed = true) }
+        main.close()
+
+        assertThat(outcome).isInstanceOf(ReplayOutcome.Completed::class.java)
+        assertThat(readers).isNotEmpty()
+        assertThat(readers.filter { it.startsWith("fake-main") }).isEmpty()
     }
 }
