@@ -66,7 +66,7 @@ public class InsightEngine(private val thresholds: InsightThresholds) {
             }
 
     private fun nPlusOne(samples: List<TrafficSample>): List<Insight> = samples.groupBy { Triple(it.method, it.host, pathPattern(it.path)) }
-        .filterKeys { (_, _, pattern) -> pattern.contains(ID_PLACEHOLDER) }
+        .filterKeys { (_, _, pattern) -> pattern.contains(EndpointTemplater.ID_PLACEHOLDER) }
         .mapNotNull { (key, group) ->
             val burst = densestWindow(group, thresholds.nPlusOneWindowMillis)
             if (burst.size < thresholds.nPlusOneCount || burst.map { it.path }.distinct().size < 2) return@mapNotNull null
@@ -148,13 +148,9 @@ public class InsightEngine(private val thresholds: InsightThresholds) {
     private companion object {
         const val RULE_VERSION = 1
         const val HTTP_OK = 200
-        const val ID_PLACEHOLDER = "{id}"
         val idempotentReads = setOf("GET", "HEAD")
-        private val idSegment =
-            Regex("^(\\d+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{24,})$")
 
         /** N+1 추정에만 쓰는 경로 묶음. 숫자·UUID·긴 16진수 조각을 같은 자리표시로 본다. */
-        fun pathPattern(path: String): String =
-            path.split('/').joinToString("/") { segment -> if (idSegment.matches(segment)) ID_PLACEHOLDER else segment }
+        fun pathPattern(path: String): String = EndpointTemplater.autoTemplate(path)
     }
 }
