@@ -15,7 +15,8 @@
 | 기기 전체 파일·내보내기에 남는 비밀 | 위 대응 전체 + 내보낼 때 다시 마스킹 | **`SecretLeakAuditTest`**: 가짜 비밀 14개를 헤더·쿼리·중첩 JSON·문자열 속 JSON과 URL·form·잘못된 JSON·Set-Cookie·Location에 심고, DB·WAL·본문 파일·HAR·PULSE JSON·cURL을 바이트 단위로 검사 |
 | cURL로 자격 증명 재구성 | 가려진 헤더는 넣지 않음 | `CurlFormatterTest` |
 | release 빌드 유입 | no-op 교체, release 런타임 classpath 검사, 공개 API 일치 검사 | `verifyReleaseClasspath`, `verifyNoopApi` |
-| 다른 앱이 화면을 엶 | `exported=false` | merged manifest 확인(수동, README 참고) |
+| 다른 앱이 화면을 엶 | 인스펙터 Activity는 `exported=false`. debug 빌드의 런처 아이콘(activity-alias)만 `exported=true`이며 화면을 띄울 뿐 데이터를 돌려주지 않음. 알림 버튼 수신기는 `exported=false` | merged manifest 확인(수동). release에는 둘 다 없음 |
+| 알림으로 드러나는 요청 경로 | 기본은 알림 권한이 없어 띄우지 않음. 띄울 때도 잠금 화면에서는 개수만 보임(`VISIBILITY_PRIVATE`) | 수동 확인 |
 | 재실행으로 운영 서버 변경·자격 증명 유출 | 기본 꺼짐, 허용 호스트, 확인, 가려진 헤더 제거, 리다이렉트 단계별 검사 | `ReplayEngineTest`, `PulseTest` |
 | 모의 응답이 운영에서 동작 | 명시적으로 붙여야 동작, 기본 꺼짐, 메모리에만 저장 | `MockInterceptorTest` |
 | 정규식 ReDoS | 길이 제한·시간 예산 | `MockInterceptorTest` |

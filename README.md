@@ -7,16 +7,16 @@
 
 <table>
   <tr>
-    <td align="center" width="25%"><img src="docs/images/screen-traffic.png" width="200" alt="트래픽 목록"><br><b>트래픽</b><br>검색·상태 필터</td>
-    <td align="center" width="25%"><img src="docs/images/screen-failed.png" width="200" alt="실패 필터"><br><b>실패</b><br>취소·I/O 실패 구분</td>
-    <td align="center" width="25%"><img src="docs/images/screen-request.png" width="200" alt="요청 상세"><br><b>요청</b><br>저장 전 마스킹</td>
-    <td align="center" width="25%"><img src="docs/images/screen-timeline.png" width="200" alt="타임라인"><br><b>타임라인</b><br>관찰한 단계만</td>
+    <td align="center" width="25%"><img src="docs/images/screen-traffic.png" width="200" alt="트래픽 목록"><br><b>트래픽</b><br>메서드·결과·소요 시간</td>
+    <td align="center" width="25%"><img src="docs/images/screen-notification.png" width="200" alt="알림"><br><b>알림</b><br>앱 어디서든 열기</td>
+    <td align="center" width="25%"><img src="docs/images/screen-request.png" width="200" alt="요청 상세"><br><b>요청</b><br>요약·저장 전 마스킹</td>
+    <td align="center" width="25%"><img src="docs/images/screen-timeline.png" width="200" alt="타임라인"><br><b>타임라인</b><br>단계·응답 대기</td>
   </tr>
   <tr>
     <td align="center"><img src="docs/images/screen-overview.png" width="200" alt="개요"><br><b>개요</b><br>오류율·p95·시간별 요청</td>
     <td align="center"><img src="docs/images/screen-insights.png" width="200" alt="진단"><br><b>진단</b><br>기준값·관찰값·근거 요청</td>
     <td align="center"><img src="docs/images/screen-replay.png" width="200" alt="재실행"><br><b>재실행</b><br>허용 호스트·위험 확인</td>
-    <td align="center"><img src="docs/images/screen-settings.png" width="200" alt="설정"><br><b>설정</b><br>모의 응답·수집 상태</td>
+    <td align="center"><img src="docs/images/screen-settings.png" width="200" alt="설정"><br><b>설정</b><br>기록·수집 설정</td>
   </tr>
 </table>
 
@@ -24,6 +24,8 @@
 
 ## 기능
 
+- **바로 열기**: 앱에 버튼을 달지 않아도 debug 빌드에 PULSE 런처 아이콘과 알림(요청 수·오류·최근 요청, 멈춤·지우기)이 생김. 둘 다 리소스 값으로 끌 수 있음
+- **요청 공유**: 요청 하나를 결과·헤더·본문·cURL이 담긴 Markdown 글로 공유해 이슈나 메신저에 바로 붙임
 - **기록**: 메서드, 마스킹한 URL·헤더, 상태 코드, 실패 종류(I/O 실패·취소·시간 초과와 4xx·5xx 응답을 구분), 크기, 소요 시간
 - **본문**(선택): JSON만, 상한 안에서, 호스트가 실제로 읽거나 쓴 바이트만 복사해 마스킹한 뒤 저장. 트리·원문 보기
 - **단계 타이밍**: OkHttp `EventListener`가 관찰한 DNS·연결·TLS·요청·응답 단계, 캐시 응답·연결 재사용 근거. 관찰하지 못한 값은 추정하지 않음

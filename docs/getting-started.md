@@ -50,6 +50,24 @@ PulseInspectorScreen(inspector = pulse, onClose = {}) // 앱의 Compose 화면 �
 
 화면 모듈이 없거나 release(no-op)면 `open`은 `false`를 돌려주고 아무것도 하지 않습니다.
 
+앱에 버튼을 달지 않아도 `pulse-ui-compose`를 넣으면 debug 빌드에 두 가지 진입점이 생깁니다.
+
+- **런처 아이콘**: 홈 화면 앱 목록에 PULSE 아이콘이 따로 생기고, 누르면 인스펙터가 앱과 다른 작업으로 열립니다.
+- **알림**: 최근 1시간 요청 수·오류 수와 최근 요청 5개를 보여 주고, 멈춤·재개·지우기 버튼이 있습니다. 누르면 인스펙터가 열립니다.
+  - Android 13 이상은 알림 권한이 필요합니다. 인스펙터 트래픽 탭에서 한 번 권하며, "나중에"를 누르면 다시 묻지 않습니다.
+  - 잠금 화면에서는 요청 경로를 숨기고 개수만 보여 줍니다.
+
+끄려면 앱의 `res/values`에 같은 이름으로 넣습니다(debug 소스셋에 두면 됩니다).
+
+```xml
+<bool name="pulse_launcher_icon_enabled">false</bool>
+<bool name="pulse_notification_enabled">false</bool>
+```
+
+## 요청 공유
+
+상세 화면의 **공유**는 요청 하나를 Markdown 글로 만들어 공유 시트로 보냅니다. 결과·URL·소요 시간·헤더·본문(8KB까지)·cURL이 들어가며, 모두 저장 전에 가린 값입니다. QA가 이슈에 붙이거나 메신저로 개발자에게 넘길 때 씁니다.
+
 ## 5. 멈추기·지우기·닫기
 
 `pulse.pause()`, `pulse.resume()`, `pulse.clear()`(저장된 기록과 본문 삭제), `pulse.close()`(설정을 바꿔 다시 초기화할 때).
