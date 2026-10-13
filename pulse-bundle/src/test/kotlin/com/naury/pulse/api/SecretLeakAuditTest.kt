@@ -50,7 +50,8 @@ class SecretLeakAuditTest {
                     .setHeader("Content-Type", "application/json")
                     .setHeader("Set-Cookie", "sid=${secrets[0]}; HttpOnly")
                     .body(
-                        """{"user":{"accessToken":"${secrets[1]}","profile":{"ssn":"${secrets[2]}"}},"list":[{"refresh_token":"${secrets[3]}"}]}""",
+                        """{"user":{"accessToken":"${secrets[1]}","profile":{"ssn":"${secrets[2]}"}},""" +
+                            """"list":[{"refresh_token":"${secrets[3]}"}]}""",
                     )
                     .build(),
             )
