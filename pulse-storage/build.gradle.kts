@@ -33,7 +33,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 }
 
-// 스키마 JSON은 KSP가 만들므로, 테스트 asset을 모으기 전에 KSP가 먼저 돌아야 새 버전 스키마가 들어간다.
+// Room plugin이 KSP 결과를 copyRoomSchemas로 schemas/에 옮긴 뒤에 테스트 asset을 모아야 새 버전 스키마가 들어간다.
 tasks.matching { it.name.matches(Regex("merge(Debug|Release)UnitTestAssets")) }.configureEach {
-    dependsOn(tasks.matching { it.name.matches(Regex("ksp(Debug|Release)Kotlin")) })
+    dependsOn("copyRoomSchemas")
 }

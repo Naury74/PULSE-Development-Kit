@@ -23,6 +23,8 @@ public class RequestRecord internal constructor(
     override val transactionId: String,
     public val sessionId: String,
     public val source: CaptureSource,
+    /** 재실행이면 원본 트랜잭션 ID. */
+    public val parentTransactionId: String?,
     public val startedAtEpochMillis: Long,
     public val method: String,
     public val url: String,

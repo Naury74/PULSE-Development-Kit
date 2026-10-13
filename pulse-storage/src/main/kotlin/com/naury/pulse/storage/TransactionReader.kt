@@ -93,6 +93,7 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
         requestBodyBytes = requestBodyBytes,
         responseBodyBytes = responseBodyBytes,
         source = source,
+        parentTransactionId = parentTransactionId,
     )
 
     private fun MessageEntity.toHttpMessage(headers: List<HeaderField>) =

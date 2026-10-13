@@ -120,6 +120,7 @@ internal class CaptureWriter(
                 id = record.transactionId,
                 sessionId = record.sessionId,
                 source = record.source,
+                parentTransactionId = record.parentTransactionId,
                 method = record.method,
                 url = record.url,
                 scheme = record.scheme,

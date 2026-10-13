@@ -47,6 +47,7 @@ internal data class TransactionEntity(
     val responseBodyBytes: Long? = null,
     @ColumnInfo(defaultValue = "NULL") val responseSource: ResponseSource? = null,
     @ColumnInfo(defaultValue = "NULL") val connectionReused: Boolean? = null,
+    @ColumnInfo(defaultValue = "NULL") val parentTransactionId: String? = null,
 )
 
 @Entity(

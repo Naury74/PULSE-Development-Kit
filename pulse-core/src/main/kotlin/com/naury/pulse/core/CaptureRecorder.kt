@@ -49,12 +49,15 @@ public class CaptureRecorder internal constructor(
         headers: List<Pair<String, String>>,
         contentType: String?,
         declaredContentLength: Long?,
+        source: CaptureSource = CaptureSource.ORIGINAL,
+        parentTransactionId: String? = null,
     ) {
         enqueue {
             RequestRecord(
                 transactionId = transactionId,
                 sessionId = sessionId,
-                source = CaptureSource.ORIGINAL,
+                source = source,
+                parentTransactionId = parentTransactionId,
                 startedAtEpochMillis = startedAtEpochMillis,
                 method = method,
                 url = redactor.sanitizeUrl(url),

@@ -1,6 +1,7 @@
 package com.naury.pulse.okhttp
 
 import com.naury.pulse.core.CaptureRecorder
+import com.naury.pulse.core.CaptureTag
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -17,8 +18,9 @@ public class PulseInterceptor(private val recorder: CaptureRecorder, private val
 
         val capture = runCatchingCapture {
             val startNanos = recorder.clock.monoNanos()
-            TransactionCapture(recorder, chain.call(), recorder.newTransactionId(), startNanos).also {
-                it.recordRequest(request, recorder.clock.wallMillis())
+            val tag = request.tag(CaptureTag::class.java)
+            TransactionCapture(recorder, chain.call(), tag?.transactionId ?: recorder.newTransactionId(), startNanos).also {
+                it.recordRequest(request, recorder.clock.wallMillis(), tag)
                 timings.attach(chain.call(), it.transactionId, startNanos)
             }
         }

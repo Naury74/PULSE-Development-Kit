@@ -1,9 +1,11 @@
 package com.naury.pulse.okhttp
 
 import com.naury.pulse.api.BodyState
+import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.TransactionState
 import com.naury.pulse.core.CaptureRecorder
+import com.naury.pulse.core.CaptureTag
 import com.naury.pulse.security.BodySanitizer
 import java.io.IOException
 import java.net.HttpURLConnection.HTTP_NOT_MODIFIED
@@ -24,7 +26,7 @@ internal class TransactionCapture(
 ) {
     private val finished = AtomicBoolean()
 
-    fun recordRequest(request: Request, startedAtEpochMillis: Long) {
+    fun recordRequest(request: Request, startedAtEpochMillis: Long, tag: CaptureTag?) {
         val body = request.body
         recorder.requestStarted(
             transactionId = transactionId,
@@ -37,6 +39,8 @@ internal class TransactionCapture(
             headers = request.headers.toPairs(),
             contentType = body?.contentType()?.toString(),
             declaredContentLength = body?.let { safeContentLength { it.contentLength() } },
+            source = tag?.source ?: CaptureSource.ORIGINAL,
+            parentTransactionId = tag?.parentTransactionId,
         )
     }
 

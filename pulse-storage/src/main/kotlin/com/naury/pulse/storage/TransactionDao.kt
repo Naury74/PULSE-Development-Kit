@@ -76,12 +76,15 @@ internal interface TransactionDao {
     )
     suspend fun page(text: String, status: String, afterStarted: Long?, afterId: String?, limit: Int): List<TransactionEntity>
 
-    /** 자격 증명 여부는 저장 전에 가려진 요청 헤더가 있는지로 판단한다(값은 이미 남아 있지 않다). */
+    /**
+     * 집계·진단용 기록. 재실행·모의 응답은 원래 트래픽 통계를 흐리지 않도록 뺀다.
+     * 자격 증명 여부는 저장 전에 가려진 요청 헤더가 있는지로 판단한다(값은 이미 남아 있지 않다).
+     */
     @Query(
         """SELECT t.id, t.method, t.url, t.host, t.path, t.startedAtEpochMillis, t.durationNanos, t.statusCode, t.state,
         t.requestBodyBytes, t.responseBodyBytes, t.responseSource,
         EXISTS(SELECT 1 FROM headers h WHERE h.transactionId = t.id AND h.kind = 'REQUEST' AND h.value = :redacted) AS hasCredentials
-        FROM transactions t WHERE t.startedAtEpochMillis >= :from
+        FROM transactions t WHERE t.startedAtEpochMillis >= :from AND t.source = 'ORIGINAL'
         ORDER BY t.startedAtEpochMillis DESC LIMIT :limit""",
     )
     suspend fun samples(from: Long, limit: Int, redacted: String = RedactionPolicy.REDACTED): List<SampleRow>

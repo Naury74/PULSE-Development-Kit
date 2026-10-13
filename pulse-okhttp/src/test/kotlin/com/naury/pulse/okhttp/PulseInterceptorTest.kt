@@ -4,10 +4,12 @@ import com.google.common.truth.Truth.assertThat
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureLimits
 import com.naury.pulse.api.CaptureMode
+import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.RedactionPolicy.Companion.REDACTED
 import com.naury.pulse.api.TransactionState
+import com.naury.pulse.core.CaptureTag
 import java.io.IOException
 import java.net.ConnectException
 import java.net.ServerSocket
@@ -300,5 +302,22 @@ class PulseInterceptorTest {
         val captured = harness.finish()
 
         assertThat(captured.records).isEmpty()
+    }
+
+    @Test
+    fun `PULSE가 붙인 태그가 있으면 그 ID·출처·원본으로 기록한다`() {
+        server.enqueue(jsonResponse("{}"))
+        val harness = CaptureHarness()
+
+        harness.client().newCall(
+            Request.Builder().url(
+                server.url("/"),
+            ).tag(CaptureTag::class.java, CaptureTag("replay-1", CaptureSource.REPLAY, "origin-1")).build(),
+        ).execute().close()
+        val captured = harness.finish()
+
+        val request = captured.request("replay-1")
+        assertThat(request.source).isEqualTo(CaptureSource.REPLAY)
+        assertThat(request.parentTransactionId).isEqualTo("origin-1")
     }
 }

@@ -33,6 +33,23 @@ class PulseDatabaseMigrationTest {
         migrated.close()
     }
 
+    @Test
+    fun `v2에서 v3로 올리면 원본 연결 열이 비어 있다`() {
+        helper.createDatabase(DATABASE, 2).use { database ->
+            database.execSQL(
+                """INSERT INTO transactions (id, sessionId, source, method, url, scheme, host, path, startedAtEpochMillis, state)
+                VALUES ('t1', 's1', 'ORIGINAL', 'GET', 'https://a.test/', 'https', 'a.test', '/', 1, 'COMPLETED')""",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DATABASE, 3, true).use { migrated ->
+            migrated.query("SELECT parentTransactionId FROM transactions WHERE id = 't1'").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.isNull(0)).isTrue()
+            }
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-test.db"
     }

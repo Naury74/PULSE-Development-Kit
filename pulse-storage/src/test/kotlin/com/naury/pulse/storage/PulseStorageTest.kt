@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.naury.pulse.api.BodyState
+import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.RedactionPolicy.Companion.REDACTED
@@ -234,6 +235,10 @@ class PulseStorageTest {
             transaction("old", startedAt = 10)
             transaction("new", startedAt = 20)
             requestStarted("plain", 30, "GET", "https://api.test/p", "https", "api.test", "/p", listOf("Accept" to "*/*"), null, null)
+            requestStarted(
+                "replay", 40, "GET", "https://api.test/p", "https", "api.test", "/p", emptyList(), null, null,
+                CaptureSource.REPLAY, "plain",
+            )
         }
 
         val (samples, limited) = runBlocking { storage.loadSamples(fromEpochMillis = 15, limit = 1) }
@@ -242,6 +247,7 @@ class PulseStorageTest {
         assertThat(samples.map { it.id }).containsExactly("plain")
         assertThat(limited).isTrue()
         assertThat(all.associate { it.id to it.hasCredentials }).containsExactly("plain", false, "new", true, "old", true)
+        assertThat(runBlocking { storage.loadTransaction("replay") }!!.summary.parentTransactionId).isEqualTo("plain")
     }
 
     @Test

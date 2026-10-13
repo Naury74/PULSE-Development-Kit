@@ -99,6 +99,8 @@ public class TransactionSummary(
     /** 호스트가 읽은 응답 본문 바이트(압축 해제 후). 끝까지 읽지 않았거나 모르면 null. */
     public val responseBodyBytes: Long?,
     public val source: CaptureSource,
+    /** [CaptureSource.REPLAY]이면 재실행한 원본 트랜잭션 ID. */
+    public val parentTransactionId: String? = null,
 )
 
 /** 상세 화면용 트랜잭션. */
