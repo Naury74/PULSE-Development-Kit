@@ -67,6 +67,7 @@ android-library = { id = "com.android.library", version.ref = "androidGradlePlug
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+androidx-room = { id = "androidx.room", version.ref = "androidxRoom" }
 pulse-jvm-library = { id = "pulse.jvm.library" }
 pulse-android-library = { id = "pulse.android.library" }
 pulse-android-compose = { id = "pulse.android.compose" }

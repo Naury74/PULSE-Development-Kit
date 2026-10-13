@@ -17,7 +17,11 @@ complexity:
   TooManyFunctions:
     # OkHttp EventListener처럼 콜백을 재정의하는 클래스는 함수 수가 계약에서 정해진다.
     ignoreOverridden: true
+    # Room DAO는 쿼리 하나가 함수 하나다.
+    ignoreAnnotated: ['Dao']
   LongParameterList:
     # 공개 모델은 data class 대신(이진 호환) 일반 클래스로 두므로 생성자 인자가 필드 수만큼 길다.
     constructorThreshold: 16
-    ignoreAnnotated: ['Composable']
+    # Room 쿼리 함수의 인자는 SQL 바인딩 변수와 일대일이다.
+    ignoreAnnotated: ['Composable', 'Query']
+    excludes: ['**/test/**', '**/androidTest/**']

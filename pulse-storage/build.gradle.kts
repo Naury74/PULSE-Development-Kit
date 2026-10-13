@@ -1,10 +1,15 @@
 plugins {
     alias(libs.plugins.pulse.android.library)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
 }
 
 android {
     namespace = "com.naury.pulse.storage"
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
