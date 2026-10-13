@@ -27,4 +27,8 @@
     <string name="scenario_cancel_detail">The call is canceled 200 ms after it starts.</string>
     <string name="scenario_burst">20 concurrent requests</string>
     <string name="scenario_burst_detail">Each request keeps its own ID and response.</string>
+    <string name="scenario_error_burst">Error burst</string>
+    <string name="scenario_error_burst_detail">Six 500 responses in a row, so the Insights tab reports an error burst.</string>
+    <string name="scenario_repeated_get">Repeated GET</string>
+    <string name="scenario_repeated_get_detail">The same unauthenticated GET six times without a cache, a cache candidate.</string>
 </resources>

@@ -27,9 +27,14 @@ enum class DemoScenario(@StringRes val title: Int, @StringRes val description: I
     TIMEOUT(R.string.scenario_timeout, R.string.scenario_timeout_detail),
     CANCEL(R.string.scenario_cancel, R.string.scenario_cancel_detail),
     BURST(R.string.scenario_burst, R.string.scenario_burst_detail),
+    ERROR_BURST(R.string.scenario_error_burst, R.string.scenario_error_burst_detail),
+    REPEATED_GET(R.string.scenario_repeated_get, R.string.scenario_repeated_get_detail),
 }
 
-class DemoRunner(private val client: OkHttpClient, private val server: DemoServer) {
+/** [clientFactory]는 첫 시나리오를 실행할 때 I/O 스레드에서 부른다. */
+class DemoRunner(clientFactory: () -> OkHttpClient, private val server: DemoServer) {
+    private val client by lazy(clientFactory)
+
     private val json = "application/json; charset=utf-8".toMediaType()
 
     /** 시나리오를 실행하고 앱이 받은 결과를 한 줄로 돌려준다. 실패도 결과로 돌려준다. */
@@ -70,6 +75,10 @@ class DemoRunner(private val client: OkHttpClient, private val server: DemoServe
         DemoScenario.CANCEL -> cancelAfterStart(get(base, "slow"))
 
         DemoScenario.BURST -> burst(base)
+
+        DemoScenario.ERROR_BURST -> repeatCall(base, "error", REPEAT_COUNT)
+
+        DemoScenario.REPEATED_GET -> repeatCall(base, "config", REPEAT_COUNT)
     }
 
     private fun get(base: HttpUrl, path: String) = Request.Builder().url(base.resolve(path)!!).build()
@@ -92,7 +101,11 @@ class DemoRunner(private val client: OkHttpClient, private val server: DemoServe
         "${codes.size} requests"
     }
 
+    private fun repeatCall(base: HttpUrl, path: String, times: Int): String =
+        (1..times).map { call(get(base, path)) }.last().let { "$times × $it" }
+
     private companion object {
+        const val REPEAT_COUNT = 6
         const val TIMEOUT_MILLIS = 300L
         const val CANCEL_AFTER_MILLIS = 200L
         const val BURST_SIZE = 20

@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as SampleApplication
-        val runner = DemoRunner(app.client, app.demoServer)
+        val runner = DemoRunner({ app.client }, app.demoServer)
         setContent {
             MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
                 SampleScreen(
