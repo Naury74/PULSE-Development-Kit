@@ -41,12 +41,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
+import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.HttpMessage
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PulseInspector
@@ -73,7 +75,14 @@ private sealed interface BodyLoad {
 
     data object Missing : BodyLoad
 
-    data class Loaded(val full: String, val preview: String, val truncated: Boolean, val tree: JsonTree?) : BodyLoad
+    data class Loaded(
+        val full: String,
+        val preview: String,
+        val truncated: Boolean,
+        val tree: JsonTree?,
+        val json: Boolean,
+        val formFields: List<HeaderField>?,
+    ) : BodyLoad
 }
 
 @Composable
@@ -225,6 +234,20 @@ private fun SummaryTab(detail: TransactionDetail) {
         Field(stringResource(R.string.pulse_field_response_size), summary.responseBodyBytes?.let(Formatters::bytes) ?: unknown)
         Field(stringResource(R.string.pulse_field_source), summary.source.name)
     }
+    summary.context?.let { context ->
+        SectionTitle(stringResource(R.string.pulse_section_context))
+        PulseCard {
+            context.screen?.let { Field(stringResource(R.string.pulse_field_screen), it, monospace = true) }
+            context.foreground?.let {
+                Field(
+                    stringResource(R.string.pulse_field_app_state),
+                    stringResource(if (it) R.string.pulse_app_foreground else R.string.pulse_app_background),
+                )
+            }
+            context.networkType?.let { Field(stringResource(R.string.pulse_field_network), networkLabel(it)) }
+            context.label?.let { Field(stringResource(R.string.pulse_field_label), it, monospace = true) }
+        }
+    }
     summary.failureType?.let { type ->
         SectionTitle(stringResource(R.string.pulse_field_failure))
         PulseCard {
@@ -251,22 +274,26 @@ private fun MessageTab(inspector: PulseInspector, transactionId: String, kind: M
     if (message.redactedValueCount > 0) {
         Notice(stringResource(R.string.pulse_body_redacted_count, message.redactedValueCount), LocalStatusColors.current.clientError)
     }
-    BodyViewer(inspector, transactionId, kind)
+    BodyViewer(inspector, transactionId, kind, message.contentType)
 }
 
 @Composable
-private fun BodyViewer(inspector: PulseInspector, transactionId: String, kind: MessageKind) {
+private fun BodyViewer(inspector: PulseInspector, transactionId: String, kind: MessageKind, contentType: String?) {
     val body by produceState<BodyLoad>(BodyLoad.Loading, inspector, transactionId, kind) {
         val text = inspector.loadBody(transactionId, kind)
         value = if (text == null) {
             BodyLoad.Missing
         } else {
             withContext(Dispatchers.Default) {
+                val json = BodyKinds.isJson(contentType)
+                val head = text.take(PREVIEW_CHARACTERS)
                 BodyLoad.Loaded(
                     full = text,
-                    preview = JsonPrettyPrinter.format(text.take(PREVIEW_CHARACTERS)),
+                    preview = if (json) JsonPrettyPrinter.format(head) else head,
                     truncated = text.length > PREVIEW_CHARACTERS,
-                    tree = JsonTreeBuilder.build(text),
+                    tree = if (json) JsonTreeBuilder.build(text) else null,
+                    json = json,
+                    formFields = if (BodyKinds.isForm(contentType)) BodyKinds.formFields(text) else null,
                 )
             }
         }
@@ -282,7 +309,12 @@ private fun BodyViewer(inspector: PulseInspector, transactionId: String, kind: M
 private fun LoadedBody(body: BodyLoad.Loaded) {
     var showTree by rememberSaveable { mutableStateOf(body.tree != null) }
     val accents = LocalAccentColors.current
-    val highlighted = remember(body.preview, accents) { JsonHighlighter.highlight(body.preview, accents) }
+    val highlighted = remember(body.preview, accents) {
+        if (body.json) JsonHighlighter.highlight(body.preview, accents) else AnnotatedString(body.preview)
+    }
+    body.formFields?.let { fields ->
+        PulseCard(Modifier.padding(top = Spacing.s)) { HeaderTable(fields) }
+    }
     Row(
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         verticalAlignment = Alignment.CenterVertically,

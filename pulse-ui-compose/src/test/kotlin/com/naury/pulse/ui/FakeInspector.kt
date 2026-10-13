@@ -19,6 +19,7 @@ import com.naury.pulse.api.ReplayBlockReason
 import com.naury.pulse.api.ReplayDraft
 import com.naury.pulse.api.ReplayOutcome
 import com.naury.pulse.api.ResponseSource
+import com.naury.pulse.api.StatsQuery
 import com.naury.pulse.api.StatsWindow
 import com.naury.pulse.api.StatusCounts
 import com.naury.pulse.api.StatusFilter
@@ -44,6 +45,13 @@ class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseI
         window, null, 0, StatusCounts(0, 0, 0, 0, 0, 0), DurationPercentiles(0, null, null, null), ByteTotals(0, 0, 0),
         emptyList(), emptyList(), emptyList(), false,
     )
+
+    val statsQueries = mutableListOf<StatsQuery>()
+
+    override suspend fun loadStatistics(query: StatsQuery): TrafficStatistics {
+        statsQueries += query
+        return loadStatistics(query.window)
+    }
 
     override suspend fun loadInsights(window: StatsWindow): List<Insight> = insights
 

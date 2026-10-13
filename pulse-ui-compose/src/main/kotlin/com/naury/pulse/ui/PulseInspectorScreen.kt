@@ -62,6 +62,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.RecordingState
 import com.naury.pulse.api.StatsWindow
+import com.naury.pulse.api.StatusFilter
 import com.naury.pulse.api.TransactionQuery
 
 private val TwoPaneMinWidth = 840.dp
@@ -167,10 +168,21 @@ private fun DestinationContent(
 ) {
     val changeWindow: (StatsWindow) -> Unit = { navigation.window = it }
     when (navigation.destination) {
-        Destination.OVERVIEW -> OverviewPane(inspector, navigation.window, changeWindow, onOpenTraffic = { filter ->
-            trafficViewModel.filter(filter)
-            navigation.open(Destination.TRAFFIC, null)
-        }, modifier)
+        Destination.OVERVIEW -> OverviewPane(
+            inspector,
+            navigation.window,
+            changeWindow,
+            onOpenTraffic = { filter ->
+                trafficViewModel.filter(filter)
+                navigation.open(Destination.TRAFFIC, null)
+            },
+            modifier = modifier,
+            onSearchTraffic = { text ->
+                trafficViewModel.filter(StatusFilter.ALL)
+                trafficViewModel.search(text)
+                navigation.open(Destination.TRAFFIC, null)
+            },
+        )
 
         Destination.TRAFFIC -> TrafficDestination(inspector, trafficViewModel, wide, navigation.selectedId, {
             navigation.selectedId = it

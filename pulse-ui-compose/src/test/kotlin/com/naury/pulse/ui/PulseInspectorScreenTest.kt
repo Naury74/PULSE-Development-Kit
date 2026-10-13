@@ -19,6 +19,7 @@ import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.ByteTotals
 import com.naury.pulse.api.DurationPercentiles
 import com.naury.pulse.api.EndpointStatistics
+import com.naury.pulse.api.GroupStatistics
 import com.naury.pulse.api.HostStatistics
 import com.naury.pulse.api.Insight
 import com.naury.pulse.api.InsightCertainty
@@ -30,6 +31,8 @@ import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.RecordingState
 import com.naury.pulse.api.ReplayOutcome
 import com.naury.pulse.api.ReplayPolicy
+import com.naury.pulse.api.StatsDimension
+import com.naury.pulse.api.StatsFacets
 import com.naury.pulse.api.StatsWindow
 import com.naury.pulse.api.StatusCounts
 import com.naury.pulse.api.TrafficBucket
@@ -95,6 +98,32 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("Error rate").performClick()
         settle()
         compose.onNodeWithText("/users").assertIsDisplayed()
+    }
+
+    @Test
+    fun `대시보드는 엔드포인트와 기준별 분류를 보여 주고 분류 값을 누르면 그 값으로 거른다`() {
+        val inspector = FakeInspector(listOf(FakeInspector.detail("a", "/users")))
+        inspector.statistics = TrafficStatistics(
+            window = StatsWindow.LAST_HOUR, fromEpochMillis = 0, toEpochMillis = 60_000,
+            counts = StatusCounts(total = 3, success = 3, clientError = 0, serverError = 0, failed = 0, inFlight = 0),
+            durations = DurationPercentiles(3, 100_000_000, 200_000_000, 200_000_000),
+            bytes = ByteTotals(0, 300, 0), buckets = emptyList(), topHosts = emptyList(), slowestEndpoints = emptyList(),
+            sampleLimitReached = false,
+            endpoints = listOf(EndpointStatistics("GET", "api.test", "/users/{id}", 3, 200_000_000, 200_000_000, 0, 100_000_000, 300)),
+            breakdowns = mapOf(StatsDimension.SCREEN to listOf(GroupStatistics("HomeActivity", 3, 0, 100_000_000, 200_000_000, 300))),
+            facets = StatsFacets(listOf("api.test"), listOf("HomeActivity"), emptyList()),
+        )
+        show(inspector)
+
+        compose.onNodeWithText("Overview").performClick()
+        settle()
+        awaitText("Endpoints (1)")
+
+        compose.onNodeWithText("/users/{id}").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("HomeActivity").performScrollTo().performClick()
+        settle()
+        assertThat(inspector.statsQueries.last().screen).isEqualTo("HomeActivity")
+        compose.onNodeWithText("Screen: HomeActivity").assertExists()
     }
 
     @Test

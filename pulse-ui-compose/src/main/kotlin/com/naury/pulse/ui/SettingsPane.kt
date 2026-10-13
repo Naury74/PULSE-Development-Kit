@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.naury.pulse.api.CaptureFilter
 import com.naury.pulse.api.CaptureMode
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseInspector
@@ -117,6 +118,10 @@ private fun ConfigSections(config: PulseConfig) {
             ),
         )
         Field(stringResource(R.string.pulse_settings_queue), config.queueCapacity.toString())
+        Field(stringResource(R.string.pulse_settings_formats), bodyFormatsText(config))
+        Field(stringResource(R.string.pulse_settings_filter), filterText(config), monospace = true)
+        Field(stringResource(R.string.pulse_settings_context), contextText(config))
+        Field(stringResource(R.string.pulse_settings_endpoints), endpointsText(config), monospace = true)
     }
 
     SectionTitle(stringResource(R.string.pulse_settings_retention))
@@ -138,4 +143,42 @@ private fun ConfigSections(config: PulseConfig) {
         Field(stringResource(R.string.pulse_settings_query), config.redaction.queryParameters.sorted().joinToString(", "), monospace = true)
         Field(stringResource(R.string.pulse_settings_names), config.redaction.sensitiveNames.sorted().joinToString(", "), monospace = true)
     }
+}
+
+@Composable
+private fun bodyFormatsText(config: PulseConfig): String = listOfNotNull(
+    "JSON",
+    if (config.bodyFormats.forms) "form" else null,
+    if (config.bodyFormats.text) "text·XML" else null,
+).joinToString(", ")
+
+@Composable
+private fun filterText(config: PulseConfig): String {
+    val filter = config.filter
+    if (filter == CaptureFilter.ALL) return stringResource(R.string.pulse_settings_filter_all)
+    return listOfNotNull(
+        filter.onlyHosts.takeIf { it.isNotEmpty() }?.let { "only: " + it.sorted().joinToString() },
+        filter.ignoredHosts.takeIf { it.isNotEmpty() }?.let { "skip: " + it.sorted().joinToString() },
+        filter.ignoredPathPrefixes.takeIf { it.isNotEmpty() }?.let { "skip paths: " + it.sorted().joinToString() },
+    ).joinToString("\n")
+}
+
+@Composable
+private fun contextText(config: PulseConfig): String {
+    val context = config.context
+    val parts = listOfNotNull(
+        if (context.screen) stringResource(R.string.pulse_field_screen) else null,
+        if (context.appState) stringResource(R.string.pulse_field_app_state) else null,
+        if (context.networkType) stringResource(R.string.pulse_field_network) else null,
+    )
+    return if (parts.isEmpty()) stringResource(R.string.pulse_settings_off) else parts.joinToString(", ")
+}
+
+@Composable
+private fun endpointsText(config: PulseConfig): String {
+    val grouping = config.endpoints
+    return listOfNotNull(
+        stringResource(if (grouping.autoTemplates) R.string.pulse_settings_endpoints_auto else R.string.pulse_settings_endpoints_exact),
+        grouping.templates.takeIf { it.isNotEmpty() }?.joinToString(),
+    ).joinToString("\n")
 }

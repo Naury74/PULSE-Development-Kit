@@ -1,60 +1,50 @@
 package com.naury.pulse.ui
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.naury.pulse.api.PulseInspector
+import com.naury.pulse.api.StatsDimension
+import com.naury.pulse.api.StatsQuery
 import com.naury.pulse.api.StatsWindow
 import com.naury.pulse.api.StatusFilter
-import com.naury.pulse.api.TrafficBucket
 import com.naury.pulse.api.TrafficStatistics
 
-private const val PERCENT = 100.0
+private val TwoColumnMinWidth = 640.dp
 
-/** 개요 탭. 숫자 하나로 충분한 값은 타일로, 시간에 따른 양만 막대 차트로 보여 준다. */
+/**
+ * 개요 탭(대시보드). 기간·호스트·화면·라벨로 거른 기록의 지표·추이·분포·엔드포인트·기준별 분류를 보여 준다.
+ * 넓은 화면에서는 카드를 두 열로 놓는다.
+ */
 @Composable
 internal fun OverviewPane(
     inspector: PulseInspector,
@@ -62,94 +52,153 @@ internal fun OverviewPane(
     onWindowChange: (StatsWindow) -> Unit,
     onOpenTraffic: (StatusFilter) -> Unit,
     modifier: Modifier = Modifier,
+    onSearchTraffic: (String) -> Unit = {},
 ) {
-    val stats = rememberLive(inspector, window) { inspector.loadStatistics(window) }
+    var host by rememberSaveable { mutableStateOf<String?>(null) }
+    var screen by rememberSaveable { mutableStateOf<String?>(null) }
+    var label by rememberSaveable { mutableStateOf<String?>(null) }
+    var synthetic by rememberSaveable { mutableStateOf(false) }
+    val query = StatsQuery(window, host, screen, label, synthetic)
+    val stats = rememberLive(inspector, query) { inspector.loadStatistics(query) }
+    val filters = DashboardFilters(
+        query = query,
+        onWindow = onWindowChange,
+        onHost = { host = it },
+        onScreen = { screen = it },
+        onLabel = { label = it },
+        onSynthetic = { synthetic = it },
+    )
     Column(
         modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = Spacing.l, vertical = Spacing.s),
     ) {
-        WindowSelector(window, onWindowChange)
-        when (stats) {
-            null -> Box(Modifier.fillMaxWidth().padding(Spacing.xl), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            else -> OverviewContent(stats, onOpenTraffic)
+        FilterBar(filters, stats)
+        when {
+            stats == null -> Box(Modifier.fillMaxWidth().padding(Spacing.xl), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+
+            stats.counts.total == 0 -> Box(Modifier.padding(top = Spacing.m)) { Notice(stringResource(R.string.pulse_overview_empty)) }
+
+            else -> DashboardContent(stats, filters, onOpenTraffic, onSearchTraffic)
         }
     }
 }
 
-@Composable
-private fun OverviewContent(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit) {
-    val counts = stats.counts
-    if (counts.total == 0) {
-        Notice(stringResource(R.string.pulse_overview_empty))
-        return
-    }
-    if (stats.sampleLimitReached) Notice(stringResource(R.string.pulse_overview_sample_limit, TrafficStatistics.MAX_SAMPLES))
-    StatTiles(stats, onOpenTraffic)
-    SectionTitle(stringResource(R.string.pulse_chart_title))
-    PulseCard { RequestsChart(stats.buckets) }
-    if (stats.slowestEndpoints.isNotEmpty()) {
-        SectionTitle(stringResource(R.string.pulse_slowest_title))
-        PulseCard {
-            stats.slowestEndpoints.forEachIndexed { index, endpoint ->
-                if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                RankRow(
-                    endpoint.path,
-                    endpoint.host,
-                    stringResource(R.string.pulse_slowest_value, Formatters.duration(endpoint.p95Nanos), endpoint.count),
-                    method = endpoint.method,
-                )
-            }
+/** 대시보드 거르기 상태와 바꾸는 방법. */
+internal class DashboardFilters(
+    val query: StatsQuery,
+    val onWindow: (StatsWindow) -> Unit,
+    val onHost: (String?) -> Unit,
+    val onScreen: (String?) -> Unit,
+    val onLabel: (String?) -> Unit,
+    val onSynthetic: (Boolean) -> Unit,
+) {
+    /** 분류 표의 값을 눌렀을 때 그 값으로 거른다. 거를 수 없는 기준이면 false. */
+    fun drillDown(dimension: StatsDimension, key: String): Boolean {
+        when (dimension) {
+            StatsDimension.HOST -> onHost(key)
+            StatsDimension.SCREEN -> onScreen(key)
+            StatsDimension.LABEL -> onLabel(key)
+            else -> return false
         }
-    }
-    if (stats.topHosts.isNotEmpty()) {
-        SectionTitle(stringResource(R.string.pulse_hosts_title))
-        PulseCard {
-            stats.topHosts.forEachIndexed { index, host ->
-                if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                RankRow(host.host, null, stringResource(R.string.pulse_hosts_value, host.count, host.errorCount))
-            }
-        }
+        return true
     }
 }
 
 @Composable
-private fun StatTiles(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit) {
-    val counts = stats.counts
-    val errors = counts.clientError + counts.serverError + counts.failed
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.padding(top = Spacing.s)) {
-        StatTile(stringResource(R.string.pulse_stat_requests), counts.total.toString(), Modifier.weight(1f)) {
-            onOpenTraffic(StatusFilter.ALL)
+private fun DashboardContent(
+    stats: TrafficStatistics,
+    filters: DashboardFilters,
+    onOpenTraffic: (StatusFilter) -> Unit,
+    onSearchTraffic: (String) -> Unit,
+) {
+    if (stats.sampleLimitReached) {
+        Box(Modifier.padding(top = Spacing.s)) {
+            Notice(stringResource(R.string.pulse_overview_sample_limit, TrafficStatistics.MAX_SAMPLES))
         }
-        StatTile(
-            stringResource(R.string.pulse_stat_errors),
-            String.format(java.util.Locale.ROOT, "%.1f%%", errors * PERCENT / counts.total),
-            Modifier.weight(1f),
-            detail = stringResource(R.string.pulse_stat_errors_detail, counts.clientError, counts.serverError, counts.failed),
-            valueColor = if (errors > 0) LocalStatusColors.current.serverError else Color.Unspecified,
-        ) { onOpenTraffic(if (counts.serverError > 0) StatusFilter.SERVER_ERROR else StatusFilter.FAILED) }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.padding(top = Spacing.s)) {
-        val durations = stats.durations
-        StatTile(
-            stringResource(R.string.pulse_stat_p95),
-            durations.p95Nanos?.let(Formatters::duration) ?: "—",
-            Modifier.weight(1f),
-            detail = durations.p50Nanos?.let {
-                stringResource(R.string.pulse_stat_p95_detail, Formatters.duration(it), durations.sampleCount)
-            } ?: stringResource(R.string.pulse_stat_no_completed),
-        )
-        StatTile(
-            stringResource(R.string.pulse_stat_bytes),
-            Formatters.bytes(stats.bytes.responseBytes),
-            Modifier.weight(1f),
-            detail = if (stats.bytes.unknownResponseSizeCount > 0) {
-                stringResource(R.string.pulse_stat_bytes_unknown, stats.bytes.unknownResponseSizeCount)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val wide = maxWidth >= TwoColumnMinWidth
+        Column {
+            KpiGrid(stats, columns = if (wide) 4 else 2, onOpenTraffic = onOpenTraffic)
+            val left: @Composable () -> Unit = {
+                TrendCard(stats)
+                LatencyCard(stats)
+                StatusCard(stats, onOpenTraffic)
+            }
+            val right: @Composable () -> Unit = {
+                NetworkCard(stats)
+                EndpointCard(stats, onSearchTraffic)
+                BreakdownCard(stats, filters)
+            }
+            if (wide) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
+                    Column(Modifier.weight(1f)) { left() }
+                    Column(Modifier.weight(1f)) { right() }
+                }
             } else {
-                null
-            },
+                left()
+                right()
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterBar(filters: DashboardFilters, stats: TrafficStatistics?) {
+    WindowSelector(filters.query.window, filters.onWindow)
+    val facets = stats?.facets
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        modifier = Modifier
+            .padding(top = Spacing.s)
+            .horizontalScroll(rememberScrollState()),
+    ) {
+        FacetChip(stringResource(R.string.pulse_filter_host), filters.query.host, facets?.hosts.orEmpty(), filters.onHost)
+        FacetChip(stringResource(R.string.pulse_filter_screen), filters.query.screen, facets?.screens.orEmpty(), filters.onScreen)
+        FacetChip(stringResource(R.string.pulse_filter_label), filters.query.label, facets?.labels.orEmpty(), filters.onLabel)
+        FilterChip(
+            selected = filters.query.includeSynthetic,
+            onClick = { filters.onSynthetic(!filters.query.includeSynthetic) },
+            label = { Text(stringResource(R.string.pulse_filter_synthetic)) },
+            shape = MaterialTheme.shapes.small,
+            colors = dashboardChipColors(),
+            border = dashboardChipBorder(filters.query.includeSynthetic),
         )
+    }
+}
+
+/** 값 하나를 고르는 칩. 고른 값이 있으면 이름과 지우기 단추를 보여 준다. 선택지가 없으면 누를 수 없다. */
+@Composable
+private fun FacetChip(name: String, selected: String?, options: List<String>, onSelect: (String?) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        FilterChip(
+            selected = selected != null,
+            enabled = selected != null || options.isNotEmpty(),
+            onClick = { if (selected != null) onSelect(null) else expanded = true },
+            label = { Text(if (selected == null) name else "$name: $selected") },
+            trailingIcon = {
+                Icon(
+                    if (selected == null) Icons.Filled.ArrowDropDown else Icons.Filled.Close,
+                    contentDescription = if (selected == null) null else stringResource(R.string.pulse_filter_clear, name),
+                )
+            },
+            shape = MaterialTheme.shapes.small,
+            colors = dashboardChipColors(),
+            border = dashboardChipBorder(selected != null),
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(text = { Text(option) }, onClick = {
+                    expanded = false
+                    onSelect(option)
+                })
+            }
+        }
     }
 }
 
@@ -168,147 +217,24 @@ internal fun WindowSelector(window: StatsWindow, onChange: (StatsWindow) -> Unit
                 onClick = { onChange(option) },
                 label = { Text(stringResource(labels.getValue(option))) },
                 shape = MaterialTheme.shapes.small,
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = option == window,
-                    borderColor = MaterialTheme.colorScheme.outlineVariant,
-                ),
+                colors = dashboardChipColors(),
+                border = dashboardChipBorder(option == window),
             )
         }
     }
 }
 
 @Composable
-private fun StatTile(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    detail: String? = null,
-    valueColor: Color = Color.Unspecified,
-    onClick: (() -> Unit)? = null,
-) {
-    val base = modifier
-        .heightIn(min = 104.dp)
-        .clip(CardShape)
-        .background(MaterialTheme.colorScheme.surfaceContainerLow)
-        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CardShape)
-    Column(
-        (if (onClick != null) base.clickable(role = Role.Button, onClick = onClick) else base)
-            .semantics(mergeDescendants = true) {}
-            .padding(Spacing.l),
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-    ) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = valueColor)
-        detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-    }
-}
-
-/**
- * 구간별 요청 수 막대. 오류는 같은 막대 아래쪽에 상태 색으로 쌓고 범례를 함께 둔다.
- * 막대를 누르면 그 구간의 값을 글자로 보여 주고, 스크린 리더에는 전체 요약을 읽어 준다.
- */
-@Composable
-private fun RequestsChart(buckets: List<TrafficBucket>) {
-    if (buckets.isEmpty()) return
-    var selected by rememberSaveable(buckets.size) { mutableIntStateOf(buckets.indexOfLast { it.count > 0 }) }
-    val requestColor = MaterialTheme.colorScheme.primary
-    val errorColor = LocalStatusColors.current.serverError
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val surface = MaterialTheme.colorScheme.surface
-    val max = buckets.maxOf { it.count }.coerceAtLeast(1)
-    val summary = stringResource(
-        R.string.pulse_chart_summary,
-        buckets.size,
-        buckets.sumOf { it.count },
-        buckets.maxOf { it.count },
-        buckets.sumOf { it.errorCount },
-    )
-    buckets.getOrNull(selected)?.let { bucket ->
-        Text(
-            stringResource(
-                R.string.pulse_chart_selected,
-                Formatters.clockTime(bucket.startEpochMillis).take(CLOCK_MINUTES_LENGTH),
-                Formatters.clockTime(bucket.endEpochMillis).take(CLOCK_MINUTES_LENGTH),
-                bucket.count,
-                bucket.errorCount,
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
-    Canvas(
-        Modifier
-            .fillMaxWidth()
-            .height(120.dp)
-            .padding(top = Spacing.s)
-            .semantics { contentDescription = summary }
-            .pointerInput(buckets) {
-                detectTapGestures { offset -> selected = (offset.x / size.width * buckets.size).toInt().coerceIn(0, buckets.lastIndex) }
-            },
-    ) {
-        drawBuckets(buckets, selected, max, BarColors(requestColor, errorColor, trackColor, surface))
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.l), modifier = Modifier.padding(top = Spacing.xs)) {
-        LegendItem(requestColor, stringResource(R.string.pulse_chart_requests))
-        LegendItem(errorColor, stringResource(R.string.pulse_chart_errors))
-    }
-}
-
-private class BarColors(val request: Color, val error: Color, val track: Color, val surface: Color)
-
-private fun DrawScope.drawBuckets(buckets: List<TrafficBucket>, selected: Int, max: Int, colors: BarColors) {
-    val gap = 2.dp.toPx()
-    val slot = size.width / buckets.size
-    val barWidth = slot - gap
-    val radius = CornerRadius(4.dp.toPx())
-    drawLine(colors.track, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
-    buckets.forEachIndexed { index, bucket ->
-        if (bucket.count == 0) return@forEachIndexed
-        val left = index * slot
-        val height = size.height * bucket.count / max
-        drawRoundRect(colors.request, Offset(left, size.height - height), Size(barWidth, height), radius)
-        if (bucket.errorCount > 0) {
-            val errorHeight = size.height * bucket.errorCount / max
-            // 오류 부분과 요청 부분 사이에 2dp 간격을 두어 색이 붙어 보이지 않게 한다.
-            drawRect(colors.surface, Offset(left, size.height - errorHeight - gap), Size(barWidth, gap))
-            drawRect(colors.error, Offset(left, size.height - errorHeight), Size(barWidth, errorHeight))
-        }
-        if (index == selected) drawRect(colors.request.copy(alpha = SELECTED_ALPHA), Offset(left, 0f), Size(barWidth, size.height))
-    }
-}
+internal fun dashboardChipColors() = FilterChipDefaults.filterChipColors(
+    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    selectedContainerColor = MaterialTheme.colorScheme.primary,
+    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+    selectedTrailingIconColor = MaterialTheme.colorScheme.onPrimary,
+)
 
 @Composable
-private fun LegendItem(color: Color, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        Box(Modifier.size(10.dp).background(color, RoundedCornerShape(2.dp)))
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun RankRow(title: String, subtitle: String?, value: String, method: String? = null) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = Spacing.s)
-            .semantics(mergeDescendants = true) {},
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                method?.let { MethodTag(it) }
-                Text(title, style = MonospaceStyle, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        }
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-private const val CLOCK_MINUTES_LENGTH = 5
-private const val SELECTED_ALPHA = 0.12f
+internal fun dashboardChipBorder(selected: Boolean) = FilterChipDefaults.filterChipBorder(
+    enabled = true,
+    selected = selected,
+    borderColor = MaterialTheme.colorScheme.outlineVariant,
+)
