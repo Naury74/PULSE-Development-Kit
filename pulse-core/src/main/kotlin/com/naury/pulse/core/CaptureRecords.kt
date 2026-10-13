@@ -4,6 +4,7 @@ import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TransactionState
 
@@ -62,7 +63,12 @@ public class FinishRecord internal constructor(
     public val failureMessage: String?,
 ) : CaptureRecord
 
-public class TimingRecord internal constructor(override val transactionId: String, public val phases: List<TimingPhase>) : CaptureRecord
+public class TimingRecord internal constructor(
+    override val transactionId: String,
+    public val phases: List<TimingPhase>,
+    public val responseSource: ResponseSource?,
+    public val connectionReused: Boolean?,
+) : CaptureRecord
 
 /** 저장 스레드에서 마스킹할 원본 본문. 큐 밖으로 나가기 전에 [BodyRecord]로 바뀐다. */
 internal class RawBody(

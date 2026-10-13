@@ -1,5 +1,6 @@
 package com.naury.pulse.storage
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -7,6 +8,7 @@ import androidx.room.PrimaryKey
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhaseType
 import com.naury.pulse.api.TransactionState
 
@@ -43,6 +45,8 @@ internal data class TransactionEntity(
     val failureMessage: String? = null,
     val requestBodyBytes: Long? = null,
     val responseBodyBytes: Long? = null,
+    @ColumnInfo(defaultValue = "NULL") val responseSource: ResponseSource? = null,
+    @ColumnInfo(defaultValue = "NULL") val connectionReused: Boolean? = null,
 )
 
 @Entity(

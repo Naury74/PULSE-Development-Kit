@@ -5,6 +5,7 @@ import com.naury.pulse.api.CaptureMode
 import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PulseConfig
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TransactionState
 import com.naury.pulse.security.Redactor
@@ -115,9 +116,10 @@ public class CaptureRecorder internal constructor(
         }
     }
 
-    public fun timings(transactionId: String, phases: List<TimingPhase>) {
-        if (phases.isEmpty()) return
-        enqueue { TimingRecord(transactionId, phases) }
+    /** 관찰한 단계와 근거. 단계도 근거도 없으면 기록하지 않는다. */
+    public fun timings(transactionId: String, phases: List<TimingPhase>, responseSource: ResponseSource?, connectionReused: Boolean?) {
+        if (phases.isEmpty() && responseSource == null && connectionReused == null) return
+        enqueue { TimingRecord(transactionId, phases, responseSource, connectionReused) }
     }
 
     @Suppress("TooGenericExceptionCaught")

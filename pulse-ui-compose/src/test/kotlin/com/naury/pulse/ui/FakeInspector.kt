@@ -9,6 +9,7 @@ import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PageCursor
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.RecordingState
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.StatusFilter
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TimingPhaseType
@@ -93,6 +94,8 @@ class FakeInspector(var details: List<TransactionDetail> = emptyList()) : PulseI
                 HttpMessage(listOf(HeaderField("Content-Type", "application/json")), "application/json", 10, responseBody, 10, 1)
             },
             timings = timings,
+            responseSource = ResponseSource.NETWORK,
+            connectionReused = true,
         )
     }
 }

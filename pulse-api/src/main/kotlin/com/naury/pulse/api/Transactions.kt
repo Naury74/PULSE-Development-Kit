@@ -115,7 +115,23 @@ public class TransactionDetail(
     public val response: HttpMessage?,
     /** `EventListener`가 관찰한 단계만 담는다. 관찰하지 못한 단계는 목록에 없다. */
     public val timings: List<TimingPhase>,
+    /** OkHttp 캐시 이벤트로 판단한 응답 출처. 캐시를 쓰지 않는 클라이언트이거나 관찰하지 못했으면 null. */
+    public val responseSource: ResponseSource? = null,
+    /** 연결을 새로 맺지 않고 재사용했는지. 연결을 얻는 이벤트를 관찰하지 못했으면(캐시 응답 등) null. */
+    public val connectionReused: Boolean? = null,
 )
+
+/** 응답이 어디서 왔는지. OkHttp `Cache`가 알린 이벤트만 근거로 쓴다. */
+public enum class ResponseSource {
+    /** 캐시에 없어 네트워크에서 받았다. */
+    NETWORK,
+
+    /** 네트워크 없이 캐시에서 받았다. */
+    CACHE,
+
+    /** 서버에 조건부 요청을 보내 캐시가 유효함(304)을 확인했다. */
+    CONDITIONAL_CACHE,
+}
 
 /** 요청 또는 응답 메시지. 헤더 값은 저장 전에 마스킹된 값이다. */
 public class HttpMessage(

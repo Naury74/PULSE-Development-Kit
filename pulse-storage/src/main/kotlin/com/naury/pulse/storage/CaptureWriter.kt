@@ -101,19 +101,17 @@ internal class CaptureWriter(
                 record.failureMessage,
             )
 
-            is TimingRecord -> dao.insertTimings(
-                record.phases.mapIndexed { position, phase ->
-                    TimingEntity(
-                        record.transactionId,
-                        position,
-                        phase.type,
-                        phase.exchangeIndex,
-                        phase.startOffsetNanos,
-                        phase.durationNanos,
-                    )
-                },
-            )
+            is TimingRecord -> insertTimings(record)
         }
+    }
+
+    private fun insertTimings(record: TimingRecord) {
+        dao.insertTimings(
+            record.phases.mapIndexed { position, phase ->
+                TimingEntity(record.transactionId, position, phase.type, phase.exchangeIndex, phase.startOffsetNanos, phase.durationNanos)
+            },
+        )
+        dao.updateNetworkEvidence(record.transactionId, record.responseSource, record.connectionReused)
     }
 
     private fun insertRequest(record: RequestRecord) {

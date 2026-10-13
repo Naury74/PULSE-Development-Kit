@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TimingPhaseType
 import com.naury.pulse.api.TransactionDetail
@@ -27,6 +28,7 @@ import com.naury.pulse.api.TransactionDetail
 @Composable
 internal fun TimelineTab(detail: TransactionDetail) {
     val phases = detail.timings
+    NetworkEvidence(detail)
     if (phases.isEmpty()) {
         Notice(stringResource(R.string.pulse_timeline_empty))
         return
@@ -82,6 +84,29 @@ private fun PhaseRow(phase: TimingPhase, span: Long) {
             val width = phase.durationNanos?.let { size.width * it / span }?.coerceAtLeast(2.dp.toPx()) ?: 2.dp.toPx()
             drawRoundRect(barColor, topLeft = Offset(start, 0f), size = Size(width, size.height), cornerRadius = CornerRadius(4.dp.toPx()))
         }
+    }
+}
+
+/** 응답 출처와 연결 재사용은 OkHttp가 알린 이벤트가 있을 때만 보여 준다. */
+@Composable
+private fun NetworkEvidence(detail: TransactionDetail) {
+    val source = when (detail.responseSource) {
+        ResponseSource.CACHE -> R.string.pulse_evidence_cache
+        ResponseSource.CONDITIONAL_CACHE -> R.string.pulse_evidence_conditional_cache
+        ResponseSource.NETWORK -> R.string.pulse_evidence_network
+        null -> null
+    }
+    val connection = when (detail.connectionReused) {
+        true -> R.string.pulse_evidence_connection_reused
+        false -> R.string.pulse_evidence_connection_new
+        null -> null
+    }
+    listOfNotNull(source, connection).forEach { text ->
+        Text(
+            "• " + stringResource(text),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(bottom = Spacing.xs),
+        )
     }
 }
 

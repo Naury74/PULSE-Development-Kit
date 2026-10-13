@@ -7,6 +7,7 @@ import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.RedactionPolicy.Companion.REDACTED
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.RetentionPolicy
 import com.naury.pulse.api.StatusFilter
 import com.naury.pulse.api.TimingPhase
@@ -99,7 +100,12 @@ class PulseStorageTest {
                 url = "https://api.test/items/t1?token=secret",
                 responseBody = """{"password":"secret","ok":true}""",
             )
-            timings("t1", listOf(TimingPhase(TimingPhaseType.CONNECT, 0, 10, 20), TimingPhase(TimingPhaseType.TLS, 0, 15, null)))
+            timings(
+                "t1",
+                listOf(TimingPhase(TimingPhaseType.CONNECT, 0, 10, 20), TimingPhase(TimingPhaseType.TLS, 0, 15, null)),
+                ResponseSource.NETWORK,
+                false,
+            )
         }
 
         val summary = page(storage).items.single()
@@ -116,6 +122,8 @@ class PulseStorageTest {
         assertThat(detail.response!!.redactedValueCount).isEqualTo(1)
         assertThat(detail.timings.map { it.type }).containsExactly(TimingPhaseType.CONNECT, TimingPhaseType.TLS).inOrder()
         assertThat(detail.timings[1].durationNanos).isNull()
+        assertThat(detail.responseSource).isEqualTo(ResponseSource.NETWORK)
+        assertThat(detail.connectionReused).isFalse()
         assertThat(runBlocking { storage.loadBody("t1", MessageKind.RESPONSE) }).isEqualTo("""{"password":"$REDACTED","ok":true}""")
         assertThat(runBlocking { storage.loadBody("t1", MessageKind.REQUEST) }).isNull()
         val stored = bodies.listFiles()!!.joinToString { it.readText() } + database.openHelper.readableDatabase.dump()

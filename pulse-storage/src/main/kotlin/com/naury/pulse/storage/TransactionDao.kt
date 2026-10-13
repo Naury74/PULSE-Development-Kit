@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TransactionState
 
 @Dao
@@ -33,6 +34,9 @@ internal interface TransactionDao {
         redactedValueCount = :redactedCount WHERE transactionId = :id AND kind = :kind""",
     )
     fun updateBody(id: String, kind: MessageKind, state: BodyState, blobFile: String?, storedBytes: Long?, redactedCount: Int): Int
+
+    @Query("UPDATE transactions SET responseSource = :source, connectionReused = :reused WHERE id = :id")
+    fun updateNetworkEvidence(id: String, source: ResponseSource?, reused: Boolean?)
 
     @Query("UPDATE transactions SET requestBodyBytes = :bytes WHERE id = :id")
     fun updateRequestBodyBytes(id: String, bytes: Long?)

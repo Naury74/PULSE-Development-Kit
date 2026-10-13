@@ -122,6 +122,7 @@ class PulseInspectorScreenTest {
 
         compose.onNodeWithText("Not observed: DNS, Connect, TLS", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Response headers").assertIsDisplayed()
+        compose.onNodeWithText("Reused an existing connection", substring = true).assertIsDisplayed()
     }
 
     @Test

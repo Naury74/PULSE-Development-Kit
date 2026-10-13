@@ -42,6 +42,8 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
             request = request,
             response = messages[MessageKind.RESPONSE]?.toHttpMessage(headers[MessageKind.RESPONSE].orEmpty()),
             timings = dao.timings(id).map { TimingPhase(it.phase, it.exchangeIndex, it.startOffsetNanos, it.durationNanos) },
+            responseSource = transaction.responseSource,
+            connectionReused = transaction.connectionReused,
         )
     }
 

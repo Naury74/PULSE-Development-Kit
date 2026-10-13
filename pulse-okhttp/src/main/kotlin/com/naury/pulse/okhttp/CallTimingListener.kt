@@ -1,5 +1,6 @@
 package com.naury.pulse.okhttp
 
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhase
 import com.naury.pulse.api.TimingPhaseType
 import com.naury.pulse.core.CaptureRecorder
@@ -10,6 +11,7 @@ import java.net.Proxy
 import java.util.Collections
 import java.util.WeakHashMap
 import okhttp3.Call
+import okhttp3.Connection
 import okhttp3.EventListener
 import okhttp3.Handshake
 import okhttp3.Protocol
@@ -67,6 +69,9 @@ internal class CallTimingListener(
     private var transactionId: String? = null
     private var interceptorStartNanos = callStartNanos
     private var reported = false
+    private var responseSource: ResponseSource? = null
+    private var connectionAcquired = false
+    private var connectionOpened = false
 
     @Synchronized
     fun attach(id: String, startNanos: Long) {
@@ -90,6 +95,26 @@ internal class CallTimingListener(
     override fun secureConnectStart(call: Call) = start(TimingPhaseType.TLS, newConnection = true)
 
     override fun secureConnectEnd(call: Call, handshake: Handshake?) = end(TimingPhaseType.TLS)
+
+    @Synchronized
+    override fun connectionAcquired(call: Call, connection: Connection) {
+        connectionAcquired = true
+    }
+
+    @Synchronized
+    override fun cacheHit(call: Call, response: Response) {
+        responseSource = ResponseSource.CACHE
+    }
+
+    @Synchronized
+    override fun cacheConditionalHit(call: Call, cachedResponse: Response) {
+        responseSource = ResponseSource.CONDITIONAL_CACHE
+    }
+
+    @Synchronized
+    override fun cacheMiss(call: Call) {
+        if (responseSource == null) responseSource = ResponseSource.NETWORK
+    }
 
     override fun requestHeadersStart(call: Call) = start(TimingPhaseType.REQUEST_HEADERS, newConnection = false)
 
@@ -120,6 +145,7 @@ internal class CallTimingListener(
             exchangeHasRequest = false
         }
         if (type == TimingPhaseType.REQUEST_HEADERS) exchangeHasRequest = true
+        if (type == TimingPhaseType.CONNECT) connectionOpened = true
         phases += OpenPhase(type, exchangeIndex, recorder.clock.monoNanos())
     }
 
@@ -129,14 +155,22 @@ internal class CallTimingListener(
     }
 
     private fun report() {
-        val (id, measured) = synchronized(this) {
+        val snapshot = synchronized(this) {
             if (reported) return
             reported = true
-            transactionId to phases.map { it.toTimingPhase(interceptorStartNanos) }
+            val reused = if (connectionAcquired) !connectionOpened else null
+            transactionId?.let { Report(it, phases.map { phase -> phase.toTimingPhase(interceptorStartNanos) }, responseSource, reused) }
         }
         registry.remove(call)
-        if (id != null) recorder.timings(id, measured)
+        snapshot?.let { recorder.timings(it.transactionId, it.phases, it.responseSource, it.connectionReused) }
     }
+
+    private class Report(
+        val transactionId: String,
+        val phases: List<TimingPhase>,
+        val responseSource: ResponseSource?,
+        val connectionReused: Boolean?,
+    )
 
     private class OpenPhase(val type: TimingPhaseType, val exchangeIndex: Int, val startNanos: Long) {
         var endNanos: Long? = null

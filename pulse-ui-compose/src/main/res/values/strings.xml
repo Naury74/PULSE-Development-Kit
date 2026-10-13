@@ -98,4 +98,9 @@
     <string name="pulse_tree_rows_limited">Showing the first %1$d rows. Collapse nodes to see more.</string>
     <string name="pulse_tree_expanded">Expanded</string>
     <string name="pulse_tree_collapsed">Collapsed</string>
+    <string name="pulse_evidence_cache">Served from the OkHttp cache without a network request.</string>
+    <string name="pulse_evidence_conditional_cache">The server confirmed the cached response is still valid (conditional request).</string>
+    <string name="pulse_evidence_network">Not in the cache, fetched from the network.</string>
+    <string name="pulse_evidence_connection_reused">Reused an existing connection, so DNS, connect, and TLS did not happen.</string>
+    <string name="pulse_evidence_connection_new">Opened a new connection.</string>
 </resources>

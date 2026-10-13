@@ -2,6 +2,7 @@ package com.naury.pulse.okhttp
 
 import com.google.common.truth.Truth.assertThat
 import com.naury.pulse.api.MessageKind
+import com.naury.pulse.api.ResponseSource
 import com.naury.pulse.api.TimingPhaseType
 import com.naury.pulse.api.TransactionState
 import java.util.concurrent.Callable
@@ -97,7 +98,11 @@ class CallCorrelationTest {
         repeat(2) { client.newCall(Request.Builder().url(server.url("/")).build()).execute().use { it.body.string() } }
         val captured = harness.finish()
 
-        val (first, second) = captured.requests.map { requireNotNull(captured.timing(it.transactionId)).phases }
+        val (firstRecord, secondRecord) = captured.requests.map { requireNotNull(captured.timing(it.transactionId)) }
+        assertThat(firstRecord.connectionReused).isFalse()
+        assertThat(secondRecord.connectionReused).isTrue()
+        assertThat(secondRecord.responseSource).isNull()
+        val (first, second) = listOf(firstRecord.phases, secondRecord.phases)
         assertThat(first.map { it.type }).contains(TimingPhaseType.CONNECT)
         assertThat(second.map { it.type }).containsNoneOf(TimingPhaseType.DNS, TimingPhaseType.CONNECT, TimingPhaseType.TLS)
         assertThat(second.map { it.type }).contains(TimingPhaseType.RESPONSE_HEADERS)
@@ -119,7 +124,11 @@ class CallCorrelationTest {
         assertThat(bodies).containsExactly("""{"v":1}""", """{"v":1}""")
         assertThat(server.requestCount).isEqualTo(1)
         val cachedId = captured.requests[1].transactionId
-        assertThat(captured.timing(cachedId)).isNull()
+        val cached = requireNotNull(captured.timing(cachedId))
+        assertThat(cached.phases).isEmpty()
+        assertThat(cached.responseSource).isEqualTo(ResponseSource.CACHE)
+        assertThat(cached.connectionReused).isNull()
+        assertThat(requireNotNull(captured.timing(captured.requests[0].transactionId)).responseSource).isEqualTo(ResponseSource.NETWORK)
         assertThat(captured.finish(cachedId).state).isEqualTo(TransactionState.COMPLETED)
     }
 
