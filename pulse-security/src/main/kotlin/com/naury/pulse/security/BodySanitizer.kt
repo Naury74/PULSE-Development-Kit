@@ -1,7 +1,10 @@
 package com.naury.pulse.security
 
+import com.naury.pulse.api.BodyFormats
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.RedactionPolicy.Companion.REDACTED
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.ByteBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.Charset
@@ -23,17 +26,83 @@ public sealed interface BodySanitizeResult {
 }
 
 /**
- * 원본 본문 바이트를 저장 가능한 텍스트로 바꾼다. JSON만 받아들이고, 해석하거나 마스킹할 수 없으면 실패로 닫는다(fail closed).
+ * 원본 본문 바이트를 저장 가능한 텍스트로 바꾼다. JSON과 [formats]로 켠 형식만 받아들이고,
+ * 해석하거나 마스킹할 수 없으면 실패로 닫는다(fail closed).
  *
  * JSON 해석은 비용이 크므로 네트워크 스레드가 아닌 저장 스레드에서 불러야 한다.
  */
-public class BodySanitizer(private val redactor: Redactor) {
+public class BodySanitizer @JvmOverloads constructor(
+    private val redactor: Redactor,
+    private val formats: BodyFormats = BodyFormats.JSON_ONLY,
+) {
+    /** [contentType] 본문을 저장할 수 있는 형식인지. 네트워크 스레드에서 불러도 된다. */
+    public fun supports(contentType: String?): Boolean = formatOf(contentType) != null
+
     public fun sanitize(bytes: ByteArray, contentType: String?): BodySanitizeResult {
         if (bytes.isEmpty()) return BodySanitizeResult.Rejected(BodyState.EMPTY)
-        if (!isJson(contentType)) return BodySanitizeResult.Rejected(BodyState.UNSUPPORTED_CONTENT)
+        val format = formatOf(contentType) ?: return BodySanitizeResult.Rejected(BodyState.UNSUPPORTED_CONTENT)
         val text = decode(bytes, charsetOf(contentType)) ?: return BodySanitizeResult.Rejected(BodyState.DECODE_FAILED)
-        return redactJson(text)
+        return when (format) {
+            Format.JSON -> redactJson(text)
+            Format.FORM -> redactForm(text)
+            Format.TEXT -> redactText(text)
+        }
     }
+
+    private fun formatOf(contentType: String?): Format? = when {
+        isJson(contentType) -> Format.JSON
+        formats.forms && isForm(contentType) -> Format.FORM
+        formats.text && isText(contentType) -> Format.TEXT
+        else -> null
+    }
+
+    /** `a=1&b=2` 형태. 민감한 이름의 값은 가리고, 나머지 값 안의 URL·`name=value`도 가린다. 인코딩은 원래대로 둔다. */
+    internal fun redactForm(text: String): BodySanitizeResult {
+        var redacted = 0
+        val safe = text.split('&').joinToString("&") { pair ->
+            if ('=' !in pair) return@joinToString pair
+            val rawName = pair.substringBefore('=')
+            val rawValue = pair.substringAfter('=')
+            val name = decodeForm(rawName)
+            val value = decodeForm(rawValue)
+            when {
+                name == null || value == null -> {
+                    redacted++
+                    "$rawName=$REDACTED"
+                }
+
+                redactor.matcher.isSensitiveKey(name) || redactor.matcher.isSensitiveQueryParameter(name) -> {
+                    redacted++
+                    "$rawName=$REDACTED"
+                }
+
+                else -> {
+                    val sanitized = redactor.sanitizeText(value)
+                    if (sanitized == value) {
+                        pair
+                    } else {
+                        redacted++
+                        "$rawName=" + URLEncoder.encode(sanitized, Charsets.UTF_8.name())
+                    }
+                }
+            }
+        }
+        return BodySanitizeResult.Captured(safe, redacted)
+    }
+
+    /** 구조를 모르는 텍스트. URL 쿼리와 `name=value` 형태의 비밀만 가린다. */
+    internal fun redactText(text: String): BodySanitizeResult {
+        val safe = redactor.sanitizeText(text)
+        return BodySanitizeResult.Captured(safe, if (safe == text) 0 else 1)
+    }
+
+    private fun decodeForm(value: String): String? = try {
+        URLDecoder.decode(value, Charsets.UTF_8.name())
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+
+    private enum class Format { JSON, FORM, TEXT }
 
     internal fun redactJson(text: String): BodySanitizeResult {
         val element = parseOrNull(text) ?: return BodySanitizeResult.Rejected(BodyState.REDACTION_FAILED)
@@ -112,6 +181,18 @@ public class BodySanitizer(private val redactor: Redactor) {
         private val BYTE_ORDER_MARK = Char(0xFEFF).toString()
 
         /** `application/json`, `text/json`과 `+json`으로 끝나는 형식(`application/problem+json` 등)만 JSON으로 본다. */
+        @JvmStatic
+        public fun isForm(contentType: String?): Boolean = mediaType(contentType) == "application/x-www-form-urlencoded"
+
+        /** `text/`로 시작하는 형식과 XML(`application/xml`, `+xml`). */
+        @JvmStatic
+        public fun isText(contentType: String?): Boolean {
+            val mediaType = mediaType(contentType) ?: return false
+            return mediaType.startsWith("text/") || mediaType == "application/xml" || mediaType.endsWith("+xml")
+        }
+
+        private fun mediaType(contentType: String?): String? = contentType?.substringBefore(';')?.trim()?.lowercase()
+
         @JvmStatic
         public fun isJson(contentType: String?): Boolean {
             val mediaType = contentType?.substringBefore(';')?.trim()?.lowercase() ?: return false

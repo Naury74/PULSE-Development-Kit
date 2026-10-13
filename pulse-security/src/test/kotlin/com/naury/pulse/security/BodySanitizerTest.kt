@@ -1,6 +1,7 @@
 package com.naury.pulse.security
 
 import com.google.common.truth.Truth.assertThat
+import com.naury.pulse.api.BodyFormats
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.RedactionPolicy
 import com.naury.pulse.api.RedactionPolicy.Companion.REDACTED
@@ -131,5 +132,22 @@ class BodySanitizerTest {
         val body = """{"data":"{ \"id\": 1 }","note":"a=b"}"""
 
         assertThat(captured(body).text).isEqualTo(body)
+    }
+
+    @Test
+    fun `form과 텍스트는 켰을 때만 저장하고 비밀을 가린다`() {
+        val all = BodySanitizer(Redactor(RedactionPolicy.strict()), BodyFormats(forms = true, text = true))
+        val form = "application/x-www-form-urlencoded"
+
+        assertThat(sanitize("a=1", form)).isInstanceOf(BodySanitizeResult.Rejected::class.java)
+        val captured = all.sanitize("user=kim&password=pw&next=https%3A%2F%2Fa.test%2F%3Ftoken%3Dt".toByteArray(), form)
+            as BodySanitizeResult.Captured
+        assertThat(captured.text).startsWith("user=kim&password=$REDACTED&next=")
+        assertThat(captured.text).doesNotContain("token%3Dt")
+        assertThat(captured.redactedValueCount).isEqualTo(2)
+        val text = all.sanitize("retry with password=abc".toByteArray(), "text/plain; charset=utf-8") as BodySanitizeResult.Captured
+        assertThat(text.text).isEqualTo("retry with password=$REDACTED")
+        assertThat(all.supports("application/soap+xml")).isTrue()
+        assertThat(all.supports("image/png")).isFalse()
     }
 }
