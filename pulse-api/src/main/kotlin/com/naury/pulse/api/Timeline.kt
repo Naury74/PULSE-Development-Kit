@@ -80,3 +80,37 @@ public class EnvironmentSnapshot(
     public val flags: Map<String, String>,
     public val capturedAtEpochMillis: Long,
 )
+
+/**
+ * 두 실행(세션)의 차이. [base]는 기준(정상이라고 보는) 실행, [target]은 비교할(문제가 있던) 실행이다.
+ *
+ * @property endpoints 엔드포인트(`GET /users/{id}`)별 요청 수·오류 수·중앙 소요 시간. 차이가 큰 순.
+ * @property eventCounts 이벤트 종류별 개수(기준, 비교).
+ * @property screensOnlyInBase 기준 실행에서만 간 화면.
+ * @property screensOnlyInTarget 비교 실행에서만 간 화면.
+ * @property flags 마지막 값이 다른 플래그(기준 값, 비교 값). 없으면 null.
+ * @property newIssues 비교 실행에만 있는 오류·크래시·멈춤의 첫 줄.
+ * @property truncated 한쪽 실행이 커서 앞부분만 비교했는지.
+ */
+public class SessionDiff(
+    public val base: SessionSummary,
+    public val target: SessionSummary,
+    public val endpoints: List<EndpointDiff>,
+    public val eventCounts: Map<EventKind, Pair<Int, Int>>,
+    public val screensOnlyInBase: List<String>,
+    public val screensOnlyInTarget: List<String>,
+    public val flags: Map<String, Pair<String?, String?>>,
+    public val newIssues: List<String>,
+    public val truncated: Boolean,
+)
+
+/** 엔드포인트 하나의 두 실행 비교. 중앙 소요 시간은 ns이고 요청이 없으면 null. */
+public class EndpointDiff(
+    public val endpoint: String,
+    public val baseCount: Int,
+    public val targetCount: Int,
+    public val baseErrors: Int,
+    public val targetErrors: Int,
+    public val baseMedianNanos: Long?,
+    public val targetMedianNanos: Long?,
+)

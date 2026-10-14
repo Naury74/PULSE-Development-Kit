@@ -98,6 +98,9 @@ public interface PulseInspector {
         windowMillis: Long = DEFAULT_RELATED_WINDOW_MILLIS,
     ): List<EvidenceLink> = emptyList()
 
+    /** 두 실행(세션)을 비교한다. 한쪽 실행이 없거나 지원하지 않는 구현은 null. 실행마다 요청·이벤트를 최대 20,000개까지 본다. */
+    public suspend fun compareSessions(baseSessionId: String, targetSessionId: String): SessionDiff? = null
+
     /** 지금 시각에 마커를 남긴다. 화면(플로팅 버튼 등)에서 쓴다. */
     public fun mark(name: String) {}
 

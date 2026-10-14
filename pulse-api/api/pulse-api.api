@@ -303,6 +303,17 @@ public final class com/naury/pulse/api/DurationPercentiles {
 	public final fun getSampleCount ()I
 }
 
+public final class com/naury/pulse/api/EndpointDiff {
+	public fun <init> (Ljava/lang/String;IIIILjava/lang/Long;Ljava/lang/Long;)V
+	public final fun getBaseCount ()I
+	public final fun getBaseErrors ()I
+	public final fun getBaseMedianNanos ()Ljava/lang/Long;
+	public final fun getEndpoint ()Ljava/lang/String;
+	public final fun getTargetCount ()I
+	public final fun getTargetErrors ()I
+	public final fun getTargetMedianNanos ()Ljava/lang/Long;
+}
+
 public final class com/naury/pulse/api/EndpointGrouping {
 	public fun <init> ()V
 	public fun <init> (Z)V
@@ -771,6 +782,7 @@ public abstract interface class com/naury/pulse/api/PulseInspector {
 	public static final field DEFAULT_RELATED_WINDOW_MILLIS J
 	public fun beginSpan (Ljava/lang/String;)Ljava/lang/String;
 	public abstract fun clear ()V
+	public fun compareSessions (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun endSpan (Ljava/lang/String;)V
 	public fun environment ()Lcom/naury/pulse/api/EnvironmentSnapshot;
 	public abstract fun getCaptureHealth ()Lkotlinx/coroutines/flow/StateFlow;
@@ -811,6 +823,7 @@ public final class com/naury/pulse/api/PulseInspector$Companion {
 
 public final class com/naury/pulse/api/PulseInspector$DefaultImpls {
 	public static fun beginSpan (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/String;)Ljava/lang/String;
+	public static fun compareSessions (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun endSpan (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/String;)V
 	public static fun environment (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/EnvironmentSnapshot;
 	public static fun getChaos (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseChaos;
@@ -1289,6 +1302,19 @@ public final class com/naury/pulse/api/ScreenshotPolicy {
 	public final fun getBlockedScreens ()Ljava/util/Set;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/naury/pulse/api/SessionDiff {
+	public fun <init> (Lcom/naury/pulse/api/SessionSummary;Lcom/naury/pulse/api/SessionSummary;Ljava/util/List;Ljava/util/Map;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Ljava/util/List;Z)V
+	public final fun getBase ()Lcom/naury/pulse/api/SessionSummary;
+	public final fun getEndpoints ()Ljava/util/List;
+	public final fun getEventCounts ()Ljava/util/Map;
+	public final fun getFlags ()Ljava/util/Map;
+	public final fun getNewIssues ()Ljava/util/List;
+	public final fun getScreensOnlyInBase ()Ljava/util/List;
+	public final fun getScreensOnlyInTarget ()Ljava/util/List;
+	public final fun getTarget ()Lcom/naury/pulse/api/SessionSummary;
+	public final fun getTruncated ()Z
 }
 
 public final class com/naury/pulse/api/SessionSummary {
