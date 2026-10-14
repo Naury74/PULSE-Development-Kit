@@ -43,6 +43,10 @@ public interface PulseInspector {
     /** [query] 조건의 트래픽 집계. 기본 구현은 기간만 쓴다. */
     public suspend fun loadStatistics(query: StatsQuery): TrafficStatistics = loadStatistics(query.window)
 
+    /** 원격 보고 상태와 실행 중 설정. 원격 보고를 지원하지 않는 구현은 null. */
+    public val remote: PulseRemote?
+        get() = null
+
     /** 앱 이벤트·세션이 바뀔 때마다 값을 낸다. 앱 수집이 없는 구현은 아무것도 내지 않는다. */
     public fun observeEvents(): Flow<Unit> = kotlinx.coroutines.flow.emptyFlow()
 
@@ -97,12 +101,20 @@ public class TransactionQuery @JvmOverloads constructor(
     /** 마스킹한 URL에서 찾을 문자열. 빈 문자열이면 조건 없음. 대소문자를 구분하지 않는다. */
     public val text: String = "",
     public val status: StatusFilter = StatusFilter.ALL,
+    /** 이 시각(epoch ms) 이후에 시작한 요청만. null이면 제한 없음. */
+    public val fromEpochMillis: Long? = null,
+    /** 이 시각(epoch ms) 이전에 시작한 요청만. null이면 제한 없음. */
+    public val toEpochMillis: Long? = null,
 ) {
-    override fun equals(other: Any?): Boolean = other is TransactionQuery && text == other.text && status == other.status
+    override fun equals(other: Any?): Boolean = other is TransactionQuery &&
+        text == other.text &&
+        status == other.status &&
+        fromEpochMillis == other.fromEpochMillis &&
+        toEpochMillis == other.toEpochMillis
 
-    override fun hashCode(): Int = 31 * text.hashCode() + status.hashCode()
+    override fun hashCode(): Int = listOf(text, status, fromEpochMillis, toEpochMillis).hashCode()
 
-    override fun toString(): String = "TransactionQuery(text=$text, status=$status)"
+    override fun toString(): String = "TransactionQuery(text=$text, status=$status, from=$fromEpochMillis, to=$toEpochMillis)"
 }
 
 /** 상태 필터. */

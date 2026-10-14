@@ -234,3 +234,115 @@ public class AppMonitoring @JvmOverloads constructor(
         )
     }
 }
+
+/**
+ * 오류 보고를 원격 서버로 보내는 설정. 보낼 이벤트는 저장할 때 보낼 목록(outbox)에 함께 넣으므로 앱이 죽어도 다음 실행 때 보낸다.
+ * 보내는 값은 저장 전에 이미 마스킹한 것이다. 요청은 PULSE가 기록하지 않는 별도 클라이언트로 보낸다.
+ *
+ * 받는 쪽 형식은 `pulse.remote.v1` JSON이다(docs/remote-reporting.md).
+ *
+ * @property endpoint 받을 주소. `https`만 받고, [allowCleartext]면 `http`도 받는다.
+ * @property headers 요청마다 붙일 헤더(인증 토큰 등). PULSE 저장소·화면·내보내기에 남기지 않는다.
+ * @property kinds 보낼 이벤트 종류.
+ * @property minLogLevel 이 수준 이상의 로그도 보낸다. null이면 로그는 보내지 않는다.
+ * @property networkFailures 5xx 응답과 응답 없이 실패한 요청의 요약(메서드·URL·결과·시간)도 보낸다.
+ * @property batchSize 한 번에 보낼 최대 개수, 1..500.
+ * @property flushIntervalMillis 보내지 못한 보고를 다시 확인하는 간격(ms), 5,000 이상. 새 보고는 쌓이고 약 1초 안에 보내고,
+ *   크래시는 다음 실행 직후에 보낸다.
+ * @property wifiOnly 셀룰러 등 요금이 드는 네트워크에서는 보내지 않는다.
+ * @property allowCleartext `http` 주소를 허용한다. 개발용 로컬 서버에만 쓴다.
+ * @property attributes 모든 보고에 붙일 값(빌드 이름·테스트 실행 ID 등).
+ * @property maxPending 보내지 못하고 쌓아 둘 최대 개수. 넘치면 오래된 것부터 버린다.
+ */
+public class RemoteReporting @JvmOverloads constructor(
+    public val endpoint: String,
+    public val headers: Map<String, String> = emptyMap(),
+    public val kinds: Set<EventKind> = DEFAULT_KINDS,
+    public val minLogLevel: LogLevel? = null,
+    public val networkFailures: Boolean = true,
+    public val batchSize: Int = DEFAULT_BATCH_SIZE,
+    public val flushIntervalMillis: Long = DEFAULT_FLUSH_INTERVAL_MILLIS,
+    public val wifiOnly: Boolean = false,
+    public val allowCleartext: Boolean = false,
+    public val attributes: Map<String, String> = emptyMap(),
+    public val maxPending: Int = DEFAULT_MAX_PENDING,
+) {
+    init {
+        require(isAllowedEndpoint(endpoint, allowCleartext)) { "endpoint는 https 주소여야 합니다(allowCleartext면 http도 가능): $endpoint" }
+        require(batchSize in 1..MAX_BATCH_SIZE) { "batchSize는 1..$MAX_BATCH_SIZE 범위여야 합니다." }
+        require(flushIntervalMillis >= MIN_FLUSH_INTERVAL_MILLIS) { "flushIntervalMillis는 $MIN_FLUSH_INTERVAL_MILLIS 이상이어야 합니다." }
+        require(maxPending >= 1) { "maxPending은 1 이상이어야 합니다." }
+    }
+
+    // 헤더 값(토큰)은 같음 비교에는 쓰되 문자열로는 드러내지 않는다.
+    private fun values(): List<Any?> = listOf(
+        endpoint, headers, kinds, minLogLevel, networkFailures, batchSize, flushIntervalMillis, wifiOnly, allowCleartext, attributes,
+        maxPending,
+    )
+
+    override fun equals(other: Any?): Boolean = other is RemoteReporting && values() == other.values()
+
+    override fun hashCode(): Int = values().hashCode()
+
+    override fun toString(): String = "RemoteReporting(endpoint=$endpoint, headers=${headers.keys}, kinds=$kinds, minLogLevel=$minLogLevel)"
+
+    public companion object {
+        public const val DEFAULT_BATCH_SIZE: Int = 50
+        public const val MAX_BATCH_SIZE: Int = 500
+        public const val DEFAULT_FLUSH_INTERVAL_MILLIS: Long = 30_000
+        public const val MIN_FLUSH_INTERVAL_MILLIS: Long = 5_000
+        public const val DEFAULT_MAX_PENDING: Int = 5_000
+
+        @JvmField
+        public val DEFAULT_KINDS: Set<EventKind> = setOf(EventKind.CRASH, EventKind.EXIT, EventKind.ERROR, EventKind.MAIN_THREAD_BLOCKED)
+
+        /** `https://` 주소인지(또는 [allowCleartext]면 `http://`). 화면에서 바꾼 주소도 같은 규칙으로 검사한다. */
+        @JvmStatic
+        public fun isAllowedEndpoint(endpoint: String, allowCleartext: Boolean): Boolean {
+            val lower = endpoint.trim().lowercase()
+            return lower.startsWith("https://") || (allowCleartext && lower.startsWith("http://"))
+        }
+    }
+}
+
+/**
+ * 원격 보고 상태와 실행 중 바꿀 값. 설정 탭에서 쓴다.
+ *
+ * 실행 중에 바꾼 주소·토큰·켜기는 이 기기에만 저장되어 [PulseConfig.remote]보다 우선한다. 지우면 다시 코드 설정을 쓴다.
+ */
+public interface PulseRemote {
+    public val status: kotlinx.coroutines.flow.StateFlow<RemoteStatus>
+
+    /**
+     * 실행 중 덮어쓸 값. null인 항목은 바꾸지 않는다. [bearerToken]은 `Authorization: Bearer` 헤더로 붙인다.
+     * 주소가 규칙([RemoteReporting.isAllowedEndpoint])에 맞지 않으면 [IllegalArgumentException].
+     */
+    public fun setOverride(enabled: Boolean?, endpoint: String?, bearerToken: String?)
+
+    /** 실행 중 바꾼 값을 지우고 코드 설정으로 돌아간다. */
+    public fun clearOverride()
+
+    /** 기다리지 않고 지금 보낸다. */
+    public fun flushNow()
+}
+
+/**
+ * @property configured 코드나 실행 중 설정으로 보낼 곳이 정해졌는지.
+ * @property overridden 실행 중 바꾼 값이 있는지.
+ * @property pending 보내지 못하고 기다리는 개수.
+ */
+public class RemoteStatus(
+    public val configured: Boolean,
+    public val enabled: Boolean,
+    public val endpoint: String?,
+    public val overridden: Boolean,
+    public val pending: Int,
+    public val sent: Long,
+    public val lastSuccessEpochMillis: Long?,
+    public val lastError: String?,
+) {
+    public companion object {
+        @JvmField
+        public val NONE: RemoteStatus = RemoteStatus(false, false, null, false, 0, 0, null, null)
+    }
+}

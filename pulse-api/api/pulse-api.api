@@ -614,6 +614,7 @@ public final class com/naury/pulse/api/PulseConfig {
 	public final fun getMonitoring ()Lcom/naury/pulse/api/AppMonitoring;
 	public final fun getQueueCapacity ()I
 	public final fun getRedaction ()Lcom/naury/pulse/api/RedactionPolicy;
+	public final fun getRemote ()Lcom/naury/pulse/api/RemoteReporting;
 	public final fun getReplay ()Lcom/naury/pulse/api/ReplayPolicy;
 	public final fun getRetention ()Lcom/naury/pulse/api/RetentionPolicy;
 	public final fun getStartRecording ()Z
@@ -635,6 +636,7 @@ public final class com/naury/pulse/api/PulseConfig$Builder {
 	public final fun monitoring (Lcom/naury/pulse/api/AppMonitoring;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun queueCapacity (I)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun redaction (Lcom/naury/pulse/api/RedactionPolicy;)Lcom/naury/pulse/api/PulseConfig$Builder;
+	public final fun remote (Lcom/naury/pulse/api/RemoteReporting;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun replay (Lcom/naury/pulse/api/ReplayPolicy;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun retention (Lcom/naury/pulse/api/RetentionPolicy;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun startRecording (Z)Lcom/naury/pulse/api/PulseConfig$Builder;
@@ -657,6 +659,7 @@ public abstract interface class com/naury/pulse/api/PulseInspector {
 	public abstract fun getConfig ()Lcom/naury/pulse/api/PulseConfig;
 	public abstract fun getMocks ()Lcom/naury/pulse/api/PulseMocks;
 	public abstract fun getRecordingState ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun getRemote ()Lcom/naury/pulse/api/PulseRemote;
 	public fun loadAppStatistics (Ljava/lang/Long;Ljava/lang/Long;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun loadAttachment (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun loadBody (Ljava/lang/String;Lcom/naury/pulse/api/MessageKind;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -680,6 +683,7 @@ public abstract interface class com/naury/pulse/api/PulseInspector {
 public final class com/naury/pulse/api/PulseInspector$DefaultImpls {
 	public static fun beginSpan (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/String;)Ljava/lang/String;
 	public static fun endSpan (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/String;)V
+	public static fun getRemote (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseRemote;
 	public static fun loadAppStatistics (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/Long;Ljava/lang/Long;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun loadAttachment (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun loadEvents (Lcom/naury/pulse/api/PulseInspector;Lcom/naury/pulse/api/EventQuery;Lcom/naury/pulse/api/PageCursor;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -722,6 +726,13 @@ public abstract interface class com/naury/pulse/api/PulseMocks {
 	public abstract fun upsert (Lcom/naury/pulse/api/MockRule;)V
 }
 
+public abstract interface class com/naury/pulse/api/PulseRemote {
+	public abstract fun clearOverride ()V
+	public abstract fun flushNow ()V
+	public abstract fun getStatus ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun setOverride (Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;)V
+}
+
 public final class com/naury/pulse/api/RecordingState : java/lang/Enum {
 	public static final field DISABLED Lcom/naury/pulse/api/RecordingState;
 	public static final field PAUSED Lcom/naury/pulse/api/RecordingState;
@@ -749,6 +760,64 @@ public final class com/naury/pulse/api/RedactionPolicy {
 
 public final class com/naury/pulse/api/RedactionPolicy$Companion {
 	public final fun strict ()Lcom/naury/pulse/api/RedactionPolicy;
+}
+
+public final class com/naury/pulse/api/RemoteReporting {
+	public static final field Companion Lcom/naury/pulse/api/RemoteReporting$Companion;
+	public static final field DEFAULT_BATCH_SIZE I
+	public static final field DEFAULT_FLUSH_INTERVAL_MILLIS J
+	public static final field DEFAULT_KINDS Ljava/util/Set;
+	public static final field DEFAULT_MAX_PENDING I
+	public static final field MAX_BATCH_SIZE I
+	public static final field MIN_FLUSH_INTERVAL_MILLIS J
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;Z)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;ZI)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;ZIJ)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;ZIJZ)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;ZIJZZ)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;ZIJZZLjava/util/Map;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;ZIJZZLjava/util/Map;I)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;Lcom/naury/pulse/api/LogLevel;ZIJZZLjava/util/Map;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllowCleartext ()Z
+	public final fun getAttributes ()Ljava/util/Map;
+	public final fun getBatchSize ()I
+	public final fun getEndpoint ()Ljava/lang/String;
+	public final fun getFlushIntervalMillis ()J
+	public final fun getHeaders ()Ljava/util/Map;
+	public final fun getKinds ()Ljava/util/Set;
+	public final fun getMaxPending ()I
+	public final fun getMinLogLevel ()Lcom/naury/pulse/api/LogLevel;
+	public final fun getNetworkFailures ()Z
+	public final fun getWifiOnly ()Z
+	public fun hashCode ()I
+	public static final fun isAllowedEndpoint (Ljava/lang/String;Z)Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/naury/pulse/api/RemoteReporting$Companion {
+	public final fun isAllowedEndpoint (Ljava/lang/String;Z)Z
+}
+
+public final class com/naury/pulse/api/RemoteStatus {
+	public static final field Companion Lcom/naury/pulse/api/RemoteStatus$Companion;
+	public static final field NONE Lcom/naury/pulse/api/RemoteStatus;
+	public fun <init> (ZZLjava/lang/String;ZIJLjava/lang/Long;Ljava/lang/String;)V
+	public final fun getConfigured ()Z
+	public final fun getEnabled ()Z
+	public final fun getEndpoint ()Ljava/lang/String;
+	public final fun getLastError ()Ljava/lang/String;
+	public final fun getLastSuccessEpochMillis ()Ljava/lang/Long;
+	public final fun getOverridden ()Z
+	public final fun getPending ()I
+	public final fun getSent ()J
+}
+
+public final class com/naury/pulse/api/RemoteStatus$Companion {
 }
 
 public abstract interface class com/naury/pulse/api/ReplayAuthorizer {
@@ -930,14 +999,18 @@ public final class com/naury/pulse/api/StatsQuery {
 	public fun <init> (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;)V
 	public fun <init> (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public fun <init> (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V
-	public synthetic fun <init> (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun copy (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)Lcom/naury/pulse/api/StatsQuery;
-	public static synthetic fun copy$default (Lcom/naury/pulse/api/StatsQuery;Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lcom/naury/pulse/api/StatsQuery;
+	public fun <init> (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Long;)V
+	public fun <init> (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun copy (Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Long;Ljava/lang/Long;)Lcom/naury/pulse/api/StatsQuery;
+	public static synthetic fun copy$default (Lcom/naury/pulse/api/StatsQuery;Lcom/naury/pulse/api/StatsWindow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lcom/naury/pulse/api/StatsQuery;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFromEpochMillis ()Ljava/lang/Long;
 	public final fun getHost ()Ljava/lang/String;
 	public final fun getIncludeSynthetic ()Z
 	public final fun getLabel ()Ljava/lang/String;
 	public final fun getScreen ()Ljava/lang/String;
+	public final fun getToEpochMillis ()Ljava/lang/Long;
 	public final fun getWindow ()Lcom/naury/pulse/api/StatsWindow;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -1068,10 +1141,14 @@ public final class com/naury/pulse/api/TransactionQuery {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;)V
 	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/StatusFilter;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/StatusFilter;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/StatusFilter;Ljava/lang/Long;)V
+	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/StatusFilter;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/StatusFilter;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFromEpochMillis ()Ljava/lang/Long;
 	public final fun getStatus ()Lcom/naury/pulse/api/StatusFilter;
 	public final fun getText ()Ljava/lang/String;
+	public final fun getToEpochMillis ()Ljava/lang/Long;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

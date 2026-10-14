@@ -133,6 +133,8 @@ public class EndpointStatistics @JvmOverloads constructor(
  * @property screen 이 화면에서 시작한 요청만.
  * @property label 이 라벨이 붙은 요청만.
  * @property includeSynthetic 재실행·모의 응답 기록도 넣을지. 기본은 앱이 실제로 보낸 요청만 센다.
+ * @property fromEpochMillis 날짜를 고른 경우 기간 시작(epoch ms). 있으면 [window] 대신 쓴다.
+ * @property toEpochMillis 날짜를 고른 경우 기간 끝(epoch ms). null이면 지금까지.
  */
 public class StatsQuery @JvmOverloads constructor(
     public val window: StatsWindow = StatsWindow.LAST_HOUR,
@@ -140,25 +142,33 @@ public class StatsQuery @JvmOverloads constructor(
     public val screen: String? = null,
     public val label: String? = null,
     public val includeSynthetic: Boolean = false,
+    public val fromEpochMillis: Long? = null,
+    public val toEpochMillis: Long? = null,
 ) {
+    @Suppress("LongParameterList")
     public fun copy(
         window: StatsWindow = this.window,
         host: String? = this.host,
         screen: String? = this.screen,
         label: String? = this.label,
         includeSynthetic: Boolean = this.includeSynthetic,
-    ): StatsQuery = StatsQuery(window, host, screen, label, includeSynthetic)
+        fromEpochMillis: Long? = this.fromEpochMillis,
+        toEpochMillis: Long? = this.toEpochMillis,
+    ): StatsQuery = StatsQuery(window, host, screen, label, includeSynthetic, fromEpochMillis, toEpochMillis)
 
     override fun equals(other: Any?): Boolean = other is StatsQuery &&
         window == other.window &&
         host == other.host &&
         screen == other.screen &&
         label == other.label &&
-        includeSynthetic == other.includeSynthetic
+        includeSynthetic == other.includeSynthetic &&
+        fromEpochMillis == other.fromEpochMillis &&
+        toEpochMillis == other.toEpochMillis
 
-    override fun hashCode(): Int = listOf(window, host, screen, label, includeSynthetic).hashCode()
+    override fun hashCode(): Int = listOf(window, host, screen, label, includeSynthetic, fromEpochMillis, toEpochMillis).hashCode()
 
-    override fun toString(): String = "StatsQuery(window=$window, host=$host, screen=$screen, label=$label, synthetic=$includeSynthetic)"
+    override fun toString(): String = "StatsQuery(window=$window, host=$host, screen=$screen, label=$label, synthetic=$includeSynthetic, " +
+        "from=$fromEpochMillis, to=$toEpochMillis)"
 }
 
 /** 통계를 나눠 보는 기준. */

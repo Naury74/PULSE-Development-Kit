@@ -18,6 +18,7 @@ package com.naury.pulse.api
  * @property endpoints 통계에서 엔드포인트를 묶는 방법.
  * @property bodyFormats JSON 말고 더 저장할 본문 형식. 기본은 JSON만.
  * @property monitoring 앱 로그·크래시·종료 이유·성능 수집.
+ * @property remote 오류 보고를 원격으로 보내는 설정. null(기본)이면 보내지 않는다.
  */
 public class PulseConfig private constructor(
     public val captureMode: CaptureMode,
@@ -33,32 +34,22 @@ public class PulseConfig private constructor(
     public val endpoints: EndpointGrouping,
     public val bodyFormats: BodyFormats,
     public val monitoring: AppMonitoring,
+    public val remote: RemoteReporting?,
 ) {
     public fun newBuilder(): Builder = Builder(this)
 
-    override fun equals(other: Any?): Boolean = other is PulseConfig &&
-        captureMode == other.captureMode &&
-        limits == other.limits &&
-        retention == other.retention &&
-        redaction == other.redaction &&
-        queueCapacity == other.queueCapacity &&
-        startRecording == other.startRecording &&
-        insights == other.insights &&
-        replay == other.replay &&
-        filter == other.filter &&
-        context == other.context &&
-        endpoints == other.endpoints &&
-        bodyFormats == other.bodyFormats &&
-        monitoring == other.monitoring
-
-    override fun hashCode(): Int = listOf(
+    private fun values(): List<Any?> = listOf(
         captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints, bodyFormats,
-        monitoring,
-    ).hashCode()
+        monitoring, remote,
+    )
+
+    override fun equals(other: Any?): Boolean = other is PulseConfig && values() == other.values()
+
+    override fun hashCode(): Int = values().hashCode()
 
     override fun toString(): String = "PulseConfig(captureMode=$captureMode, limits=$limits, retention=$retention, " +
         "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording, insights=$insights, replay=$replay, " +
-        "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats, monitoring=$monitoring)"
+        "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats, monitoring=$monitoring, remote=$remote)"
 
     /** [PulseConfig]를 만든다. 값 검증은 [build]에서 하고, 범위를 벗어나면 [IllegalArgumentException]을 던진다. */
     @Suppress("TooManyFunctions")
@@ -76,6 +67,7 @@ public class PulseConfig private constructor(
         private var endpoints = EndpointGrouping()
         private var bodyFormats = BodyFormats.JSON_ONLY
         private var monitoring = AppMonitoring()
+        private var remote: RemoteReporting? = null
 
         internal constructor(config: PulseConfig) : this() {
             captureMode = config.captureMode
@@ -91,6 +83,7 @@ public class PulseConfig private constructor(
             endpoints = config.endpoints
             bodyFormats = config.bodyFormats
             monitoring = config.monitoring
+            remote = config.remote
         }
 
         public fun captureMode(mode: CaptureMode): Builder = apply { captureMode = mode }
@@ -120,13 +113,16 @@ public class PulseConfig private constructor(
 
         public fun monitoring(monitoring: AppMonitoring): Builder = apply { this.monitoring = monitoring }
 
+        /** 원격 보고를 켠다. null이면 끈다. */
+        public fun remote(remote: RemoteReporting?): Builder = apply { this.remote = remote }
+
         public fun build(): PulseConfig {
             require(queueCapacity in MIN_QUEUE_CAPACITY..MAX_QUEUE_CAPACITY) {
                 "queueCapacity는 $MIN_QUEUE_CAPACITY..$MAX_QUEUE_CAPACITY 범위여야 합니다: $queueCapacity"
             }
             return PulseConfig(
                 captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints,
-                bodyFormats, monitoring,
+                bodyFormats, monitoring, remote,
             )
         }
     }
