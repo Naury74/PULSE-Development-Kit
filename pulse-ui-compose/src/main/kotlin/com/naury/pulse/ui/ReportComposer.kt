@@ -160,10 +160,27 @@ private suspend fun ReportForm.load(inspector: PulseInspector, reports: PulseRep
     }
     val recommended = reports.recommendEvidence(sessionId, request.capturedAtEpochMillis)
     evidence = (listOfNotNull(request.evidence) + recommended).distinctBy { it.kind to it.id }
-    steps = evidence.mapNotNull { ref ->
-        STEP_PREFIXES.firstOrNull { ref.title.startsWith(it) }?.let { ref.title.removePrefix(it).trim() }
-    }.joinToString("\n")
+    steps = draftSteps(evidence.map { it.title }).joinToString("\n")
 }
+
+/**
+ * 근거 제목에서 재현 단계 초안을 만든다. 앱이 남긴 의미 있는 행동이 있으면 자동 탭 기록은 빼고,
+ * 화면 이동은 `→ 화면`으로 줄이며, 마지막 [MAX_DRAFT_STEPS]단계만 남긴다.
+ */
+internal fun draftSteps(titles: List<String>): List<String> {
+    val steps = titles.mapNotNull { title ->
+        STEP_PREFIXES.firstOrNull { title.startsWith(it) }?.let { prefix -> prefix to title.removePrefix(prefix).trim() }
+    }
+    val hasSemantic = steps.any { (prefix, text) -> prefix == "ACTION " && !text.isInteraction() }
+    return steps.filterNot { (prefix, text) -> hasSemantic && prefix == "ACTION " && text.isInteraction() }
+        .map { (prefix, text) -> if (prefix == "NAVIGATION ") "→ " + text.substringAfterLast("→ ").trim() else text }
+        .fold(emptyList<String>()) { acc, step -> if (acc.lastOrNull() == step) acc else acc + step }
+        .takeLast(MAX_DRAFT_STEPS)
+}
+
+private fun String.isInteraction() = startsWith("tap ") || startsWith("back ")
+
+private const val MAX_DRAFT_STEPS = 8
 
 @Composable
 private fun ReportFields(form: ReportForm) {
