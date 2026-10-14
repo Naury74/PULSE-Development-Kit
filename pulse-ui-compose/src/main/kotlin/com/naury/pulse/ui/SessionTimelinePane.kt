@@ -294,7 +294,7 @@ private fun RowScope.RequestLine(request: TransactionSummary) {
 private fun RowScope.EventLine(event: AppEvent) {
     Pill(eventBadge(event), eventColor(event), Modifier.padding(top = 1.dp))
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(event.message, style = MonospaceStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(eventTitle(event), style = MonospaceStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
         val meta = listOfNotNull(event.tag?.takeIf { event.kind == EventKind.LOG || event.kind == EventKind.ERROR }, event.screen)
         if (meta.isNotEmpty()) {
             Text(meta.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -303,3 +303,12 @@ private fun RowScope.EventLine(event: AppEvent) {
 }
 
 private const val CHANGE_DEBOUNCE_MILLIS = 500L
+
+/** 행동은 속성(`{"scenario":"GET_JSON"}`)을 `scenario=GET_JSON`으로 붙여 무엇을 했는지 한 줄로 보여 준다. */
+internal fun eventTitle(event: AppEvent): String {
+    val detail = event.detail?.takeIf { event.kind == EventKind.ACTION } ?: return event.message
+    val attributes = ATTRIBUTE.findAll(detail).joinToString(" ") { "${it.groupValues[1]}=${it.groupValues[2]}" }
+    return if (attributes.isEmpty()) event.message else "${event.message} $attributes"
+}
+
+private val ATTRIBUTE = Regex("\"([^\"]+)\":\"([^\"]*)\"")

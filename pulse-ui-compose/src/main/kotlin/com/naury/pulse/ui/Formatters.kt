@@ -11,6 +11,9 @@ import kotlin.math.roundToLong
 internal object Formatters {
     private const val NANOS_PER_MILLI = 1_000_000.0
     private const val MILLIS_PER_SECOND = 1_000.0
+    private const val MILLIS_PER_MINUTE = 60_000.0
+    private const val SECONDS_PER_MINUTE = 60L
+    private const val SECONDS_PER_HOUR = 3_600L
     private const val BYTES_PER_KILOBYTE = 1_024.0
     private const val SMALL_VALUE_LIMIT = 10.0
 
@@ -19,8 +22,16 @@ internal object Formatters {
         return when {
             millis < 1 -> String.format(Locale.ROOT, "%.2f ms", millis)
             millis < MILLIS_PER_SECOND -> "${millis.roundToLong()} ms"
-            else -> String.format(Locale.ROOT, "%.2f s", millis / MILLIS_PER_SECOND)
+            millis < MILLIS_PER_MINUTE -> String.format(Locale.ROOT, "%.2f s", millis / MILLIS_PER_SECOND)
+            else -> clock((millis / MILLIS_PER_SECOND).roundToLong())
         }
+    }
+
+    /** 1분 이상은 `7m 15s`, 1시간 이상은 `1h 05m`으로 줄여 쓴다. */
+    private fun clock(seconds: Long): String = if (seconds < SECONDS_PER_HOUR) {
+        "${seconds / SECONDS_PER_MINUTE}m ${seconds % SECONDS_PER_MINUTE}s"
+    } else {
+        "${seconds / SECONDS_PER_HOUR}h " + "%02dm".format(Locale.ROOT, seconds % SECONDS_PER_HOUR / SECONDS_PER_MINUTE)
     }
 
     fun bytes(count: Long): String {
