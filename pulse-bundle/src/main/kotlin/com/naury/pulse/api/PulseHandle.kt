@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import com.naury.pulse.analytics.AppStatisticsCalculator
 import com.naury.pulse.analytics.InsightEngine
+import com.naury.pulse.analytics.SessionDiffCalculator
+import com.naury.pulse.analytics.SessionMaterial
 import com.naury.pulse.analytics.StatisticsCalculator
 import com.naury.pulse.core.CaptureEngine
 import com.naury.pulse.mock.ChaosRegistry
@@ -155,6 +157,31 @@ public class PulseHandle private constructor(
 
     override val flags: StateFlow<Map<String, String>> = environment.flags
 
+    override suspend fun compareSessions(baseSessionId: String, targetSessionId: String): SessionDiff? {
+        val sessions = storage.loadSessions(null, null, MAX_SESSIONS_FOR_DIFF, events.sessionId).associateBy { it.id }
+        val base = sessions[baseSessionId]?.let { material(it) } ?: return null
+        val target = sessions[targetSessionId]?.let { material(it) } ?: return null
+        return withContext(Dispatchers.Default) { SessionDiffCalculator.compute(base, target, config.endpoints) }
+    }
+
+    private suspend fun material(session: SessionSummary): SessionMaterial {
+        val requests = ArrayList<TransactionSummary>()
+        var cursor: PageCursor? = null
+        do {
+            val page = storage.loadTransactions(TransactionQuery(sessionId = session.id), cursor, DIFF_PAGE)
+            requests += page.items
+            cursor = page.next
+        } while (cursor != null && requests.size < MAX_DIFF_ITEMS)
+        val events = ArrayList<AppEvent>()
+        var eventCursor: PageCursor? = null
+        do {
+            val page = storage.loadEvents(EventQuery(sessionId = session.id, kinds = DIFF_KINDS), eventCursor, DIFF_PAGE)
+            events += page.items
+            eventCursor = page.next
+        } while (eventCursor != null && events.size < MAX_DIFF_ITEMS)
+        return SessionMaterial(session, requests, events, cursor != null || eventCursor != null)
+    }
+
     override fun environment(): EnvironmentSnapshot = environment.snapshot()
 
     /**
@@ -287,6 +314,10 @@ public class PulseHandle private constructor(
     internal companion object {
         private const val INSPECTOR_ACTIVITY = "com.naury.pulse.ui.PulseInspectorActivity"
         private const val MAX_STATISTICS_EVENTS = 50_000
+        private const val MAX_SESSIONS_FOR_DIFF = 5_000
+        private const val MAX_DIFF_ITEMS = 20_000
+        private const val DIFF_PAGE = 500
+        private val DIFF_KINDS = EventKind.entries.toSet() - EventKind.LOG
 
         fun create(context: Context, config: PulseConfig): PulseHandle {
             // 보낼 목록에 넣을지는 저장 스레드에서 정하므로, 실행 중에 원격 보고를 켜고 끈 값이 바로 반영되게 늦게 묶는다.
