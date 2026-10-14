@@ -10,6 +10,7 @@ import com.naury.pulse.analytics.AppStatisticsCalculator
 import com.naury.pulse.analytics.InsightEngine
 import com.naury.pulse.analytics.StatisticsCalculator
 import com.naury.pulse.core.CaptureEngine
+import com.naury.pulse.mock.ChaosRegistry
 import com.naury.pulse.mock.MockInterceptor
 import com.naury.pulse.mock.MockRegistry
 import com.naury.pulse.monitor.AppMonitor
@@ -59,7 +60,10 @@ public class PulseHandle private constructor(
     private val monitor = AppMonitor(context, config.monitoring, events, storage, scope)
     private val insightEngine = InsightEngine(config.insights)
     private val mockRegistry = MockRegistry()
-    private val mockInterceptor = MockInterceptor(mockRegistry)
+    private val chaosRegistry = config.chaos?.let(::ChaosRegistry)
+    private val mockInterceptor = MockInterceptor(mockRegistry, chaosRegistry)
+
+    override val chaos: PulseChaos? = chaosRegistry
     private val environment = EnvironmentRegistry(context.applicationContext, events)
     private val reportService = ReportService(config, storage, { this }, environment::snapshot, scope)
 

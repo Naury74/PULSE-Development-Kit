@@ -1,9 +1,12 @@
 package com.naury.pulse.mock
 
+import com.naury.pulse.api.ChaosAction
+import com.naury.pulse.api.ChaosRule
 import com.naury.pulse.api.MockRule
 import com.naury.pulse.api.PathMatch
 import com.naury.pulse.core.MockMarker
 import java.io.IOException
+import java.net.SocketTimeoutException
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Protocol
@@ -16,11 +19,17 @@ import okhttp3.ResponseBody.Companion.toResponseBody
  * PULSE 인터셉터 **뒤에** 붙이면 모의 응답이 MOCK 출처로 기록된다. 전체 스위치가 꺼져 있으면 요청을 그대로 넘긴다.
  * 응답에는 [MockMarker.HEADER] 헤더가 붙어 진짜 서버 응답과 구분된다.
  */
-public class MockInterceptor(private val registry: MockRegistry, private val now: () -> Long = System::currentTimeMillis) : Interceptor {
+public class MockInterceptor @JvmOverloads constructor(
+    private val registry: MockRegistry,
+    private val chaos: ChaosRegistry? = null,
+    private val now: () -> Long = System::currentTimeMillis,
+) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val time = now()
-        val rule = registry.take { matches(it, request, time) } ?: return chain.proceed(request)
+        val rule =
+            registry.take { matches(it, request, time) }
+                ?: return chaos?.pick(request)?.let { applyChaos(chain, it, time) } ?: chain.proceed(request)
         val spec = rule.response
         if (spec.delayMillis > 0) delay(chain, spec.delayMillis)
         val builder = Response.Builder()
@@ -35,6 +44,43 @@ public class MockInterceptor(private val registry: MockRegistry, private val now
             .header("Content-Type", spec.contentType)
             .header(MockMarker.HEADER, rule.id)
             .body(spec.body.toResponseBody(spec.contentType.toMediaTypeOrNull()))
+            .build()
+    }
+
+    /** 장애 모사. 응답을 합성하는 경우는 모의 응답처럼 표시해 MOCK 출처로 기록되게 한다. */
+    private fun applyChaos(chain: Interceptor.Chain, rule: ChaosRule, time: Long): Response {
+        val request = chain.request()
+        val status = when (rule.action) {
+            ChaosAction.DELAY -> {
+                delay(chain, rule.delayMillis)
+                return chain.proceed(request)
+            }
+
+            ChaosAction.FAIL_IO -> throw IOException("PULSE chaos: connection failed")
+
+            ChaosAction.TIMEOUT -> {
+                delay(chain, rule.delayMillis)
+                throw SocketTimeoutException("PULSE chaos: timeout")
+            }
+
+            ChaosAction.STATUS_429 -> HTTP_TOO_MANY_REQUESTS
+
+            ChaosAction.STATUS_500 -> HTTP_INTERNAL_ERROR
+
+            ChaosAction.STATUS_503 -> HTTP_UNAVAILABLE
+        }
+        return Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(status)
+            .message("Chaos")
+            .sentRequestAtMillis(time)
+            .receivedResponseAtMillis(now())
+            .apply { if (status != HTTP_INTERNAL_ERROR) header("Retry-After", RETRY_AFTER_SECONDS) }
+            .header("Content-Type", CHAOS_CONTENT_TYPE)
+            .header(MockMarker.HEADER, rule.id)
+            .header(CHAOS_HEADER, rule.action.name)
+            .body("""{"error":"pulse_chaos","action":"${rule.action}"}""".toResponseBody(CHAOS_CONTENT_TYPE.toMediaTypeOrNull()))
             .build()
     }
 
@@ -56,6 +102,14 @@ public class MockInterceptor(private val registry: MockRegistry, private val now
         private const val NANOS_PER_MILLI = 1_000_000L
         private const val DELAY_STEP_MILLIS = 50L
         private const val REGEX_BUDGET_NANOS = 50L * NANOS_PER_MILLI
+        private const val HTTP_TOO_MANY_REQUESTS = 429
+        private const val HTTP_INTERNAL_ERROR = 500
+        private const val HTTP_UNAVAILABLE = 503
+        private const val RETRY_AFTER_SECONDS = "5"
+        private const val CHAOS_CONTENT_TYPE = "application/json; charset=utf-8"
+
+        /** 장애 모사 응답에 붙는 헤더. 값은 [ChaosAction] 이름이다. */
+        const val CHAOS_HEADER: String = "X-Pulse-Chaos"
 
         fun matches(rule: MockRule, request: Request, now: Long): Boolean {
             val expires = rule.expiresAtEpochMillis
