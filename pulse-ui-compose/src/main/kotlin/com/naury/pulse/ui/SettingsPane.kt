@@ -71,6 +71,8 @@ internal fun SettingsPane(inspector: PulseInspector, onClear: () -> Unit, modifi
 
         EnvironmentSection(inspector)
 
+        inspector.localData?.let { LocalDataSection(it) }
+
         inspector.remote?.let { RemoteSection(it) }
 
         MockRulesSection(inspector.mocks)

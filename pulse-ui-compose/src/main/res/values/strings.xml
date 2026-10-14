@@ -565,4 +565,11 @@
     <string name="pulse_runs_endpoint_header">requests · errors · median time (baseline → run to check)</string>
     <string name="pulse_runs_truncated">One run is large, so only its first 20,000 records were compared.</string>
     <string name="pulse_runs_events">Event counts</string>
+    <string name="pulse_data_title">Local data (read-only)</string>
+    <string name="pulse_data_missing">not created</string>
+    <string name="pulse_data_note">Only stores registered with DataInspection. Values of sensitive keys and columns are hidden.</string>
+    <string name="pulse_data_readonly">Read-only · sensitive values hidden</string>
+    <string name="pulse_data_back">Tables</string>
+    <string name="pulse_data_empty">Empty.</string>
+    <string name="pulse_data_more">Load more</string>
 </resources>

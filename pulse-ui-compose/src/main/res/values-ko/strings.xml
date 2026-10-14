@@ -563,4 +563,11 @@
     <string name="pulse_runs_endpoint_header">요청 · 오류 · 중앙 시간(기준 → 확인할 실행)</string>
     <string name="pulse_runs_truncated">한쪽 실행이 커서 앞 20,000개 기록만 비교했습니다.</string>
     <string name="pulse_runs_events">이벤트 수</string>
+    <string name="pulse_data_title">로컬 데이터(읽기 전용)</string>
+    <string name="pulse_data_missing">아직 없음</string>
+    <string name="pulse_data_note">DataInspection으로 등록한 저장소만 보입니다. 민감한 키·열의 값은 가립니다.</string>
+    <string name="pulse_data_readonly">읽기 전용 · 민감한 값은 가림</string>
+    <string name="pulse_data_back">표 목록</string>
+    <string name="pulse_data_empty">비어 있습니다.</string>
+    <string name="pulse_data_more">더 보기</string>
 </resources>
