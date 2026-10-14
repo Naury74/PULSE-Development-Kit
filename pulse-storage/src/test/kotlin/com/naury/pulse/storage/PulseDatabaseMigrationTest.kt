@@ -87,6 +87,28 @@ class PulseDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `v6에서 v7로 올리면 이벤트가 남고 빈 보낼 목록이 생긴다`() {
+        helper.createDatabase(DATABASE, 6).use { database ->
+            database.execSQL("INSERT INTO sessions (id, startedAtEpochMillis) VALUES ('s1', 1)")
+            database.execSQL(
+                "INSERT INTO app_events (id, sessionId, timestampEpochMillis, kind, message) VALUES ('e1', 's1', 2, 'ERROR', 'boom')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DATABASE, 7, true).use { migrated ->
+            migrated.query("SELECT message FROM app_events WHERE id = 'e1'").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getString(0)).isEqualTo("boom")
+            }
+            migrated.execSQL("INSERT INTO outbox (createdAtEpochMillis, payload, attempts, nextAttemptEpochMillis) VALUES (3, '{}', 0, 0)")
+            migrated.query("SELECT COUNT(*) FROM outbox").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getInt(0)).isEqualTo(1)
+            }
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-test.db"
     }

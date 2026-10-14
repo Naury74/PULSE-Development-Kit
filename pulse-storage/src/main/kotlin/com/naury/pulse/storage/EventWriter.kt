@@ -4,7 +4,12 @@ import com.naury.pulse.core.EventRecord
 import com.naury.pulse.core.SessionRecord
 
 /** 앱 이벤트·세션을 쓴다. [CaptureWriter]가 같은 DB 트랜잭션 안에서 부른다. */
-internal class EventWriter(private val events: EventDao, private val blobs: BlobStore) {
+internal class EventWriter(
+    private val events: EventDao,
+    private val blobs: BlobStore,
+    private val outbox: OutboxDao,
+    private val filter: OutboxFilter?,
+) {
     fun insert(record: EventRecord, writtenBlobs: MutableList<String>) {
         events.ensureSession(record.sessionId, record.timestampEpochMillis)
         val attachment = record.attachmentPng?.let { png ->
@@ -13,24 +18,45 @@ internal class EventWriter(private val events: EventDao, private val blobs: Blob
                 writtenBlobs += name
             }
         }
-        events.insert(
-            EventEntity(
-                id = record.transactionId,
-                sessionId = record.sessionId,
-                timestampEpochMillis = record.timestampEpochMillis,
-                kind = record.kind,
-                level = record.level,
-                levelRank = record.level?.ordinal,
-                tag = record.tag,
-                message = record.message,
-                detail = record.detail,
-                screen = record.screen,
-                spanId = record.spanId,
-                durationMillis = record.durationMillis,
-                value = record.value,
-                attachment = attachment,
-            ),
+        val entity = EventEntity(
+            id = record.transactionId,
+            sessionId = record.sessionId,
+            timestampEpochMillis = record.timestampEpochMillis,
+            kind = record.kind,
+            level = record.level,
+            levelRank = record.level?.ordinal,
+            tag = record.tag,
+            message = record.message,
+            detail = record.detail,
+            screen = record.screen,
+            spanId = record.spanId,
+            durationMillis = record.durationMillis,
+            value = record.value,
+            attachment = attachment,
         )
+        events.insert(entity)
+        if (filter?.accepts(record.kind, record.level) == true) {
+            outbox.insert(OutboxEntity(createdAtEpochMillis = record.timestampEpochMillis, payload = OutboxPayloads.event(entity)))
+            trimOutbox()
+        }
+    }
+
+    /** 끝난 요청이 5xx이거나 응답 없이 실패했으면 요약을 보낼 목록에 넣는다. */
+    fun networkFinished(transaction: TransactionEntity?) {
+        val filter = filter ?: return
+        if (transaction == null || !filter.networkFailures || !filter.enabled()) return
+        val failed = (transaction.statusCode ?: 0) >= HTTP_SERVER_ERROR ||
+            (transaction.statusCode == null && transaction.state.name in failedStates)
+        if (!failed) return
+        outbox.insert(
+            OutboxEntity(createdAtEpochMillis = transaction.startedAtEpochMillis, payload = OutboxPayloads.networkFailure(transaction)),
+        )
+        trimOutbox()
+    }
+
+    private fun trimOutbox() {
+        val overflow = outbox.count() - (filter?.maxPending ?: return)
+        if (overflow > 0) outbox.dropOldest(overflow)
     }
 
     fun updateSession(record: SessionRecord, now: Long) {
@@ -54,5 +80,7 @@ internal class EventWriter(private val events: EventDao, private val blobs: Blob
 
     private companion object {
         const val SQL_VARIABLE_CHUNK = 500
+        const val HTTP_SERVER_ERROR = 500
+        val failedStates = setOf("FAILED", "CANCELED")
     }
 }

@@ -24,10 +24,11 @@ internal class CaptureWriter(
     private val blobs: BlobStore,
     private val retention: RetentionPolicy,
     private val wallClock: () -> Long,
+    outboxFilter: OutboxFilter? = null,
 ) : CaptureSink {
     private val dao = database.transactions()
     private val events = database.events()
-    private val eventWriter = EventWriter(events, blobs)
+    private val eventWriter = EventWriter(events, blobs, database.outbox(), outboxFilter)
     private val lock = Any()
     private var batchesSinceRetention = 0
 
@@ -99,13 +100,10 @@ internal class CaptureWriter(
 
             is BodyRecord -> updateBody(record, writtenBlobs)
 
-            is FinishRecord -> dao.updateFinish(
-                record.transactionId,
-                record.state,
-                record.durationNanos,
-                record.failureType,
-                record.failureMessage,
-            )
+            is FinishRecord -> {
+                dao.updateFinish(record.transactionId, record.state, record.durationNanos, record.failureType, record.failureMessage)
+                eventWriter.networkFinished(dao.transactionNow(record.transactionId))
+            }
 
             is TimingRecord -> insertTimings(record)
 

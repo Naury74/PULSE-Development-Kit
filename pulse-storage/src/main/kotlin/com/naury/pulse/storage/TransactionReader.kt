@@ -22,6 +22,8 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
         val rows = dao.page(
             text = escapeLike(query.text.trim()),
             status = query.status.name,
+            from = query.fromEpochMillis,
+            to = query.toEpochMillis,
             afterStarted = after?.startedAtEpochMillis,
             afterId = after?.id,
             limit = limit + 1,
@@ -61,8 +63,13 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
     }
 
     /** 기간 안의 최근 기록을 [limit]개까지 읽는다. 상한에 걸렸는지 함께 돌려준다. */
-    suspend fun samples(fromEpochMillis: Long, limit: Int, includeSynthetic: Boolean = false): Pair<List<TrafficSample>, Boolean> {
-        val rows = dao.samples(fromEpochMillis, limit + 1, includeSynthetic)
+    suspend fun samples(
+        fromEpochMillis: Long,
+        limit: Int,
+        includeSynthetic: Boolean = false,
+        toEpochMillis: Long = Long.MAX_VALUE,
+    ): Pair<List<TrafficSample>, Boolean> {
+        val rows = dao.samples(fromEpochMillis, toEpochMillis, limit + 1, includeSynthetic)
         val samples = rows.take(limit).map {
             TrafficSample(
                 id = it.id,

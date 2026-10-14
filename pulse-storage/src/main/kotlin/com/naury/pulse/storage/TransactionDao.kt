@@ -27,6 +27,9 @@ internal interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertTimings(timings: List<TimingEntity>)
 
+    @Query("SELECT * FROM transactions WHERE id = :id")
+    fun transactionNow(id: String): TransactionEntity?
+
     @Query("SELECT EXISTS(SELECT 1 FROM transactions WHERE id = :id)")
     fun transactionExists(id: String): Boolean
 
@@ -81,12 +84,23 @@ internal interface TransactionDao {
             OR (:status = 'FAILED' AND state IN ('FAILED', 'CANCELED', 'INTERRUPTED'))
             OR (:status = 'IN_FLIGHT' AND state = 'IN_FLIGHT')
         )
+        AND (:from IS NULL OR startedAtEpochMillis >= :from)
+        AND (:to IS NULL OR startedAtEpochMillis <= :to)
         AND (:afterStarted IS NULL OR startedAtEpochMillis < :afterStarted
             OR (startedAtEpochMillis = :afterStarted AND id < :afterId))
         ORDER BY startedAtEpochMillis DESC, id DESC
         LIMIT :limit""",
     )
-    suspend fun page(text: String, status: String, afterStarted: Long?, afterId: String?, limit: Int): List<TransactionEntity>
+    @Suppress("LongParameterList")
+    suspend fun page(
+        text: String,
+        status: String,
+        from: Long?,
+        to: Long?,
+        afterStarted: Long?,
+        afterId: String?,
+        limit: Int,
+    ): List<TransactionEntity>
 
     /**
      * 집계·진단용 기록. 재실행·모의 응답은 원래 트래픽 통계를 흐리지 않도록 뺀다.
@@ -100,11 +114,13 @@ internal interface TransactionDao {
         (SELECT SUM(p.durationNanos) FROM timing_phases p WHERE p.transactionId = t.id AND p.phase = 'DNS') AS dnsNanos,
         (SELECT SUM(p.durationNanos) FROM timing_phases p WHERE p.transactionId = t.id AND p.phase = 'CONNECT') AS connectNanos,
         (SELECT SUM(p.durationNanos) FROM timing_phases p WHERE p.transactionId = t.id AND p.phase = 'TLS') AS tlsNanos
-        FROM transactions t WHERE t.startedAtEpochMillis >= :from AND (:includeSynthetic OR t.source = 'ORIGINAL')
+        FROM transactions t WHERE t.startedAtEpochMillis >= :from AND t.startedAtEpochMillis <= :to
+        AND (:includeSynthetic OR t.source = 'ORIGINAL')
         ORDER BY t.startedAtEpochMillis DESC LIMIT :limit""",
     )
     suspend fun samples(
         from: Long,
+        to: Long,
         limit: Int,
         includeSynthetic: Boolean = false,
         redacted: String = RedactionPolicy.REDACTED,
