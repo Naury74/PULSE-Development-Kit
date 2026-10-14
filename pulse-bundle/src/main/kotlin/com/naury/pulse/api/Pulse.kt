@@ -42,6 +42,36 @@ public object Pulse {
     @JvmStatic
     public fun open(context: Context): Boolean = current()?.open(context) ?: false
 
+    /** [PulseHandle.log]. 초기화 전이면 아무것도 하지 않는다. */
+    @JvmStatic
+    @JvmOverloads
+    public fun log(level: LogLevel, tag: String, message: String, throwable: Throwable? = null) {
+        current()?.log(level, tag, message, throwable)
+    }
+
+    /** [PulseHandle.recordError]. 초기화 전이면 아무것도 하지 않는다. */
+    @JvmStatic
+    @JvmOverloads
+    public fun recordError(throwable: Throwable, message: String? = null) {
+        current()?.recordError(throwable, message)
+    }
+
+    /** [PulseHandle.mark]. 초기화 전이면 아무것도 하지 않는다. */
+    @JvmStatic
+    public fun mark(name: String) {
+        current()?.mark(name)
+    }
+
+    /** [PulseHandle.beginSpan]. 초기화 전이면 null. */
+    @JvmStatic
+    public fun beginSpan(name: String): String? = current()?.beginSpan(name)
+
+    /** [PulseHandle.endSpan]. */
+    @JvmStatic
+    public fun endSpan(spanId: String) {
+        current()?.endSpan(spanId)
+    }
+
     internal fun release(handle: PulseHandle) = synchronized(lock) {
         if (current === handle) {
             current = null

@@ -62,6 +62,20 @@ public class PulseHandle internal constructor(override val config: PulseConfig) 
 
     public fun setReplayAuthorizer(authorizer: ReplayAuthorizer?): Unit = Unit
 
+    @JvmOverloads
+    public fun log(level: LogLevel, tag: String, message: String, throwable: Throwable? = null): Unit = Unit
+
+    @JvmOverloads
+    public fun recordError(throwable: Throwable, message: String? = null): Unit = Unit
+
+    override fun mark(name: String): Unit = Unit
+
+    override fun beginSpan(name: String): String = ""
+
+    override fun endSpan(spanId: String): Unit = Unit
+
+    override fun recordScreenshot(png: ByteArray, note: String?): Unit = Unit
+
     override fun pause(): Unit = Unit
 
     override fun resume(): Unit = Unit

@@ -6,11 +6,13 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import com.naury.pulse.analytics.AppStatisticsCalculator
 import com.naury.pulse.analytics.InsightEngine
 import com.naury.pulse.analytics.StatisticsCalculator
 import com.naury.pulse.core.CaptureEngine
 import com.naury.pulse.mock.MockInterceptor
 import com.naury.pulse.mock.MockRegistry
+import com.naury.pulse.monitor.AppMonitor
 import com.naury.pulse.okhttp.CallTimingRegistry
 import com.naury.pulse.okhttp.PulseEventListenerFactory
 import com.naury.pulse.okhttp.PulseInterceptor
@@ -39,11 +41,14 @@ public class PulseHandle private constructor(
     private val storage: PulseStorage,
     private val engine: CaptureEngine,
     private val appContext: AndroidAppContext,
+    context: Context,
 ) : PulseInspector {
     // 디스크 정리·삭제 실패는 수집만 못 하게 할 뿐 호스트 앱을 멈추면 안 된다.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, _ -> })
     private val timingRegistry = CallTimingRegistry()
     private val interceptor = PulseInterceptor(engine.recorder, timingRegistry)
+    private val events = engine.events
+    private val monitor = AppMonitor(context, config.monitoring, events, storage, scope)
     private val insightEngine = InsightEngine(config.insights)
     private val mockRegistry = MockRegistry()
     private val mockInterceptor = MockInterceptor(mockRegistry)
@@ -109,6 +114,58 @@ public class PulseHandle private constructor(
 
     override fun observeChanges(): Flow<Unit> = storage.observeChanges()
 
+    override fun observeEvents(): Flow<Unit> = storage.observeEventChanges()
+
+    override suspend fun loadEvents(query: EventQuery, after: PageCursor?, limit: Int): EventPage = storage.loadEvents(query, after, limit)
+
+    override suspend fun loadSessions(fromEpochMillis: Long?, toEpochMillis: Long?, limit: Int): List<SessionSummary> =
+        storage.loadSessions(fromEpochMillis, toEpochMillis, limit, events.sessionId)
+
+    override suspend fun loadAppStatistics(fromEpochMillis: Long?, toEpochMillis: Long?): AppStatistics {
+        val to = toEpochMillis ?: System.currentTimeMillis()
+        val input = storage.loadAppStatisticsInput(fromEpochMillis, to, events.sessionId, MAX_STATISTICS_EVENTS)
+        return withContext(Dispatchers.Default) { AppStatisticsCalculator.compute(input, fromEpochMillis, to) }
+    }
+
+    override suspend fun loadAttachment(name: String): ByteArray? = storage.loadAttachment(name)
+
+    /**
+     * 로그를 남긴다. [throwable]이 있으면 스택을 함께 저장한다. 메시지 속 URL 쿼리와 `name=value` 형태의 비밀은 저장 전에 가린다.
+     * 어느 스레드에서 불러도 되고 디스크 작업은 저장 스레드에서 한다.
+     */
+    @JvmOverloads
+    public fun log(level: LogLevel, tag: String, message: String, throwable: Throwable? = null) {
+        events.record(EventKind.LOG, message, level = level, tag = tag, detail = throwable?.stackTraceToString())
+    }
+
+    /** 앱이 잡아서 처리한 예외를 오류로 남긴다. */
+    @JvmOverloads
+    public fun recordError(throwable: Throwable, message: String? = null) {
+        events.record(
+            EventKind.ERROR,
+            message ?: "${throwable.javaClass.name}: ${throwable.message.orEmpty()}",
+            level = LogLevel.ERROR,
+            tag = throwable.javaClass.simpleName,
+            detail = throwable.stackTraceToString(),
+        )
+    }
+
+    /** 지금 시각에 [name] 마커를 남긴다. 기록 화면에서 이 시점 앞뒤를 따로 볼 수 있다. */
+    override fun mark(name: String) {
+        events.mark(name)
+    }
+
+    /** [name] 구간을 시작하고 ID를 돌려준다. [endSpan]으로 끝낸다. 기록 화면에서 이 구간만 따로 볼 수 있다. */
+    override fun beginSpan(name: String): String = events.beginSpan(name)
+
+    override fun endSpan(spanId: String) {
+        events.endSpan(spanId)
+    }
+
+    override fun recordScreenshot(png: ByteArray, note: String?) {
+        events.record(EventKind.SCREENSHOT, note ?: "Screenshot", attachmentPng = png)
+    }
+
     override suspend fun loadTransaction(id: String): TransactionDetail? = storage.loadTransaction(id)
 
     override suspend fun loadBody(id: String, kind: MessageKind): String? = storage.loadBody(id, kind)
@@ -161,6 +218,7 @@ public class PulseHandle private constructor(
     /** 기록을 멈추고 남은 기록을 저장한 뒤 자원을 닫는다. 닫은 뒤에는 [Pulse.initialize]로 새 핸들을 만들 수 있다. */
     public fun close() {
         Pulse.release(this)
+        monitor.close()
         engine.close()
         appContext.close()
         scope.cancel()
@@ -178,13 +236,18 @@ public class PulseHandle private constructor(
 
     internal companion object {
         private const val INSPECTOR_ACTIVITY = "com.naury.pulse.ui.PulseInspectorActivity"
+        private const val MAX_STATISTICS_EVENTS = 50_000
 
         fun create(context: Context, config: PulseConfig): PulseHandle {
             val storage = PulseStorage.open(context, config.retention)
             val appContext = AndroidAppContext(context, config.context)
             val engine = CaptureEngine.start(config, storage.sink, contextSource = appContext)
-            return PulseHandle(config, storage, engine, appContext).also { handle ->
-                handle.scope.launch { storage.startSession(engine.recorder.sessionId, System.currentTimeMillis()) }
+            return PulseHandle(config, storage, engine, appContext, context).also { handle ->
+                handle.monitor.start()
+                handle.scope.launch {
+                    storage.startSession(engine.recorder.sessionId, System.currentTimeMillis())
+                    handle.monitor.recordExitReasons()
+                }
             }
         }
     }

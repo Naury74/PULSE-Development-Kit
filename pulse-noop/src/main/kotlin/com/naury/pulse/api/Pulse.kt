@@ -22,4 +22,22 @@ public object Pulse {
     /** no-op에서는 항상 `false`. */
     @JvmStatic
     public fun open(context: Context): Boolean = false
+
+    @JvmStatic
+    @JvmOverloads
+    public fun log(level: LogLevel, tag: String, message: String, throwable: Throwable? = null): Unit = Unit
+
+    @JvmStatic
+    @JvmOverloads
+    public fun recordError(throwable: Throwable, message: String? = null): Unit = Unit
+
+    @JvmStatic
+    public fun mark(name: String): Unit = Unit
+
+    /** no-op에서는 항상 null. */
+    @JvmStatic
+    public fun beginSpan(name: String): String? = null
+
+    @JvmStatic
+    public fun endSpan(spanId: String): Unit = Unit
 }
