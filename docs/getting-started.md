@@ -2,7 +2,7 @@
 
 ## 1. 의존성
 
-배포 전에는 이 저장소에서 `./gradlew publishToMavenLocal`을 실행해 로컬 Maven(`~/.m2`)에 올리고, 앱의 `settings.gradle.kts` 저장소 목록에 `mavenLocal()`을 더합니다.
+Maven Central에서 받습니다. 앱의 `settings.gradle.kts` 저장소 목록에 `mavenCentral()`이 있으면 됩니다.
 
 ```kotlin
 dependencies {
@@ -25,7 +25,7 @@ val pulse = Pulse.initialize(this, PulseConfig.debugDefaults())
 ```
 
 - 같은 설정으로 다시 부르면 기존 핸들을, 다른 설정이면 `PulseConfigurationException`을 돌려줍니다.
-- `PulseConfig.defaults()`는 본문을 저장하지 않습니다. `debugDefaults()`는 마스킹한 JSON 본문을 저장합니다.
+- `PulseConfig.defaults()`는 본문을 저장하지 않습니다. `debugDefaults()`는 마스킹한 JSON 본문을 저장하고, 이 앱의 logcat과 탭·뒤로 키도 기록합니다.
 - DI를 쓰는 앱은 돌려받은 `PulseHandle`을 그대로 주입하면 됩니다. 다른 곳에서는 `Pulse.current()`로 찾을 수 있습니다.
 
 ## 3. OkHttpClient 연결
