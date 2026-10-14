@@ -276,6 +276,66 @@ public final class com/naury/pulse/api/CountEntry {
 	public final fun getKey ()Ljava/lang/String;
 }
 
+public final class com/naury/pulse/api/DataEntry {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getMasked ()Z
+	public final fun getType ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/String;
+}
+
+public final class com/naury/pulse/api/DataInspection {
+	public static final field Companion Lcom/naury/pulse/api/DataInspection$Companion;
+	public static final field DEFAULT_MAX_ROWS I
+	public static final field MAX_ROWS_LIMIT I
+	public fun <init> ()V
+	public fun <init> (Ljava/util/Set;)V
+	public fun <init> (Ljava/util/Set;Ljava/util/Set;)V
+	public fun <init> (Ljava/util/Set;Ljava/util/Set;I)V
+	public synthetic fun <init> (Ljava/util/Set;Ljava/util/Set;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDatabases ()Ljava/util/Set;
+	public final fun getMaxRows ()I
+	public final fun getSharedPreferences ()Ljava/util/Set;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/naury/pulse/api/DataInspection$Companion {
+}
+
+public final class com/naury/pulse/api/DataRows {
+	public fun <init> (Ljava/util/List;Ljava/util/List;Ljava/util/Set;IZ)V
+	public final fun getColumns ()Ljava/util/List;
+	public final fun getHasMore ()Z
+	public final fun getMaskedColumns ()Ljava/util/Set;
+	public final fun getOffset ()I
+	public final fun getRows ()Ljava/util/List;
+}
+
+public final class com/naury/pulse/api/DataSource {
+	public fun <init> (Lcom/naury/pulse/api/DataSourceKind;Ljava/lang/String;ZLjava/lang/Long;)V
+	public final fun getBytes ()Ljava/lang/Long;
+	public final fun getExists ()Z
+	public final fun getKind ()Lcom/naury/pulse/api/DataSourceKind;
+	public final fun getName ()Ljava/lang/String;
+}
+
+public final class com/naury/pulse/api/DataSourceKind : java/lang/Enum {
+	public static final field DATABASE Lcom/naury/pulse/api/DataSourceKind;
+	public static final field SHARED_PREFERENCES Lcom/naury/pulse/api/DataSourceKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/naury/pulse/api/DataSourceKind;
+	public static fun values ()[Lcom/naury/pulse/api/DataSourceKind;
+}
+
+public final class com/naury/pulse/api/DataTable {
+	public fun <init> (Ljava/lang/String;JLjava/util/List;)V
+	public final fun getColumns ()Ljava/util/List;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getRowCount ()J
+}
+
 public final class com/naury/pulse/api/DayUsage {
 	public fun <init> (JIJJII)V
 	public final fun getCrashes ()I
@@ -724,6 +784,7 @@ public final class com/naury/pulse/api/PulseConfig {
 	public final fun getCaptureMode ()Lcom/naury/pulse/api/CaptureMode;
 	public final fun getChaos ()Lcom/naury/pulse/api/ChaosPolicy;
 	public final fun getContext ()Lcom/naury/pulse/api/ContextCapture;
+	public final fun getDataInspection ()Lcom/naury/pulse/api/DataInspection;
 	public final fun getEndpoints ()Lcom/naury/pulse/api/EndpointGrouping;
 	public final fun getFilter ()Lcom/naury/pulse/api/CaptureFilter;
 	public final fun getInsights ()Lcom/naury/pulse/api/InsightThresholds;
@@ -749,6 +810,7 @@ public final class com/naury/pulse/api/PulseConfig$Builder {
 	public final fun captureMode (Lcom/naury/pulse/api/CaptureMode;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun chaos (Lcom/naury/pulse/api/ChaosPolicy;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun context (Lcom/naury/pulse/api/ContextCapture;)Lcom/naury/pulse/api/PulseConfig$Builder;
+	public final fun dataInspection (Lcom/naury/pulse/api/DataInspection;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun endpoints (Lcom/naury/pulse/api/EndpointGrouping;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun filter (Lcom/naury/pulse/api/CaptureFilter;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun insights (Lcom/naury/pulse/api/InsightThresholds;)Lcom/naury/pulse/api/PulseConfig$Builder;
@@ -789,6 +851,7 @@ public abstract interface class com/naury/pulse/api/PulseInspector {
 	public fun getChaos ()Lcom/naury/pulse/api/PulseChaos;
 	public abstract fun getConfig ()Lcom/naury/pulse/api/PulseConfig;
 	public fun getFlags ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun getLocalData ()Lcom/naury/pulse/api/PulseLocalData;
 	public abstract fun getMocks ()Lcom/naury/pulse/api/PulseMocks;
 	public abstract fun getRecordingState ()Lkotlinx/coroutines/flow/StateFlow;
 	public fun getRemote ()Lcom/naury/pulse/api/PulseRemote;
@@ -828,6 +891,7 @@ public final class com/naury/pulse/api/PulseInspector$DefaultImpls {
 	public static fun environment (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/EnvironmentSnapshot;
 	public static fun getChaos (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseChaos;
 	public static fun getFlags (Lcom/naury/pulse/api/PulseInspector;)Lkotlinx/coroutines/flow/StateFlow;
+	public static fun getLocalData (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseLocalData;
 	public static fun getRemote (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseRemote;
 	public static fun getReports (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseReports;
 	public static fun loadAppStatistics (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/Long;Ljava/lang/Long;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -865,6 +929,13 @@ public final class com/naury/pulse/api/PulseLabel {
 }
 
 public final class com/naury/pulse/api/PulseLabel$Companion {
+}
+
+public abstract interface class com/naury/pulse/api/PulseLocalData {
+	public abstract fun preferences (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun rows (Ljava/lang/String;Ljava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun sources ()Ljava/util/List;
+	public abstract fun tables (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/naury/pulse/api/PulseMocks {

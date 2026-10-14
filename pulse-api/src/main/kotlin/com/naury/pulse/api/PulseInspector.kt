@@ -47,6 +47,10 @@ public interface PulseInspector {
     public val remote: PulseRemote?
         get() = null
 
+    /** 등록한 앱 저장소 보기. [PulseConfig.dataInspection]이 없거나 지원하지 않는 구현은 null. */
+    public val localData: PulseLocalData?
+        get() = null
+
     /** 네트워크 장애 모사. [PulseConfig.chaos]가 없거나 지원하지 않는 구현은 null. */
     public val chaos: PulseChaos?
         get() = null

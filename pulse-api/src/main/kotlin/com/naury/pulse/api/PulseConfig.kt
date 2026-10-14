@@ -22,6 +22,7 @@ package com.naury.pulse.api
  * @property reporting 버그 보고를 보낼 목적지. null(기본)이면 기기에 저장하고 내보내기만 한다.
  * @property screenshots 화면 캡처 규칙.
  * @property chaos 네트워크 장애 모사를 허용할 호스트. null(기본)이면 장애 모사를 쓸 수 없다.
+ * @property dataInspection 인스펙터에서 읽기 전용으로 볼 앱 저장소. null(기본)이면 보이지 않는다.
  */
 // 생성자는 Builder만 부르며, 인자는 설정 항목과 일대일이다.
 @Suppress("LongParameterList")
@@ -43,12 +44,13 @@ public class PulseConfig private constructor(
     public val reporting: Reporting?,
     public val screenshots: ScreenshotPolicy,
     public val chaos: ChaosPolicy?,
+    public val dataInspection: DataInspection?,
 ) {
     public fun newBuilder(): Builder = Builder(this)
 
     private fun values(): List<Any?> = listOf(
         captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints, bodyFormats,
-        monitoring, remote, reporting, screenshots, chaos,
+        monitoring, remote, reporting, screenshots, chaos, dataInspection,
     )
 
     override fun equals(other: Any?): Boolean = other is PulseConfig && values() == other.values()
@@ -58,7 +60,8 @@ public class PulseConfig private constructor(
     override fun toString(): String = "PulseConfig(captureMode=$captureMode, limits=$limits, retention=$retention, " +
         "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording, insights=$insights, replay=$replay, " +
         "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats, monitoring=$monitoring, remote=$remote, " +
-        "reporting=$reporting, screenshots=$screenshots, chaos=$chaos)"
+        "reporting=$reporting, screenshots=$screenshots, chaos=$chaos, " +
+        "dataInspection=$dataInspection)"
 
     /** [PulseConfig]를 만든다. 값 검증은 [build]에서 하고, 범위를 벗어나면 [IllegalArgumentException]을 던진다. */
     @Suppress("TooManyFunctions")
@@ -80,6 +83,7 @@ public class PulseConfig private constructor(
         private var reporting: Reporting? = null
         private var screenshots = ScreenshotPolicy()
         private var chaos: ChaosPolicy? = null
+        private var dataInspection: DataInspection? = null
 
         internal constructor(config: PulseConfig) : this() {
             captureMode = config.captureMode
@@ -99,6 +103,7 @@ public class PulseConfig private constructor(
             reporting = config.reporting
             screenshots = config.screenshots
             chaos = config.chaos
+            dataInspection = config.dataInspection
         }
 
         public fun captureMode(mode: CaptureMode): Builder = apply { captureMode = mode }
@@ -139,13 +144,16 @@ public class PulseConfig private constructor(
         /** 네트워크 장애 모사를 이 호스트들에만 허용한다. null이면 끈다. */
         public fun chaos(policy: ChaosPolicy?): Builder = apply { chaos = policy }
 
+        /** 인스펙터에서 읽기 전용으로 볼 저장소. null이면 숨긴다. */
+        public fun dataInspection(inspection: DataInspection?): Builder = apply { dataInspection = inspection }
+
         public fun build(): PulseConfig {
             require(queueCapacity in MIN_QUEUE_CAPACITY..MAX_QUEUE_CAPACITY) {
                 "queueCapacity는 $MIN_QUEUE_CAPACITY..$MAX_QUEUE_CAPACITY 범위여야 합니다: $queueCapacity"
             }
             return PulseConfig(
                 captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints,
-                bodyFormats, monitoring, remote, reporting, screenshots, chaos,
+                bodyFormats, monitoring, remote, reporting, screenshots, chaos, dataInspection,
             )
         }
     }
