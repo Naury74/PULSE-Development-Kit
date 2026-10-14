@@ -46,4 +46,20 @@
     <string name="run">Run</string>
     <string name="session_summary">This session: %1$d run · %2$d ok · %3$d errors</string>
     <string name="sample_subtitle">Demo server inside the app · nothing leaves the device</string>
+    <string name="group_app">App diagnostics (beyond network)</string>
+    <string name="scenario_logs">Debug logs</string>
+    <string name="scenario_logs_detail">Writes five logs from VERBOSE to ERROR with Pulse.log. See them in the Logs tab and filter by level.</string>
+    <string name="scenario_span">Span with requests</string>
+    <string name="scenario_span_detail">Marks a point, then opens a span around two requests. Open the span in Logs and choose "Only this span".</string>
+    <string name="scenario_handled_error">Handled error</string>
+    <string name="scenario_handled_error_detail">Records a caught exception with Pulse.recordError. It shows up in Issues and is queued for remote reporting.</string>
+    <string name="scenario_remote">Remote report round trip</string>
+    <string name="scenario_remote_detail">Records an error, flushes the queue, and shows how many reports the demo server\'s /collect received.</string>
+    <string name="scenario_freeze">Main thread freeze (3 s)</string>
+    <string name="scenario_freeze_detail">Blocks the main thread for 3 seconds. The watchdog records it as JANK. Not part of Run all.</string>
+    <string name="scenario_crash">Crash the app</string>
+    <string name="scenario_crash_detail">Throws an uncaught exception. Reopen the app: the crash and its exit reason appear in Logs and Issues. Not part of Run all.</string>
+    <string name="crash_confirm_title">Crash the app?</string>
+    <string name="crash_confirm_body">The app closes right away. Open it again and check the Logs and Issues tabs.</string>
+    <string name="crash_confirm_ok">Crash</string>
 </resources>

@@ -20,9 +20,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.naury.pulse.api.Pulse
+import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.RecordingState
 import kotlinx.coroutines.launch
 
@@ -65,7 +68,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as SampleApplication
-        val runner = DemoRunner({ app.client }, app.demoServer)
+        val inspector: PulseInspector = app.pulse
+        val runner = DemoRunner({ app.client }, app.demoServer) { inspector.remote?.flushNow() }
         setContent {
             val dark = isSystemInDarkTheme()
             MaterialTheme(colorScheme = if (dark) SampleDarkColors else SampleLightColors) {
@@ -113,12 +117,18 @@ private fun SampleScreen(runner: DemoRunner, recording: RecordingState, onOpenIn
     val results = remember { mutableStateMapOf<DemoScenario, RunResult>() }
     val running = remember { mutableStateMapOf<DemoScenario, Boolean>() }
     var runAllProgress by remember { mutableStateOf<Int?>(null) }
+    var confirmCrash by remember { mutableStateOf(false) }
+    val runAll = DemoScenario.entries.filter { it.inRunAll }
     suspend fun run(scenario: DemoScenario) {
         running[scenario] = true
         val start = System.nanoTime()
         val text = runner.run(scenario)
         results[scenario] =
-            RunResult(text, text.contains("HTTP 2") || text.contains("HTTP 3"), (System.nanoTime() - start) / NANOS_PER_MILLI)
+            RunResult(
+                text,
+                text.startsWith("OK") || text.contains("HTTP 2") || text.contains("HTTP 3"),
+                (System.nanoTime() - start) / NANOS_PER_MILLI,
+            )
         running.remove(scenario)
     }
     Scaffold(
@@ -136,10 +146,11 @@ private fun SampleScreen(runner: DemoRunner, recording: RecordingState, onOpenIn
                     recording = recording,
                     results = results.values.toList(),
                     runAllProgress = runAllProgress,
+                    runAllCount = runAll.size,
                     onOpenInspector = onOpenInspector,
                     onRunAll = {
                         scope.launch {
-                            DemoScenario.entries.forEachIndexed { index, scenario ->
+                            runAll.forEachIndexed { index, scenario ->
                                 runAllProgress = index
                                 run(scenario)
                             }
@@ -149,21 +160,48 @@ private fun SampleScreen(runner: DemoRunner, recording: RecordingState, onOpenIn
                     onClear = { results.clear() },
                 )
             }
-            ScenarioGroup.entries.forEach { group ->
-                item(key = group.name) {
-                    Text(
-                        stringResource(group.title),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
-                    )
-                }
-                items(DemoScenario.entries.filter { it.group == group }, key = { it.name }) { scenario ->
-                    ScenarioCard(scenario, results[scenario], running[scenario] == true) { scope.launch { run(scenario) } }
-                }
+            scenarioGroups(results, running) { scenario ->
+                if (scenario == DemoScenario.APP_CRASH) confirmCrash = true else scope.launch { run(scenario) }
             }
         }
     }
+    if (confirmCrash) {
+        CrashConfirmDialog(onDismiss = { confirmCrash = false }) {
+            confirmCrash = false
+            scope.launch { run(DemoScenario.APP_CRASH) }
+        }
+    }
+}
+
+private fun LazyListScope.scenarioGroups(
+    results: Map<DemoScenario, RunResult>,
+    running: Map<DemoScenario, Boolean>,
+    onRun: (DemoScenario) -> Unit,
+) {
+    ScenarioGroup.entries.forEach { group ->
+        item(key = group.name) {
+            Text(
+                stringResource(group.title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
+            )
+        }
+        items(DemoScenario.entries.filter { it.group == group }, key = { it.name }) { scenario ->
+            ScenarioCard(scenario, results[scenario], running[scenario] == true) { onRun(scenario) }
+        }
+    }
+}
+
+@Composable
+private fun CrashConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.crash_confirm_title)) },
+        text = { Text(stringResource(R.string.crash_confirm_body)) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.crash_confirm_ok), color = ErrorRed) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) } },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -189,6 +227,7 @@ private fun HeroCard(
     recording: RecordingState,
     results: List<RunResult>,
     runAllProgress: Int?,
+    runAllCount: Int,
     onOpenInspector: () -> Unit,
     onRunAll: () -> Unit,
     onClear: () -> Unit,
@@ -218,9 +257,9 @@ private fun HeroCard(
                 )
             }
             runAllProgress?.let { index ->
-                Text(stringResource(R.string.running_all, index + 1, DemoScenario.entries.size), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.running_all, index + 1, runAllCount), style = MaterialTheme.typography.bodySmall)
                 LinearProgressIndicator(
-                    progress = { (index + 1f) / DemoScenario.entries.size },
+                    progress = { (index + 1f) / runAllCount },
                     modifier = Modifier.fillMaxWidth().height(6.dp),
                 )
             }
@@ -315,6 +354,7 @@ private fun methodColor(method: String): Color = when (method) {
     "POST" -> SuccessGreen
     "PUT", "PATCH" -> WriteOrange
     "DELETE" -> ErrorRed
+    "APP" -> AppPurple
     else -> ReadBlue
 }
 
@@ -322,6 +362,7 @@ private val SuccessGreen = Color(0xFF2B8A3E)
 private val ErrorRed = Color(0xFFC92A2A)
 private val WriteOrange = Color(0xFFD9480F)
 private val ReadBlue = Color(0xFF1971C2)
+private val AppPurple = Color(0xFF7048E8)
 
 private const val NANOS_PER_MILLI = 1_000_000L
 private const val TAG_ALPHA = 0.14f

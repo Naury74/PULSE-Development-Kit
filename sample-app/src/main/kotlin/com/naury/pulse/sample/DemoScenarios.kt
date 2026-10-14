@@ -23,15 +23,20 @@ enum class ScenarioGroup(@StringRes val title: Int) {
     BODIES(R.string.group_bodies),
     DIAGNOSTICS(R.string.group_diagnostics),
     OPTIONS(R.string.group_options),
+    APP(R.string.group_app),
 }
 
-/** PULSE가 기록하는 여러 경우를 재현하는 요청 묶음. [endpoint]는 화면에 보여 줄 메서드와 경로다. */
+/**
+ * PULSE가 기록하는 여러 경우를 재현하는 묶음. [method]·[endpoint]는 화면에 보여 줄 표시다.
+ * [inRunAll]이 false면 "모두 실행"에서 뺀다(앱을 멈추거나 끝내는 시나리오).
+ */
 enum class DemoScenario(
     @StringRes val title: Int,
     @StringRes val description: Int,
     val group: ScenarioGroup,
     val method: String,
     val endpoint: String,
+    val inRunAll: Boolean = true,
 ) {
     GET_JSON(R.string.scenario_get_json, R.string.scenario_get_json_detail, ScenarioGroup.BASIC, "GET", "/users/1"),
     POST_LOGIN(R.string.scenario_post_login, R.string.scenario_post_login_detail, ScenarioGroup.BASIC, "POST", "/login"),
@@ -48,10 +53,16 @@ enum class DemoScenario(
     ERROR_BURST(R.string.scenario_error_burst, R.string.scenario_error_burst_detail, ScenarioGroup.DIAGNOSTICS, "GET", "/error ×6"),
     REPEATED_GET(R.string.scenario_repeated_get, R.string.scenario_repeated_get_detail, ScenarioGroup.DIAGNOSTICS, "GET", "/config ×6"),
     HEALTH_CHECK(R.string.scenario_health, R.string.scenario_health_detail, ScenarioGroup.OPTIONS, "GET", "/health"),
+    APP_LOGS(R.string.scenario_logs, R.string.scenario_logs_detail, ScenarioGroup.APP, "APP", "Pulse.log ×5"),
+    APP_SPAN(R.string.scenario_span, R.string.scenario_span_detail, ScenarioGroup.APP, "APP", "Pulse.beginSpan / endSpan"),
+    APP_ERROR(R.string.scenario_handled_error, R.string.scenario_handled_error_detail, ScenarioGroup.APP, "APP", "Pulse.recordError"),
+    APP_REMOTE(R.string.scenario_remote, R.string.scenario_remote_detail, ScenarioGroup.APP, "APP", "POST /collect"),
+    APP_FREEZE(R.string.scenario_freeze, R.string.scenario_freeze_detail, ScenarioGroup.APP, "APP", "main thread 3 s", inRunAll = false),
+    APP_CRASH(R.string.scenario_crash, R.string.scenario_crash_detail, ScenarioGroup.APP, "APP", "throw on main", inRunAll = false),
 }
 
-/** [clientFactory]는 첫 시나리오를 실행할 때 I/O 스레드에서 부른다. */
-class DemoRunner(clientFactory: () -> OkHttpClient, private val server: DemoServer) {
+/** [clientFactory]는 첫 시나리오를 실행할 때 I/O 스레드에서 부른다. [flushRemote]는 원격 보고를 바로 보내게 한다. */
+class DemoRunner(clientFactory: () -> OkHttpClient, private val server: DemoServer, flushRemote: () -> Unit) {
     private val client by lazy(clientFactory)
 
     private val json = "application/json; charset=utf-8".toMediaType()
@@ -66,7 +77,10 @@ class DemoRunner(clientFactory: () -> OkHttpClient, private val server: DemoServ
         }
     }
 
+    private val app = AppScenarios(server, flushRemote) { base, path -> call(get(base, path, "checkout")) }
+
     private suspend fun execute(scenario: DemoScenario, base: HttpUrl): String = simplePaths[scenario]?.let { call(get(base, it)) }
+        ?: app.takeIf { scenario.group == ScenarioGroup.APP }?.run(scenario, base)
         ?: when (scenario) {
             DemoScenario.GET_JSON -> call(get(base, "users/1?api_key=demo-key", "profile"))
             DemoScenario.POST_LOGIN, DemoScenario.FORM_LOGIN -> login(scenario, base)

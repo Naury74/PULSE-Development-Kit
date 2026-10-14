@@ -46,4 +46,20 @@
     <string name="run">실행</string>
     <string name="session_summary">이번 실행: %1$d개 · 성공 %2$d · 오류 %3$d</string>
     <string name="sample_subtitle">앱 안 데모 서버 · 기기 밖으로 나가는 요청 없음</string>
+    <string name="group_app">앱 진단(네트워크 밖)</string>
+    <string name="scenario_logs">디버그 로그</string>
+    <string name="scenario_logs_detail">Pulse.log로 VERBOSE부터 ERROR까지 로그 5개를 남깁니다. 로그 탭에서 수준으로 걸러 보세요.</string>
+    <string name="scenario_span">구간 안의 요청</string>
+    <string name="scenario_span_detail">마커를 찍고 요청 두 개를 구간으로 감쌉니다. 로그 탭에서 구간을 열고 "구간만 보기"를 누르세요.</string>
+    <string name="scenario_handled_error">처리한 오류</string>
+    <string name="scenario_handled_error_detail">잡은 예외를 Pulse.recordError로 기록합니다. 이슈 탭에 나오고 원격 보고 목록에도 쌓입니다.</string>
+    <string name="scenario_remote">원격 보고 왕복</string>
+    <string name="scenario_remote_detail">오류를 하나 기록하고 바로 보낸 뒤, 데모 서버 /collect가 받은 보고 수를 보여 줍니다.</string>
+    <string name="scenario_freeze">메인 스레드 멈춤(3초)</string>
+    <string name="scenario_freeze_detail">메인 스레드를 3초 막습니다. 감시기가 JANK로 기록합니다. 모두 실행에서는 뺍니다.</string>
+    <string name="scenario_crash">앱 강제 종료(크래시)</string>
+    <string name="scenario_crash_detail">잡지 않은 예외를 던집니다. 앱을 다시 열면 크래시와 종료 이유가 로그·이슈 탭에 나옵니다. 모두 실행에서는 뺍니다.</string>
+    <string name="crash_confirm_title">앱을 종료할까요?</string>
+    <string name="crash_confirm_body">앱이 바로 닫힙니다. 다시 열어 로그·이슈 탭을 확인하세요.</string>
+    <string name="crash_confirm_ok">종료</string>
 </resources>
