@@ -20,6 +20,7 @@ internal class EventReader(private val dao: EventDao, private val blobs: BlobSto
             from = query.fromEpochMillis,
             to = query.toEpochMillis,
             sessionId = query.sessionId,
+            spanId = query.spanId,
             afterTimestamp = after?.startedAtEpochMillis,
             afterId = after?.id,
             limit = limit + 1,
@@ -28,6 +29,8 @@ internal class EventReader(private val dao: EventDao, private val blobs: BlobSto
         val next = if (rows.size > limit) items.last().let { PageCursor(it.timestampEpochMillis, it.id) } else null
         return EventPage(items, next)
     }
+
+    suspend fun event(id: String): AppEvent? = dao.byId(id)?.toEvent()
 
     suspend fun sessions(from: Long?, to: Long?, limit: Int, currentSessionId: String?): List<SessionSummary> =
         dao.sessions(from, to, limit).map { it.toSummary(currentSessionId) }

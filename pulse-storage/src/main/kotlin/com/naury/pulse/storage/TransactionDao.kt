@@ -57,6 +57,9 @@ internal interface TransactionDao {
     @Query("UPDATE transactions SET requestBodyBytes = :bytes WHERE id = :id")
     fun updateRequestBodyBytes(id: String, bytes: Long?)
 
+    @Query("SELECT * FROM transactions WHERE parentTransactionId = :id ORDER BY startedAtEpochMillis LIMIT :limit")
+    suspend fun children(id: String, limit: Int): List<TransactionEntity>
+
     @Query("UPDATE transactions SET responseBodyBytes = :bytes WHERE id = :id")
     fun updateResponseBodyBytes(id: String, bytes: Long?)
 
@@ -86,6 +89,8 @@ internal interface TransactionDao {
         )
         AND (:from IS NULL OR startedAtEpochMillis >= :from)
         AND (:to IS NULL OR startedAtEpochMillis <= :to)
+        AND (:sessionId IS NULL OR sessionId = :sessionId)
+        AND (:spanId IS NULL OR spanId = :spanId)
         AND (:afterStarted IS NULL OR startedAtEpochMillis < :afterStarted
             OR (startedAtEpochMillis = :afterStarted AND id < :afterId))
         ORDER BY startedAtEpochMillis DESC, id DESC
@@ -97,6 +102,8 @@ internal interface TransactionDao {
         status: String,
         from: Long?,
         to: Long?,
+        sessionId: String?,
+        spanId: String?,
         afterStarted: Long?,
         afterId: String?,
         limit: Int,

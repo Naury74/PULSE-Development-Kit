@@ -14,8 +14,9 @@ import androidx.room.RoomDatabase
         NetworkHeaderEntity::class,
         EventEntity::class,
         OutboxEntity::class,
+        ReportEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -24,6 +25,7 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
+        AutoMigration(from = 7, to = 8),
     ],
 )
 internal abstract class PulseDatabase : RoomDatabase() {
@@ -32,4 +34,6 @@ internal abstract class PulseDatabase : RoomDatabase() {
     abstract fun events(): EventDao
 
     abstract fun outbox(): OutboxDao
+
+    abstract fun reports(): ReportDao
 }

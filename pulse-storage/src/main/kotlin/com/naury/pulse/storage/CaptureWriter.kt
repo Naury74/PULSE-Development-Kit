@@ -151,6 +151,7 @@ internal class CaptureWriter(
                 foreground = record.context?.foreground,
                 networkType = record.context?.networkType,
                 label = record.context?.label,
+                spanId = record.context?.spanId,
             ),
         )
         if (inserted == -1L) return

@@ -4,13 +4,21 @@ import android.content.Context
 import androidx.room.Room
 import com.naury.pulse.analytics.AppStatisticsInput
 import com.naury.pulse.analytics.TrafficSample
+import com.naury.pulse.api.AppEvent
 import com.naury.pulse.api.EventKind
 import com.naury.pulse.api.EventPage
 import com.naury.pulse.api.EventQuery
+import com.naury.pulse.api.EvidenceLink
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PageCursor
+import com.naury.pulse.api.ReportDraft
+import com.naury.pulse.api.ReportState
+import com.naury.pulse.api.ReportStatus
 import com.naury.pulse.api.RetentionPolicy
 import com.naury.pulse.api.SessionSummary
+import com.naury.pulse.api.TimelineItemKind
+import com.naury.pulse.api.TimelinePage
+import com.naury.pulse.api.TimelineQuery
 import com.naury.pulse.api.TransactionDetail
 import com.naury.pulse.api.TransactionPage
 import com.naury.pulse.api.TransactionQuery
@@ -44,6 +52,10 @@ public class PulseStorage private constructor(
     private val writer by lazy { CaptureWriter(database, blobs, retention, wallClock, outboxFilter) }
     private val reader by lazy { TransactionReader(database.transactions(), blobs) }
     private val eventReader by lazy { EventReader(database.events(), blobs) }
+    private val timeline by lazy { TimelineReader(reader, eventReader) }
+    private val reports by lazy {
+        ReportStore(database.reports(), BlobStore(File(bodyDirectory().parentFile, REPORT_DIRECTORY)), wallClock)
+    }
 
     public val sink: CaptureSink = CaptureSink { records -> writer.write(records) }
 
@@ -84,6 +96,48 @@ public class PulseStorage private constructor(
                 requestTimes = eventReader.requestTimes(from, to),
             )
         }
+
+    public suspend fun loadTimeline(query: TimelineQuery, after: PageCursor?, limit: Int): TimelinePage =
+        withContext(Dispatchers.IO) { timeline.page(query, after, limit) }
+
+    public suspend fun loadRelated(id: String, kind: TimelineItemKind, windowMillis: Long): List<EvidenceLink> =
+        withContext(Dispatchers.IO) { timeline.related(id, kind, windowMillis) }
+
+    public suspend fun loadEvent(id: String): AppEvent? = withContext(Dispatchers.IO) { eventReader.event(id) }
+
+    /** 보고를 저장한다. 글자는 마스킹을 마친 것이어야 한다. [png]의 뜻은 [com.naury.pulse.api.PulseReports.save]와 같다. */
+    public suspend fun saveReport(draft: ReportDraft, png: ByteArray?, destinationId: String?): String =
+        withContext(Dispatchers.IO) { reports.save(draft, png, destinationId) }
+
+    public suspend fun loadReport(id: String): ReportDraft? = withContext(Dispatchers.IO) { reports.load(id) }
+
+    public suspend fun loadReportScreenshot(id: String): ByteArray? = withContext(Dispatchers.IO) { reports.screenshot(id) }
+
+    public fun observeReportStates(): Flow<List<ReportState>> = flow { emitAll(reports.observeStates()) }.flowOn(Dispatchers.IO)
+
+    public suspend fun reportState(id: String): ReportState? = withContext(Dispatchers.IO) { reports.state(id) }
+
+    /** 보낼 차례가 된 보고를 오래 기다린 순으로. */
+    public suspend fun dueReportUploads(now: Long, limit: Int): List<ReportState> = withContext(Dispatchers.IO) { reports.due(now, limit) }
+
+    @Suppress("LongParameterList")
+    public suspend fun updateReport(
+        id: String,
+        status: ReportStatus,
+        attempts: Int,
+        nextAttempt: Long,
+        lastError: String?,
+        destinationId: String?,
+    ) {
+        withContext(Dispatchers.IO) { reports.update(id, status, attempts, nextAttempt, lastError, destinationId) }
+    }
+
+    /** 보내던 중에 프로세스가 끝난 보고를 다시 보낼 목록으로 돌린다. */
+    public suspend fun requeueInterruptedReports(): Int = withContext(Dispatchers.IO) { reports.requeueSending() }
+
+    public suspend fun deleteReport(id: String) {
+        withContext(Dispatchers.IO) { reports.delete(id) }
+    }
 
     public suspend fun loadAttachment(name: String): ByteArray? = withContext(Dispatchers.IO) { eventReader.attachment(name) }
 
@@ -136,6 +190,7 @@ public class PulseStorage private constructor(
         private const val DIRECTORY = "pulse"
         private const val DATABASE_FILE = "pulse.db"
         private const val BODY_DIRECTORY = "bodies"
+        private const val REPORT_DIRECTORY = "reports"
 
         @JvmStatic
         @JvmOverloads

@@ -109,6 +109,28 @@ class PulseDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `v7에서 v8로 올리면 요청의 구간 열이 비어 있고 보고 표가 생긴다`() {
+        helper.createDatabase(DATABASE, 7).use { database ->
+            database.execSQL("INSERT INTO sessions (id, startedAtEpochMillis) VALUES ('s1', 1)")
+            database.execSQL(
+                "INSERT INTO transactions (id, sessionId, source, method, url, scheme, host, path, startedAtEpochMillis, state) " +
+                    "VALUES ('t1', 's1', 'ORIGINAL', 'GET', 'https://a/b', 'https', 'a', '/b', 2, 'COMPLETED')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DATABASE, 8, true).use { migrated ->
+            migrated.query("SELECT spanId FROM transactions WHERE id = 't1'").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.isNull(0)).isTrue()
+            }
+            migrated.query("SELECT COUNT(*) FROM reports").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getInt(0)).isEqualTo(0)
+            }
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-test.db"
     }

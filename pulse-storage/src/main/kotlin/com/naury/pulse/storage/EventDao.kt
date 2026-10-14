@@ -21,6 +21,7 @@ internal interface EventDao {
         AND (:from IS NULL OR timestampEpochMillis >= :from)
         AND (:to IS NULL OR timestampEpochMillis <= :to)
         AND (:sessionId IS NULL OR sessionId = :sessionId)
+        AND (:spanId IS NULL OR spanId = :spanId)
         AND (:afterTimestamp IS NULL OR timestampEpochMillis < :afterTimestamp
             OR (timestampEpochMillis = :afterTimestamp AND id < :afterId))
         ORDER BY timestampEpochMillis DESC, id DESC
@@ -36,10 +37,14 @@ internal interface EventDao {
         from: Long?,
         to: Long?,
         sessionId: String?,
+        spanId: String?,
         afterTimestamp: Long?,
         afterId: String?,
         limit: Int,
     ): List<EventEntity>
+
+    @Query("SELECT * FROM app_events WHERE id = :id")
+    suspend fun byId(id: String): EventEntity?
 
     /** 집계용. 기간 안의 지정한 종류만 최신순으로. */
     @Query(

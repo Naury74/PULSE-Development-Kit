@@ -61,6 +61,7 @@ internal data class EventEntity(
         Index("statusCode", "startedAtEpochMillis"),
         Index("state", "startedAtEpochMillis"),
         Index("durationNanos"),
+        Index("spanId"),
     ],
 )
 internal data class TransactionEntity(
@@ -89,6 +90,7 @@ internal data class TransactionEntity(
     @ColumnInfo(defaultValue = "NULL") val foreground: Boolean? = null,
     @ColumnInfo(defaultValue = "NULL") val networkType: NetworkType? = null,
     @ColumnInfo(defaultValue = "NULL") val label: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val spanId: String? = null,
 )
 
 @Entity(

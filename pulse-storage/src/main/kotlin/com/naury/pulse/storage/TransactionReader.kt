@@ -24,6 +24,8 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
             status = query.status.name,
             from = query.fromEpochMillis,
             to = query.toEpochMillis,
+            sessionId = query.sessionId,
+            spanId = query.spanId,
             afterStarted = after?.startedAtEpochMillis,
             afterId = after?.id,
             limit = limit + 1,
@@ -32,6 +34,10 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
         val next = if (rows.size > limit) items.last().let { PageCursor(it.startedAtEpochMillis, it.id) } else null
         return TransactionPage(items, next)
     }
+
+    suspend fun summary(id: String): TransactionSummary? = dao.transaction(id)?.toSummary()
+
+    suspend fun children(id: String, limit: Int): List<TransactionSummary> = dao.children(id, limit).map { it.toSummary() }
 
     suspend fun detail(id: String): TransactionDetail? {
         val transaction = dao.transaction(id) ?: return null
@@ -115,11 +121,11 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
         responseBodyBytes = responseBodyBytes,
         source = source,
         parentTransactionId = parentTransactionId,
-        context = context(screen, foreground, networkType, label),
+        context = context(screen, foreground, networkType, label, spanId),
     )
 
-    private fun context(screen: String?, foreground: Boolean?, networkType: NetworkType?, label: String?) =
-        RequestContext(screen, foreground, networkType, label).takeUnless { it.isEmpty }
+    private fun context(screen: String?, foreground: Boolean?, networkType: NetworkType?, label: String?, spanId: String? = null) =
+        RequestContext(screen, foreground, networkType, label, spanId).takeUnless { it.isEmpty }
 
     private fun MessageEntity.toHttpMessage(headers: List<HeaderField>) =
         HttpMessage(headers, contentType, declaredContentLength, bodyState, storedBodyBytes, redactedValueCount)
