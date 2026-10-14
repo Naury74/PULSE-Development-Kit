@@ -16,10 +16,10 @@ dependencies {
     implementation(project(":pulse-analytics"))
     implementation(project(":pulse-replay"))
     implementation(project(":pulse-mock"))
+    implementation(project(":pulse-export"))
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.okhttp.mockwebserver)
-    testImplementation(project(":pulse-export"))
 }

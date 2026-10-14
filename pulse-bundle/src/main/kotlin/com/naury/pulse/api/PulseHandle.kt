@@ -15,6 +15,7 @@ import com.naury.pulse.mock.MockRegistry
 import com.naury.pulse.monitor.AppMonitor
 import com.naury.pulse.monitor.EnvironmentRegistry
 import com.naury.pulse.monitor.RemoteReporter
+import com.naury.pulse.monitor.ReportService
 import com.naury.pulse.okhttp.CallTimingRegistry
 import com.naury.pulse.okhttp.PulseEventListenerFactory
 import com.naury.pulse.okhttp.PulseInterceptor
@@ -60,6 +61,9 @@ public class PulseHandle private constructor(
     private val mockRegistry = MockRegistry()
     private val mockInterceptor = MockInterceptor(mockRegistry)
     private val environment = EnvironmentRegistry(context.applicationContext, events)
+    private val reportService = ReportService(config, storage, { this }, environment::snapshot, scope)
+
+    override val reports: PulseReports = reportService
 
     override val mocks: PulseMocks = mockRegistry
 
@@ -300,6 +304,7 @@ public class PulseHandle private constructor(
             return PulseHandle(config, storage, engine, appContext, context, reporter).also { handle ->
                 handle.monitor.start()
                 reporter.start()
+                handle.reportService.uploader.start()
                 handle.scope.launch {
                     storage.startSession(engine.recorder.sessionId, System.currentTimeMillis())
                     handle.monitor.recordExitReasons()
