@@ -2,7 +2,7 @@
 
 > **WIP** — 아직 Maven Central에 배포하지 않았습니다. 공개 API는 0.x 동안 바뀔 수 있습니다.
 
-**PULSE**는 Android 앱의 OkHttp 요청을 기기 안에서 안전하게 기록하고 살펴보는 네트워크 인스펙터 SDK입니다.
+**PULSE**는 Android 앱의 OkHttp 요청과 앱 상태(로그·크래시·멈춤·성능)를 기기 안에서 안전하게 기록하고 살펴보는 debug용 진단 SDK입니다.
 연결한 `OkHttpClient`를 지나는 요청만 기록하며, 비밀 값은 **저장하기 전에** 가립니다. 호스트 앱이 받는 응답·예외·스트리밍 동작은 바뀌지 않습니다.
 
 <table>
@@ -32,10 +32,15 @@
 - **대시보드**: 기간·호스트·화면·라벨로 거른 요청 수·분당 요청·오류율·p50~p99·첫 응답 시간·전송량·연결 재사용·캐시, 응답 시간 추이와 분포, 상태 코드·실패 종류, DNS·연결·TLS 단계, 정렬 가능한 엔드포인트 표(`/users/{id}`로 묶음), 화면·라벨·호스트·네트워크·앱 상태별 분류
 - **수집 옵션**: 호스트·경로 필터, 요청을 보낸 화면·앱 상태·네트워크 종류, 요청 라벨(`PulseLabel`), form·텍스트 본문(선택)
 - **진단**: 진단 규칙 6개(느린 요청, 오류 몰림, 동시 중복 GET, 큰 응답, N+1 추정, 캐시 후보). 결과마다 기준값·관찰값·근거 요청을 보여 주고 추정 규칙은 추정이라고 밝힘
-- **내보내기**: HAR 1.2·PULSE JSON을 사용자가 고른 위치에 스트리밍으로 저장(내보낼 때 다시 마스킹), cURL 복사
+- **내보내기**: 요청은 HAR 1.2·PULSE JSON·CSV·Markdown, 로그는 텍스트·JSON·CSV로. 지금 조건·선택한 항목·전부 중에서 고르고 헤더·본문 포함 여부를 정해 파일로 저장하거나 바로 공유(내보낼 때 다시 마스킹). cURL 복사
 - **재실행**(선택, 기본 꺼짐): 허용한 호스트에만, 가려진 자격 증명은 빼고, 상태를 바꾸는 요청은 확인 후 보냄. 리다이렉트도 단계마다 검사. 원본과 결과 비교
 - **모의 응답**(선택, 기본 꺼짐): 직접 붙인 interceptor가 규칙에 맞는 요청에 합성 응답. MOCK으로 따로 기록
 - **보관**: Room DB와 백업 제외 폴더, 건수·기간·본문 용량 상한, 앱이 죽어 끝나지 않은 요청은 "중단"으로 표시
+- **앱 진단**: 크래시(죽기 직전 저장), 지난 실행의 종료 이유(ANR·네이티브 크래시·메모리 부족), 메인 스레드 멈춤과 스택, 콜드 스타트·화면 로딩·프레임·메모리, 실행(세션)별 실행 시간. 이 앱의 logcat과 `Pulse.log`를 수준·묶음·검색으로 거름
+- **마커·구간**: `Pulse.mark`·`beginSpan`/`endSpan` 또는 앱 화면 위 플로팅 버튼으로 테스트 중 시점과 구간을 표시하고, 그 시점 앞뒤나 구간만 모든 탭에서 따로 봄. 화면 캡처도 함께 남김
+- **이슈·앱 대시보드**: 크래시·오류·멈춤·종료를 원인별로 묶고, 크래시 없는 실행 비율·날짜별 실행 시간·화면별 느린 프레임을 보여 줌
+- **날짜·실행으로 보기**: 오늘·어제·7일·30일, 달력 범위, 실행 하나를 골라 모든 탭에 적용(야간 자동 테스트 결과 확인)
+- **원격 오류 보고**(선택): 크래시·오류·멈춤을 묶어 팀 서버로 보냄. 앱이 죽어도 다음 실행 때 보내고, 주소·토큰은 코드·빌드 값·설정 탭에서 지정
 - **release 빌드**: 같은 API의 `pulse-noop`으로 바꾸면 수집·저장·화면 코드가 들어가지 않음
 
 ## 시작하기
@@ -79,6 +84,8 @@ Compose 화면 안에 넣으려면 `PulseInspectorScreen(inspector = pulse, onCl
 | --- | --- |
 | [getting-started.md](docs/getting-started.md) | 설치, 초기화, 기존 EventListener와 함께 쓰기, 화면 열기 |
 | [configuration.md](docs/configuration.md) | `PulseConfig`의 모든 설정과 기본값 |
+| [app-monitoring.md](docs/app-monitoring.md) | 로그·크래시·성능·마커, 날짜로 보기, 로그 내보내기 |
+| [remote-reporting.md](docs/remote-reporting.md) | 원격 오류 보고 설정과 받는 쪽 형식 |
 | [capture-semantics.md](docs/capture-semantics.md) | 무엇을 언제 기록하는지, 본문 상태, 타이밍의 의미 |
 | [privacy-and-export.md](docs/privacy-and-export.md) | 마스킹 규칙, 저장 위치, 내보내기 |
 | [replay-and-mocks.md](docs/replay-and-mocks.md) | 재실행과 모의 응답의 안전 장치 |
@@ -94,6 +101,7 @@ Compose 화면 안에 넣으려면 `PulseInspectorScreen(inspector = pulse, onCl
 - application interceptor 위치에서 기록하므로 OkHttp가 나중에 붙이는 헤더(`Host`, `Accept-Encoding`, 쿠키 저장소의 쿠키)는 보이지 않습니다.
 - 본문은 JSON만 저장합니다(form·텍스트는 `BodyFormats`로 켬). multipart·바이너리와 WebSocket 프레임은 기록하지 않습니다.
 - 저장 데이터는 암호화하지 않습니다. 스크린샷 차단은 아직 없습니다.
+- 네이티브 크래시와 ANR은 그 자리에서 잡지 못하고 다음 실행 때 시스템 기록(Android 11+)으로 남깁니다.
 - 성능은 JVM에서만 쟀고 Android 기기 측정은 아직입니다.
 
 ## 빌드

@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | `captureMode` | `METADATA_ONLY` | `METADATA_AND_SAFE_BODIES`면 마스킹한 JSON 본문도 저장 |
 | `limits` | 요청 128 KB, 응답 512 KB | 본문 상한(최대 4 MB). 넘으면 본문 전체를 저장하지 않음 |
-| `retention` | 10,000건, 7일, 본문 100 MB | 셋 다 지키도록 오래된 것부터 지움 |
+| `retention` | 10,000건, 이벤트 50,000개, 7일, 본문 100 MB | 모두 지키도록 오래된 것부터 지움 |
 | `redaction` | `RedactionPolicy.strict()` | 가릴 헤더·쿼리·민감 단어. 아래 참고 |
 | `queueCapacity` | 2,000 | 저장을 기다리는 이벤트 수(16..100,000). 넘치면 본문부터 버림 |
 | `startRecording` | `true` | `false`면 멈춘 상태로 시작 |
@@ -16,6 +16,8 @@
 | `context` | 화면·앱 상태·네트워크 모두 켬 | 요청을 시작할 때의 맥락을 함께 기록 |
 | `endpoints` | 자동 템플릿 켬 | 통계에서 `/users/42`를 `/users/{id}`로 묶는 방법 |
 | `bodyFormats` | `BodyFormats.JSON_ONLY` | JSON 말고 form·텍스트 본문도 저장할지 |
+| `monitoring` | 크래시·종료 이유·멈춤(2초)·성능·메모리 켬, logcat 끔 | 앱 쪽 수집. `debugDefaults()`는 logcat도 켬. [app-monitoring.md](app-monitoring.md) |
+| `remote` | `null`(꺼짐) | 크래시·오류를 서버로 보냄. [remote-reporting.md](remote-reporting.md) |
 
 ## 기록할 요청 거르기
 
@@ -76,3 +78,21 @@ RedactionPolicy.strict()
 ## 재실행
 
 `ReplayPolicy(allowedHosts, allowCleartext = false, maxRequestBodyBytes = 256 KB, timeoutMillis = 15_000, maxRedirects = 5)` — [replay-and-mocks.md](replay-and-mocks.md).
+
+## 앱 진단
+
+`AppMonitoring(crashes = true, exitReasons = true, logcat = false, logcatMinLevel = DEBUG, logcatIgnoredTags = emptySet(), mainThreadBlockMillis = 2_000, performance = true, memoryIntervalMillis = 30_000, screenshotOnCrash = false)` — [app-monitoring.md](app-monitoring.md).
+
+## 원격 오류 보고
+
+`RemoteReporting(endpoint, headers = emptyMap(), kinds = CRASH·EXIT·ERROR·MAIN_THREAD_BLOCKED, minLogLevel = null, networkFailures = true, batchSize = 50, flushIntervalMillis = 30_000, wifiOnly = false, allowCleartext = false, attributes = emptyMap(), maxPending = 5_000)` — 어디에 어떤 값을 둘지와 받는 쪽 형식은 [remote-reporting.md](remote-reporting.md).
+
+## 화면 리소스
+
+호스트 앱의 `res/values`에 같은 이름으로 두면 바뀝니다.
+
+| 리소스 | 기본값 | 설명 |
+| --- | --- | --- |
+| `pulse_launcher_icon_enabled` | `true` | debug 빌드에 PULSE 런처 아이콘 |
+| `pulse_notification_enabled` | `true` | 요청 수·오류를 보여 주는 알림 |
+| `pulse_overlay_enabled` | `false` | 앱 화면 위 플로팅 버튼(마커·구간·화면 캡처). 설정 탭에서 기기마다 바꿀 수 있음 |
