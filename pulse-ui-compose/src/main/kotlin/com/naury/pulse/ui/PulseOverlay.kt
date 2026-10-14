@@ -40,7 +40,6 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
     private const val BUBBLE_DP = 48
     private const val MARGIN_DP = 8
     private const val TAP_SLOP_DP = 6
-    private const val MAX_WIDTH = 1080
     private const val START_Y_FRACTION = 0.6f
     private const val ELEVATION_DP = 6
     private const val STROKE_DP = 2
@@ -50,6 +49,7 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
     private const val MENU_SCREENSHOT = 4
     private const val MENU_OPEN = 5
     private const val MENU_HIDE = 6
+    private const val MENU_REPORT = 7
 
     private var installed = false
     private var markerCount = 0
@@ -120,6 +120,7 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
             activity.getString(R.string.pulse_overlay_span_end, name, (SystemClock.elapsedRealtime() - spanStartedAt) / MILLIS_PER_SECOND)
         } ?: activity.getString(R.string.pulse_overlay_span_start)
         menu.menu.add(0, MENU_SPAN, MENU_SPAN, spanLabel)
+        menu.menu.add(0, MENU_REPORT, MENU_REPORT, activity.getString(R.string.pulse_overlay_report))
         menu.menu.add(0, MENU_SCREENSHOT, MENU_SCREENSHOT, activity.getString(R.string.pulse_overlay_screenshot))
         menu.menu.add(0, MENU_OPEN, MENU_OPEN, activity.getString(R.string.pulse_overlay_open))
         menu.menu.add(0, MENU_HIDE, MENU_HIDE, activity.getString(R.string.pulse_overlay_hide))
@@ -136,6 +137,8 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
                 }
 
                 MENU_SCREENSHOT -> screenshot(activity)
+
+                MENU_REPORT -> openReport(activity, bubble)
 
                 MENU_OPEN -> activity.startActivity(Intent(activity, PulseInspectorActivity::class.java))
 
@@ -177,20 +180,7 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
 
     private fun screenshot(activity: Activity) {
         val inspector = PulseInspectorRegistry.current ?: return
-        // 앱이 스크린샷을 막은 화면(FLAG_SECURE)은 PULSE도 찍지 않는다.
-        if (activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0) {
-            toast(activity, activity.getString(R.string.pulse_overlay_screenshot_secure))
-            return
-        }
-        val view = activity.window.decorView
-        val own = bubble
-        own?.visibility = View.INVISIBLE
-        val png = try {
-            capturePng(view, MAX_WIDTH)
-        } finally {
-            own?.visibility = View.VISIBLE
-        }
-        if (png == null) return
+        val png = captureScreen(activity, bubble) ?: return
         inspector.recordScreenshot(png, activity.getString(R.string.pulse_overlay_screenshot_note, activity.javaClass.simpleName))
         toast(activity, activity.getString(R.string.pulse_overlay_screenshot_saved))
     }
@@ -338,3 +328,27 @@ private val PULSE_LINE = floatArrayOf(0.22f, 0.52f, 0.38f, 0.52f, 0.46f, 0.34f, 
 
 /** 구간 기록 중 표시 점의 중심 x, y와 반지름. 버튼 너비에 대한 비율이다. */
 private val RECORDING_DOT = floatArrayOf(0.82f, 0.18f, 0.12f)
+
+/** 앱이 캡처를 막은 화면(FLAG_SECURE)과 설정에서 막은 화면은 찍지 않고 알린다. [hide](플로팅 버튼)는 빼고 찍는다. */
+private fun captureScreen(activity: Activity, hide: View?): ByteArray? {
+    val blocked = PulseInspectorRegistry.current?.config?.screenshots?.blockedScreens.orEmpty()
+    if (activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0 || activity.javaClass.simpleName in blocked) {
+        toast(activity, activity.getString(R.string.pulse_overlay_screenshot_secure))
+        return null
+    }
+    hide?.visibility = View.INVISIBLE
+    return try {
+        capturePng(activity.window.decorView, MAX_CAPTURE_WIDTH)
+    } finally {
+        hide?.visibility = View.VISIBLE
+    }
+}
+
+private const val MAX_CAPTURE_WIDTH = 1080
+
+/** 지금 화면을 메모리에만 잡아 두고 보고 작성기를 연다. 가리기 전 이미지는 저장하지 않는다. */
+private fun openReport(activity: Activity, hide: View?) {
+    if (PulseInspectorRegistry.current?.reports == null) return
+    ReportRequests.pending = ComposeRequest(png = captureScreen(activity, hide))
+    activity.startActivity(Intent(activity, PulseInspectorActivity::class.java))
+}

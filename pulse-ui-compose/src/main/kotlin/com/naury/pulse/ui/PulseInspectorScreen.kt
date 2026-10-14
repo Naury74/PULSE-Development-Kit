@@ -124,6 +124,8 @@ public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, 
             }
         }
 
+        ReportRequests.pending?.let { request -> ReportComposer(inspector, request) { ReportRequests.pending = null } }
+
         if (navigation.confirmClear) {
             ClearDialog(onDismiss = { navigation.confirmClear = false }) {
                 navigation.confirmClear = false

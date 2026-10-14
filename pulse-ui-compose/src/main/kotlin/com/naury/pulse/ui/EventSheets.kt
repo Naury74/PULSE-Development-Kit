@@ -44,7 +44,9 @@ import androidx.compose.ui.unit.dp
 import com.naury.pulse.api.AppEvent
 import com.naury.pulse.api.EventKind
 import com.naury.pulse.api.EventQuery
+import com.naury.pulse.api.EvidenceRef
 import com.naury.pulse.api.PulseInspector
+import com.naury.pulse.api.ReportKind
 import com.naury.pulse.api.TimelineItemKind
 import com.naury.pulse.export.EventExportFormat
 import com.naury.pulse.export.EventExporter
@@ -164,6 +166,20 @@ private fun EventDetailActions(inspector: PulseInspector, event: AppEvent, onRan
             }) { Text(stringResource(R.string.pulse_events_span_only)) }
         }
         CopyButton { listOfNotNull(event.message, event.detail).joinToString("\n\n") }
+        if (inspector.reports != null) {
+            OutlinedButton(onClick = {
+                onDismiss()
+                ReportRequests.pending = ComposeRequest(
+                    capturedAtEpochMillis = event.timestampEpochMillis,
+                    evidence = EvidenceRef(
+                        TimelineItemKind.EVENT,
+                        event.id,
+                        "${event.kind} ${event.message.lineSequence().first().take(EVIDENCE_TITLE)}",
+                    ),
+                    kind = if (event.kind == EventKind.CRASH || event.kind == EventKind.EXIT) ReportKind.CRASH else ReportKind.MANUAL,
+                )
+            }) { Text(stringResource(R.string.pulse_bug_from_event)) }
+        }
     }
 }
 
@@ -240,3 +256,5 @@ private fun EventFormatChips(selected: EventExportFormat, onSelect: (EventExport
         }
     }
 }
+
+private const val EVIDENCE_TITLE = 80

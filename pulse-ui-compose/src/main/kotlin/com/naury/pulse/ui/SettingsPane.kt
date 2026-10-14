@@ -67,6 +67,8 @@ internal fun SettingsPane(inspector: PulseInspector, onClear: () -> Unit, modifi
             )
         }
 
+        inspector.reports?.let { ReportsSection(it) }
+
         EnvironmentSection(inspector)
 
         inspector.remote?.let { RemoteSection(it) }
