@@ -841,10 +841,12 @@ public final class com/naury/pulse/api/TrafficStatistics$Companion {
 }
 
 public final class com/naury/pulse/api/TransactionDetail {
-	public fun <init> (Lcom/naury/pulse/api/TransactionSummary;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Lcom/naury/pulse/api/HttpMessage;Lcom/naury/pulse/api/HttpMessage;Ljava/util/List;Lcom/naury/pulse/api/ResponseSource;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Lcom/naury/pulse/api/TransactionSummary;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Lcom/naury/pulse/api/HttpMessage;Lcom/naury/pulse/api/HttpMessage;Ljava/util/List;Lcom/naury/pulse/api/ResponseSource;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/naury/pulse/api/TransactionSummary;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Lcom/naury/pulse/api/HttpMessage;Lcom/naury/pulse/api/HttpMessage;Ljava/util/List;Lcom/naury/pulse/api/ResponseSource;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Lcom/naury/pulse/api/TransactionSummary;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Lcom/naury/pulse/api/HttpMessage;Lcom/naury/pulse/api/HttpMessage;Ljava/util/List;Lcom/naury/pulse/api/ResponseSource;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getConnectionReused ()Ljava/lang/Boolean;
 	public final fun getFailureMessage ()Ljava/lang/String;
+	public final fun getNetworkRequestHeaders ()Ljava/util/List;
+	public final fun getNetworkResponseHeaders ()Ljava/util/List;
 	public final fun getProtocol ()Ljava/lang/String;
 	public final fun getRequest ()Lcom/naury/pulse/api/HttpMessage;
 	public final fun getResponse ()Lcom/naury/pulse/api/HttpMessage;

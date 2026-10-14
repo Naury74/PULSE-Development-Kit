@@ -112,6 +112,17 @@ internal class CaptureWriter(
             },
         )
         dao.updateNetworkEvidence(record.transactionId, record.responseSource, record.connectionReused)
+        // 요청 기록이 먼저 들어간 경우에만 쓴다. 없으면 외래 키 때문에 묶음 전체가 실패한다.
+        if (dao.transactionExists(record.transactionId)) {
+            dao.insertNetworkHeaders(
+                record.networkRequestHeaders.mapIndexed { i, h ->
+                    NetworkHeaderEntity(record.transactionId, MessageKind.REQUEST, i, h.name, h.value)
+                } +
+                    record.networkResponseHeaders.mapIndexed { i, h ->
+                        NetworkHeaderEntity(record.transactionId, MessageKind.RESPONSE, i, h.name, h.value)
+                    },
+            )
+        }
     }
 
     private fun insertRequest(record: RequestRecord) {

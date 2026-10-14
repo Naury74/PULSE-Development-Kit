@@ -138,10 +138,28 @@ public class CaptureRecorder internal constructor(
         }
     }
 
-    /** 관찰한 단계와 근거. 단계도 근거도 없으면 기록하지 않는다. */
-    public fun timings(transactionId: String, phases: List<TimingPhase>, responseSource: ResponseSource?, connectionReused: Boolean?) {
-        if (phases.isEmpty() && responseSource == null && connectionReused == null) return
-        enqueue { TimingRecord(transactionId, phases, responseSource, connectionReused) }
+    /** 관찰한 단계와 근거, 실제로 오간 헤더. 아무것도 없으면 기록하지 않는다. 헤더는 여기서 마스킹한다. */
+    @Suppress("LongParameterList")
+    public fun timings(
+        transactionId: String,
+        phases: List<TimingPhase>,
+        responseSource: ResponseSource?,
+        connectionReused: Boolean?,
+        networkRequestHeaders: List<Pair<String, String>> = emptyList(),
+        networkResponseHeaders: List<Pair<String, String>> = emptyList(),
+    ) {
+        val nothing = phases.isEmpty() && responseSource == null && connectionReused == null
+        if (nothing && networkRequestHeaders.isEmpty() && networkResponseHeaders.isEmpty()) return
+        enqueue {
+            TimingRecord(
+                transactionId,
+                phases,
+                responseSource,
+                connectionReused,
+                redactor.redactHeaders(networkRequestHeaders),
+                redactor.redactHeaders(networkResponseHeaders),
+            )
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")

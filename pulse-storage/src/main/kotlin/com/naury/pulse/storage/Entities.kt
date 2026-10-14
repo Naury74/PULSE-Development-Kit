@@ -93,6 +93,27 @@ internal data class MessageEntity(
 )
 internal data class HeaderEntity(val transactionId: String, val kind: MessageKind, val position: Int, val name: String, val value: String)
 
+/** 실제로 오간(네트워크 단계) 헤더. 앱 단계 헤더(`headers`)와 따로 둔다. */
+@Entity(
+    tableName = "network_headers",
+    primaryKeys = ["transactionId", "kind", "position"],
+    foreignKeys = [
+        ForeignKey(
+            entity = TransactionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["transactionId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+internal data class NetworkHeaderEntity(
+    val transactionId: String,
+    val kind: MessageKind,
+    val position: Int,
+    val name: String,
+    val value: String,
+)
+
 @Entity(
     tableName = "timing_phases",
     primaryKeys = ["transactionId", "position"],

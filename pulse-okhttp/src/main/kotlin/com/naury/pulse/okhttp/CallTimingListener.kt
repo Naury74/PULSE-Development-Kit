@@ -72,6 +72,8 @@ internal class CallTimingListener(
     private var responseSource: ResponseSource? = null
     private var connectionAcquired = false
     private var connectionOpened = false
+    private var wireRequestHeaders: List<Pair<String, String>> = emptyList()
+    private var wireResponseHeaders: List<Pair<String, String>> = emptyList()
 
     @Synchronized
     fun attach(id: String, startNanos: Long) {
@@ -118,7 +120,10 @@ internal class CallTimingListener(
 
     override fun requestHeadersStart(call: Call) = start(TimingPhaseType.REQUEST_HEADERS, newConnection = false)
 
-    override fun requestHeadersEnd(call: Call, request: Request) = end(TimingPhaseType.REQUEST_HEADERS)
+    override fun requestHeadersEnd(call: Call, request: Request) {
+        synchronized(this) { wireRequestHeaders = request.headers.map { (name, value) -> name to value } }
+        end(TimingPhaseType.REQUEST_HEADERS)
+    }
 
     override fun requestBodyStart(call: Call) = start(TimingPhaseType.REQUEST_BODY, newConnection = false)
 
@@ -126,7 +131,10 @@ internal class CallTimingListener(
 
     override fun responseHeadersStart(call: Call) = start(TimingPhaseType.RESPONSE_HEADERS, newConnection = false)
 
-    override fun responseHeadersEnd(call: Call, response: Response) = end(TimingPhaseType.RESPONSE_HEADERS)
+    override fun responseHeadersEnd(call: Call, response: Response) {
+        synchronized(this) { wireResponseHeaders = response.headers.map { (name, value) -> name to value } }
+        end(TimingPhaseType.RESPONSE_HEADERS)
+    }
 
     override fun responseBodyStart(call: Call) = start(TimingPhaseType.RESPONSE_BODY, newConnection = false)
 
@@ -159,10 +167,21 @@ internal class CallTimingListener(
             if (reported) return
             reported = true
             val reused = if (connectionAcquired) !connectionOpened else null
-            transactionId?.let { Report(it, phases.map { phase -> phase.toTimingPhase(interceptorStartNanos) }, responseSource, reused) }
+            transactionId?.let {
+                Report(
+                    it,
+                    phases.map { phase -> phase.toTimingPhase(interceptorStartNanos) },
+                    responseSource,
+                    reused,
+                    wireRequestHeaders,
+                    wireResponseHeaders,
+                )
+            }
         }
         registry.remove(call)
-        snapshot?.let { recorder.timings(it.transactionId, it.phases, it.responseSource, it.connectionReused) }
+        snapshot?.let {
+            recorder.timings(it.transactionId, it.phases, it.responseSource, it.connectionReused, it.requestHeaders, it.responseHeaders)
+        }
     }
 
     private class Report(
@@ -170,6 +189,8 @@ internal class CallTimingListener(
         val phases: List<TimingPhase>,
         val responseSource: ResponseSource?,
         val connectionReused: Boolean?,
+        val requestHeaders: List<Pair<String, String>>,
+        val responseHeaders: List<Pair<String, String>>,
     )
 
     private class OpenPhase(val type: TimingPhaseType, val exchangeIndex: Int, val startNanos: Long) {

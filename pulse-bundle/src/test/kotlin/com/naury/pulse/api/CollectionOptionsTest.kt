@@ -64,6 +64,11 @@ class CollectionOptionsTest {
         val form = items.single { it.path == "/oauth/token" }
         assertThat(form.context?.label).isEqualTo("auth")
         assertThat(handle.loadBody(form.id, MessageKind.REQUEST)).isEqualTo("username=kim&password=$REDACTED")
+        // 앱은 헤더를 붙이지 않았지만 실제로 보낸 헤더(Host·Content-Type 등)는 따로 남는다.
+        val formDetail = requireNotNull(handle.loadTransaction(form.id))
+        assertThat(formDetail.request.headers).isEmpty()
+        assertThat(formDetail.networkRequestHeaders.map { it.name }).containsAtLeast("Host", "Content-Type")
+        assertThat(formDetail.networkResponseHeaders).isNotEmpty()
         val stats = handle.loadStatistics(StatsQuery(StatsWindow.LAST_HOUR))
         assertThat(stats.counts.total).isEqualTo(3)
         assertThat(stats.endpoints.first().path).isEqualTo("/items/{itemId}")

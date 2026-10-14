@@ -75,6 +75,9 @@ public class TimingRecord internal constructor(
     public val phases: List<TimingPhase>,
     public val responseSource: ResponseSource?,
     public val connectionReused: Boolean?,
+    /** 마지막 교환에서 실제로 오간 헤더. 마스킹을 마친 값이다. */
+    public val networkRequestHeaders: List<HeaderField> = emptyList(),
+    public val networkResponseHeaders: List<HeaderField> = emptyList(),
 ) : CaptureRecord
 
 /** 저장 스레드에서 마스킹할 원본 본문. 큐 밖으로 나가기 전에 [BodyRecord]로 바뀐다. */

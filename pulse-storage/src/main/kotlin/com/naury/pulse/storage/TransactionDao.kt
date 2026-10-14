@@ -27,6 +27,15 @@ internal interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertTimings(timings: List<TimingEntity>)
 
+    @Query("SELECT EXISTS(SELECT 1 FROM transactions WHERE id = :id)")
+    fun transactionExists(id: String): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertNetworkHeaders(headers: List<NetworkHeaderEntity>)
+
+    @Query("SELECT * FROM network_headers WHERE transactionId = :id ORDER BY kind, position")
+    suspend fun networkHeaders(id: String): List<NetworkHeaderEntity>
+
     @Query("UPDATE transactions SET statusCode = :statusCode, protocol = :protocol, responseHeadersNanos = :headersNanos WHERE id = :id")
     fun updateResponse(id: String, statusCode: Int, protocol: String, headersNanos: Long): Int
 

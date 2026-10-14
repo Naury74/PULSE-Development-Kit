@@ -107,6 +107,7 @@ public class TransactionSummary(
 )
 
 /** 상세 화면용 트랜잭션. */
+@Suppress("LongParameterList")
 public class TransactionDetail(
     public val summary: TransactionSummary,
     /** HTTP 프로토콜(`http/1.1`, `h2` 등). 응답을 받지 못했으면 null. */
@@ -124,6 +125,13 @@ public class TransactionDetail(
     public val responseSource: ResponseSource? = null,
     /** 연결을 새로 맺지 않고 재사용했는지. 연결을 얻는 이벤트를 관찰하지 못했으면(캐시 응답 등) null. */
     public val connectionReused: Boolean? = null,
+    /**
+     * 마지막 교환에서 실제로 보낸 요청 헤더(마스킹 후). OkHttp가 붙인 `Host`·`User-Agent`·`Accept-Encoding`·쿠키 저장소 쿠키를 포함한다.
+     * `eventListenerFactory()`를 붙이지 않았거나 네트워크로 나가지 않았으면 비어 있다.
+     */
+    public val networkRequestHeaders: List<HeaderField> = emptyList(),
+    /** 마지막 교환에서 서버가 보낸 응답 헤더(마스킹 후). 압축을 풀기 전이라 `Content-Encoding` 등이 남아 있다. */
+    public val networkResponseHeaders: List<HeaderField> = emptyList(),
 )
 
 /** 응답이 어디서 왔는지. OkHttp `Cache`가 알린 이벤트만 근거로 쓴다. */

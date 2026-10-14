@@ -35,6 +35,7 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
         val transaction = dao.transaction(id) ?: return null
         val messages = dao.messages(id).associateBy { it.kind }
         val headers = dao.headers(id).groupBy({ it.kind }, { HeaderField(it.name, it.value) })
+        val network = dao.networkHeaders(id).groupBy({ it.kind }, { HeaderField(it.name, it.value) })
         val request = messages[MessageKind.REQUEST]?.toHttpMessage(headers[MessageKind.REQUEST].orEmpty())
             ?: HttpMessage(headers[MessageKind.REQUEST].orEmpty(), null, null, BodyState.PENDING, null, 0)
         return TransactionDetail(
@@ -47,6 +48,8 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
             timings = dao.timings(id).map { TimingPhase(it.phase, it.exchangeIndex, it.startOffsetNanos, it.durationNanos) },
             responseSource = transaction.responseSource,
             connectionReused = transaction.connectionReused,
+            networkRequestHeaders = network[MessageKind.REQUEST].orEmpty(),
+            networkResponseHeaders = network[MessageKind.RESPONSE].orEmpty(),
         )
     }
 
