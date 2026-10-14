@@ -29,6 +29,7 @@
 - `ScreenshotPolicy`와 `FLAG_SECURE` 화면 캡처 차단.
 - 네트워크 장애 모사(`ChaosPolicy`, `ChaosRule`, `PulseChaos`).
 - 실행 비교(`compareSessions`, `SessionDiff`), 화면 구조 보기(View·Compose Semantics), 로컬 데이터 읽기 전용 보기(`DataInspection`, `PulseLocalData`), WebView 기록(`PulseWebViewClient`, `PulseWebChromeClient`, no-op 포함), 메모리 표본의 GC 횟수·CPU 시간.
+- 로컬 데이터의 SharedPreferences 편집(`DataInspection.allowPreferenceEdits`, 기본 꺼짐).
 - 재현 패키지 뷰어(설정 → 버그 보고 → 패키지 열기, SHA-256 무결성 확인).
 - 탭·뒤로 키 자동 기록(`AppMonitoring.interactions`, `debugDefaults()`에서 켬), 인스펙터 화면 캡처 차단 리소스(`pulse_inspector_secure`).
 - 샘플 앱: 앱 진단 시나리오(로그·구간·처리 오류·원격 보고 왕복·멈춤·크래시)와 데모 서버의 `/collect`.

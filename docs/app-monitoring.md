@@ -101,7 +101,7 @@ Pulse.setFlag("server", "staging")                         // 기능 플래그·
 .dataInspection(DataInspection(sharedPreferences = setOf("settings"), databases = setOf("app.db"), maxRows = 200))
 ```
 
-등록한 SharedPreferences와 SQLite·Room DB만 설정 탭에서 읽기 전용으로 봅니다. DB는 읽기 전용으로 열고 표·열·행을 쪽으로 읽습니다. 이름이 민감 단어를 담은 키·열은 값을 가리고(`RedactionPolicy.withSensitiveNames`로 더함), 그 밖의 값도 글자 속 비밀을 가리며, BLOB은 크기만 보입니다. 값을 바꾸는 기능은 없습니다.
+등록한 SharedPreferences와 SQLite·Room DB만 설정 탭에서 읽기 전용으로 봅니다. DB는 읽기 전용으로 열고 표·열·행을 쪽으로 읽습니다. 이름이 민감 단어를 담은 키·열은 값을 가리고(`RedactionPolicy.withSensitiveNames`로 더함), 그 밖의 값도 글자 속 비밀을 가리며, BLOB은 크기만 보입니다. DB는 언제나 읽기 전용입니다. `allowPreferenceEdits = true`면 SharedPreferences 값을 확인 후 기존 형식(Boolean·Int·Long·Float·String)으로 바꾸거나 지울 수 있고, 무엇을 바꿨는지(키 이름만)가 타임라인에 `CONFIG` 이벤트로 남습니다. 되돌리기는 없습니다.
 
 ## WebView
 
