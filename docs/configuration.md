@@ -21,6 +21,7 @@
 | `reporting` | `null`(내보내기만) | 버그 보고 종류별 목적지. [bug-reports.md](bug-reports.md) |
 | `screenshots` | `ScreenshotPolicy()` | 캡처하지 않을 화면. `FLAG_SECURE` 화면은 항상 찍지 않음 |
 | `chaos` | `null`(꺼짐) | 네트워크 장애 모사를 허용할 호스트 |
+| `dataInspection` | `null`(숨김) | 인스펙터에서 읽기 전용으로 볼 SharedPreferences·DB. [app-monitoring.md](app-monitoring.md) |
 
 ## 기록할 요청 거르기
 

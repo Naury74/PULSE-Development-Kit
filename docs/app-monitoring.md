@@ -86,6 +86,31 @@ Pulse.setFlag("server", "staging")                         // 기능 플래그·
 - **이슈 탭**: 크래시·종료 이유·오류·멈춤을 같은 원인(종류와 메시지 첫 줄)끼리 묶어 횟수와 처음·마지막 시각을 보여 줍니다. 위쪽 전환으로 네트워크 진단을 봅니다.
 - **대시보드 → 앱**: 크래시 없는 실행 비율, 실행 수·전체 실행 시간·화면에 보인 시간, 날짜별 실행 시간과 크래시, 콜드 스타트·화면 로딩 p50/p95, 화면별 느린 프레임, 로그 수준별 개수, 종료 이유, 최근 실행 목록.
 
+## 실행 비교
+
+개요 → 앱 → 최근 앱 실행 아래 "두 실행 비교"에서 기준 실행(정상)과 확인할 실행(문제)을 고르면 확인할 실행에만 있는 오류·크래시, 값이 다른 플래그, 한쪽에서만 간 화면, 엔드포인트별 요청·오류·중앙 시간 변화(큰 순), 이벤트 종류별 개수를 보여 줍니다. 실행마다 기록 20,000개까지 비교합니다. API: `compareSessions(base, target)`.
+
+## 화면 구조 보기
+
+플로팅 버튼 → 화면 구조 보기는 지금 화면의 View 계층과 Compose Semantics 계층(테스트용 공개 인터페이스로 읽음)을 잡아 노드 목록과 속성(영역·보임·누를 수 있음·패딩·testTag·role 등)을 보여 주고, 고른 노드의 영역을 캡처 위에 표시합니다. 글자는 내용 없이 길이만 담습니다. 노드는 3,000개까지이고, Compose 버전이 바뀌어 읽지 못하면 그 View까지만 보입니다.
+
+## 로컬 데이터(읽기 전용)
+
+```kotlin
+.dataInspection(DataInspection(sharedPreferences = setOf("settings"), databases = setOf("app.db"), maxRows = 200))
+```
+
+등록한 SharedPreferences와 SQLite·Room DB만 설정 탭에서 읽기 전용으로 봅니다. DB는 읽기 전용으로 열고 표·열·행을 쪽으로 읽습니다. 이름이 민감 단어를 담은 키·열은 값을 가리고(`RedactionPolicy.withSensitiveNames`로 더함), 그 밖의 값도 글자 속 비밀을 가리며, BLOB은 크기만 보입니다. 값을 바꾸는 기능은 없습니다.
+
+## WebView
+
+```kotlin
+webView.webViewClient = object : PulseWebViewClient() { /* 재정의하면 super 호출 */ }
+webView.webChromeClient = PulseWebChromeClient(minLevel = LogLevel.WARN)
+```
+
+페이지 시작·끝(걸린 시간), 로딩 실패, HTTP 4xx·5xx, `console.*`(기본 WARN 이상)를 태그 `WebView`·`WebView.console` 로그로 남깁니다. release(`pulse-noop`)에도 같은 이름의 클래스가 있어 그대로 컴파일되고 기록만 하지 않습니다. JS↔Native 브리지 호출은 `Pulse.action("bridge.pay")`처럼 남기면 타임라인에 함께 보입니다.
+
 ## 날짜·실행으로 거르기
 
 모든 탭 위의 기간 칩에서 **오늘·어제·최근 7일·최근 30일**, **달력에서 날짜 범위**, **앱 실행(세션) 하나**를 고릅니다. 고른 기간은 트래픽·로그·이슈·대시보드에 함께 적용되고 화면을 돌려도 유지됩니다. 야간 자동 테스트 결과는 다음 날 "어제"나 그 실행을 골라 보면 됩니다.
