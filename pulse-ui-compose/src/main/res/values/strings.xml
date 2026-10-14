@@ -379,7 +379,7 @@
     <string name="pulse_range_session_detail">ran %1$s · on screen %2$s</string>
     <string name="pulse_range_session_current">now</string>
     <string name="pulse_range_apply">Apply</string>
-    <string name="pulse_tab_logs">Logs</string>
+    <string name="pulse_tab_logs">Timeline</string>
     <string name="pulse_tab_issues">Issues</string>
     <string name="pulse_events_all">All</string>
     <string name="pulse_events_logs">Logs</string>
@@ -470,4 +470,25 @@
     <string name="pulse_remote_token">Bearer token (optional, not shown again)</string>
     <string name="pulse_remote_edit_note">The token is stored in this app\'s private storage on this device. Prefer injecting it at build time for automated runs.</string>
     <string name="pulse_overlay_screenshot_secure">This screen blocks screenshots (FLAG_SECURE), so PULSE does not capture it.</string>
+    <string name="pulse_events_actions">Actions</string>
+    <string name="pulse_timeline_all">All</string>
+    <string name="pulse_timeline_requests">Requests</string>
+    <string name="pulse_flow_empty">Nothing recorded in this period.</string>
+    <string name="pulse_timeline_search">Search URLs, messages, tags</string>
+    <string name="pulse_timeline_flow">Full flow</string>
+    <string name="pulse_timeline_logs">App logs</string>
+    <string name="pulse_related_title">Related evidence</string>
+    <string name="pulse_related_empty">No requests or events nearby.</string>
+    <string name="pulse_related_note">Recorded links (span, replay, crash) are certain. Same screen and nearby time only mean they happened together, not that one caused the other.</string>
+    <string name="pulse_related_span">same span</string>
+    <string name="pulse_related_replay">replay</string>
+    <string name="pulse_related_crash_exit">crash · exit</string>
+    <string name="pulse_related_screen">same screen</string>
+    <string name="pulse_related_time">nearby</string>
+    <string name="pulse_env_title">Environment and flags</string>
+    <string name="pulse_env_app">App</string>
+    <string name="pulse_env_device">Device</string>
+    <string name="pulse_env_flags">Flags</string>
+    <string name="pulse_env_flags_empty">No flags yet. Call Pulse.setFlag("server", "staging") to show values here and record changes in the timeline.</string>
+    <string name="pulse_env_flag_history">Show changes</string>
 </resources>

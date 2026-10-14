@@ -99,7 +99,6 @@ internal fun TrafficPane(
         picked = if (summary.id in picked) picked - summary.id else picked + summary.id
     }
 
-    val focusManager = LocalFocusManager.current
     val range by viewModel.range.collectAsStateWithLifecycle()
 
     // 사용자가 맨 위에 있으면 바로 새로고침하고, 아래를 보고 있으면 위치를 빼앗지 않고 알림만 띄운다.
@@ -146,7 +145,10 @@ internal fun TrafficPane(
         }
     }
     if (exportPicked) {
-        ExportSheet(inspector, TransactionQuery(searchText, status, range.from, range.to), picked, scope) { exportPicked = false }
+        ExportSheet(inspector, TransactionQuery(searchText, status, range.from, range.to, range.sessionId), picked, scope) {
+            exportPicked =
+                false
+        }
     }
 }
 

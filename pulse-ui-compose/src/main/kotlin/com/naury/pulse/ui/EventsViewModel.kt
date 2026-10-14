@@ -33,6 +33,7 @@ internal enum class EventGroup(@param:StringRes val label: Int, val kinds: Set<E
     MARKERS(R.string.pulse_events_markers, setOf(EventKind.MARKER, EventKind.SPAN_START, EventKind.SPAN_END, EventKind.SCREENSHOT)),
     ISSUES(R.string.pulse_events_issues, setOf(EventKind.ERROR, EventKind.CRASH, EventKind.MAIN_THREAD_BLOCKED, EventKind.EXIT)),
     PERFORMANCE(R.string.pulse_events_performance, setOf(EventKind.STARTUP, EventKind.SCREEN_LOAD, EventKind.FRAMES, EventKind.MEMORY)),
+    ACTIONS(R.string.pulse_events_actions, setOf(EventKind.ACTION, EventKind.NAVIGATION, EventKind.CONFIG)),
     LIFECYCLE(R.string.pulse_events_lifecycle, setOf(EventKind.LIFECYCLE)),
 }
 
@@ -72,8 +73,14 @@ internal class EventsViewModel(
         state[KEY_LEVEL] = value
     }
 
-    private fun query(text: String, group: EventGroup, level: LogLevel?, range: TimeRange) =
-        EventQuery(kinds = group.kinds, minLevel = level, text = text, fromEpochMillis = range.from, toEpochMillis = range.to)
+    private fun query(text: String, group: EventGroup, level: LogLevel?, range: TimeRange) = EventQuery(
+        kinds = group.kinds,
+        minLevel = level,
+        text = text,
+        fromEpochMillis = range.from,
+        toEpochMillis = range.to,
+        sessionId = range.sessionId,
+    )
 
     private companion object {
         const val KEY_TEXT = "pulse.events.text"

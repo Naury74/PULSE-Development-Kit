@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.naury.pulse.api.AppEvent
@@ -64,6 +66,7 @@ internal fun EventsPane(
     range: TimeRange,
     onRangeChange: (TimeRange) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenRequest: ((String) -> Unit)? = null,
 ) {
     val text by viewModel.text.collectAsStateWithLifecycle()
     val group by viewModel.group.collectAsStateWithLifecycle()
@@ -97,28 +100,23 @@ internal fun EventsPane(
             }
         }
         LevelChips(minLevel, viewModel::level)
-        Box(Modifier.weight(1f)) {
-            if (items.itemCount == 0) {
-                Box(Modifier.fillMaxSize().padding(Spacing.xl), contentAlignment = Alignment.Center) {
-                    Text(
-                        stringResource(R.string.pulse_events_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                    items(count = items.itemCount, key = items.itemKey { it.id }) { index ->
-                        items[index]?.let { event ->
-                            EventRow(event) { opened = event }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        }
-                    }
-                }
-            }
-        }
+        EventList(items, listState, Modifier.weight(1f)) { opened = it }
     }
-    opened?.let { event -> EventDetailSheet(inspector, event, onRangeChange, onDismiss = { opened = null }) }
+    opened?.let { event ->
+        EventDetailSheet(
+            inspector,
+            event,
+            onRangeChange,
+            onDismiss = { opened = null },
+            onOpenRequest = onOpenRequest?.let { open ->
+                { id: String ->
+                    opened = null
+                    open(id)
+                }
+            },
+            onOpenEvent = { opened = it },
+        )
+    }
     if (exporting) EventExportSheet(inspector, viewModel.query(), scope) { exporting = false }
 }
 
@@ -214,6 +212,30 @@ private fun EventRow(event: AppEvent, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun EventList(items: LazyPagingItems<AppEvent>, listState: LazyListState, modifier: Modifier, onOpen: (AppEvent) -> Unit) {
+    Box(modifier) {
+        if (items.itemCount == 0) {
+            Box(Modifier.fillMaxSize().padding(Spacing.xl), contentAlignment = Alignment.Center) {
+                Text(
+                    stringResource(R.string.pulse_events_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                items(count = items.itemCount, key = items.itemKey { it.id }) { index ->
+                    items[index]?.let { event ->
+                        EventRow(event) { onOpen(event) }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** 목록·상세에서 이벤트 종류와 수준을 짧게 보여 주는 글자. */
 internal fun eventBadge(event: AppEvent): String =
     if (event.kind == EventKind.LOG) event.level?.name?.take(1) ?: "L" else EVENT_BADGES.getValue(event.kind)
@@ -233,6 +255,9 @@ private val EVENT_BADGES = mapOf(
     EventKind.MEMORY to "MEM",
     EventKind.SCREENSHOT to "SHOT",
     EventKind.LIFECYCLE to "APP",
+    EventKind.ACTION to "ACT",
+    EventKind.NAVIGATION to "NAV",
+    EventKind.CONFIG to "FLAG",
 )
 
 @Composable

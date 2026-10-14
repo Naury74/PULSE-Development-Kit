@@ -30,6 +30,7 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -46,12 +47,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.naury.pulse.api.AppEvent
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.HeaderField
 import com.naury.pulse.api.HttpMessage
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PulseInspector
+import com.naury.pulse.api.TimelineItemKind
 import com.naury.pulse.api.TransactionDetail
 import com.naury.pulse.export.CurlFormatter
 import kotlinx.coroutines.Dispatchers
@@ -135,6 +138,7 @@ private fun DetailTabs(inspector: PulseInspector, detail: TransactionDetail, mod
                 0 -> {
                     SummaryTab(detail)
                     detail.summary.parentTransactionId?.let { parent -> ParentComparison(inspector, detail, parent, onOpenTransaction) }
+                    RequestEvidence(inspector, detail.summary.id, onOpenTransaction)
                 }
 
                 1 -> MessageTab(inspector, detail.summary.id, MessageKind.REQUEST, detail.request, detail.networkRequestHeaders)
@@ -425,3 +429,16 @@ private fun LoadedBody(body: BodyLoad.Loaded) {
 }
 
 private const val NANOS_PER_MILLI = 1_000_000L
+
+/** 요청과 이어진 이벤트·요청. 이벤트를 누르면 상세 시트를 띄운다. */
+@Composable
+private fun RequestEvidence(inspector: PulseInspector, id: String, onOpenTransaction: (String) -> Unit) {
+    var opened by remember { mutableStateOf<AppEvent?>(null) }
+    key(id) { RelatedEvidence(inspector, id, TimelineItemKind.REQUEST, onOpenTransaction) { opened = it } }
+    opened?.let { event ->
+        EventDetailSheet(inspector, event, onRangeChange = {}, onDismiss = { opened = null }, onOpenRequest = {
+            opened = null
+            onOpenTransaction(it)
+        }, onOpenEvent = { opened = it })
+    }
+}

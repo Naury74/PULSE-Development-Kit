@@ -27,6 +27,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,6 +45,7 @@ import com.naury.pulse.api.AppEvent
 import com.naury.pulse.api.EventKind
 import com.naury.pulse.api.EventQuery
 import com.naury.pulse.api.PulseInspector
+import com.naury.pulse.api.TimelineItemKind
 import com.naury.pulse.export.EventExportFormat
 import com.naury.pulse.export.EventExporter
 import java.io.OutputStream
@@ -62,7 +64,14 @@ private const val AROUND_MILLIS = 60_000L
  * 화면 캡처가 있으면 함께 보여 준다.
  */
 @Composable
-internal fun EventDetailSheet(inspector: PulseInspector, event: AppEvent, onRangeChange: (TimeRange) -> Unit, onDismiss: () -> Unit) {
+internal fun EventDetailSheet(
+    inspector: PulseInspector,
+    event: AppEvent,
+    onRangeChange: (TimeRange) -> Unit,
+    onDismiss: () -> Unit,
+    onOpenRequest: ((String) -> Unit)? = null,
+    onOpenEvent: ((AppEvent) -> Unit)? = null,
+) {
     val image by produceState<ImageBitmap?>(null, event.attachment) {
         value = event.attachment?.let { name ->
             withContext(Dispatchers.IO) {
@@ -115,6 +124,7 @@ internal fun EventDetailSheet(inspector: PulseInspector, event: AppEvent, onRang
             SheetLabel(stringResource(R.string.pulse_events_screenshot))
             Image(it, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp))
         }
+        key(event.id) { RelatedEvidence(inspector, event.id, TimelineItemKind.EVENT, onOpenRequest, onOpenEvent) }
     }
 }
 

@@ -33,15 +33,21 @@ internal class TrafficViewModel(private val inspector: PulseInspector, private v
     private val rangeFrom: StateFlow<Long?> = state.getStateFlow(KEY_FROM, null)
     private val rangeTo: StateFlow<Long?> = state.getStateFlow(KEY_TO, null)
     private val rangeLabel: StateFlow<String?> = state.getStateFlow(KEY_LABEL, null)
+    private val rangeSession: StateFlow<String?> = state.getStateFlow(KEY_SESSION, null)
 
     /** 모든 탭이 함께 쓰는 기간. */
-    val range: StateFlow<TimeRange> = combine(rangeFrom, rangeTo, rangeLabel) { from, to, label -> TimeRange(from, to, label) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, TimeRange(state[KEY_FROM], state[KEY_TO], state[KEY_LABEL]))
+    val range: StateFlow<TimeRange> =
+        combine(rangeFrom, rangeTo, rangeLabel, rangeSession) { from, to, label, session -> TimeRange(from, to, label, session) }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                TimeRange(state[KEY_FROM], state[KEY_TO], state[KEY_LABEL], state[KEY_SESSION]),
+            )
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     val transactions: Flow<PagingData<TransactionSummary>> =
         combine(searchText.debounce(SEARCH_DEBOUNCE_MILLIS), status, range) { text, status, range ->
-            TransactionQuery(text, status, range.from, range.to)
+            TransactionQuery(text, status, range.from, range.to, range.sessionId)
         }
             .distinctUntilChanged()
             .flatMapLatest { query ->
@@ -61,6 +67,7 @@ internal class TrafficViewModel(private val inspector: PulseInspector, private v
         state[KEY_FROM] = range.from
         state[KEY_TO] = range.to
         state[KEY_LABEL] = range.label
+        state[KEY_SESSION] = range.sessionId
     }
 
     private companion object {
@@ -69,6 +76,7 @@ internal class TrafficViewModel(private val inspector: PulseInspector, private v
         const val KEY_FROM = "pulse.range.from"
         const val KEY_TO = "pulse.range.to"
         const val KEY_LABEL = "pulse.range.label"
+        const val KEY_SESSION = "pulse.range.session"
         const val SEARCH_DEBOUNCE_MILLIS = 250L
         const val PAGE_SIZE = 50
     }

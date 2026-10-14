@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -83,14 +84,8 @@ private const val DETAIL_PANE_WEIGHT = 1f - LIST_PANE_WEIGHT
 @Composable
 public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, modifier: Modifier = Modifier) {
     PulseTheme {
-        val trafficViewModel: TrafficViewModel = viewModel(
-            key = "pulse-traffic",
-            factory = viewModelFactory { initializer { TrafficViewModel(inspector, createSavedStateHandle()) } },
-        )
-        val eventsViewModel: EventsViewModel = viewModel(
-            key = "pulse-events",
-            factory = viewModelFactory { initializer { EventsViewModel(inspector, createSavedStateHandle(), trafficViewModel.range) } },
-        )
+        val panes = rememberPanes(inspector)
+        val trafficViewModel = panes.traffic
         val navigation = rememberSaveable(saver = InspectorNavigation.Saver) { InspectorNavigation() }
 
         BoxWithConstraints(modifier.fillMaxSize()) {
@@ -104,7 +99,13 @@ public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, 
             val exportQuery = if (navigation.destination == Destination.TRAFFIC && !detailOnly) {
                 {
                     val range = trafficViewModel.range.value
-                    TransactionQuery(trafficViewModel.searchText.value, trafficViewModel.status.value, range.from, range.to)
+                    TransactionQuery(
+                        trafficViewModel.searchText.value,
+                        trafficViewModel.status.value,
+                        range.from,
+                        range.to,
+                        range.sessionId,
+                    )
                 }
             } else {
                 null
@@ -118,7 +119,7 @@ public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, 
                         DestinationRail(navigation.destination) { navigation.destination = it }
                         VerticalDivider()
                     }
-                    DestinationContent(navigation, inspector, trafficViewModel, eventsViewModel, wide, Modifier.weight(1f).fillMaxHeight())
+                    DestinationContent(navigation, inspector, panes, wide, Modifier.weight(1f).fillMaxHeight())
                 }
             }
         }
@@ -166,15 +167,35 @@ private class InspectorNavigation(
     }
 }
 
+/** 탭 화면들의 ViewModel. */
+private class Panes(val traffic: TrafficViewModel, val events: EventsViewModel, val timeline: TimelineViewModel)
+
+@Composable
+private fun rememberPanes(inspector: PulseInspector): Panes {
+    val traffic: TrafficViewModel = viewModel(
+        key = "pulse-traffic",
+        factory = viewModelFactory { initializer { TrafficViewModel(inspector, createSavedStateHandle()) } },
+    )
+    val events: EventsViewModel = viewModel(
+        key = "pulse-events",
+        factory = viewModelFactory { initializer { EventsViewModel(inspector, createSavedStateHandle(), traffic.range) } },
+    )
+    val timeline: TimelineViewModel = viewModel(
+        key = "pulse-timeline",
+        factory = viewModelFactory { initializer { TimelineViewModel(inspector, createSavedStateHandle(), traffic.range) } },
+    )
+    return Panes(traffic, events, timeline)
+}
+
 @Composable
 private fun DestinationContent(
     navigation: InspectorNavigation,
     inspector: PulseInspector,
-    trafficViewModel: TrafficViewModel,
-    eventsViewModel: EventsViewModel,
+    panes: Panes,
     wide: Boolean,
     modifier: Modifier,
 ) {
+    val trafficViewModel = panes.traffic
     val changeWindow: (StatsWindow) -> Unit = { navigation.window = it }
     val range by trafficViewModel.range.collectAsStateWithLifecycle()
     val changeRange: (TimeRange) -> Unit = trafficViewModel::setRange
@@ -201,7 +222,7 @@ private fun DestinationContent(
             navigation.selectedId = it
         }, modifier)
 
-        Destination.LOGS -> EventsPane(inspector, eventsViewModel, range, changeRange, modifier)
+        Destination.LOGS -> LogsDestination(inspector, panes, range, changeRange, { navigation.open(Destination.TRAFFIC, it) }, modifier)
 
         Destination.ISSUES -> IssuesPane(
             inspector,
@@ -214,6 +235,29 @@ private fun DestinationContent(
         )
 
         Destination.SETTINGS -> SettingsPane(inspector, onClear = { navigation.confirmClear = true }, modifier = modifier)
+    }
+}
+
+/** 타임라인 탭. 요청까지 섞은 전체 흐름과 앱 이벤트만 보는 로그를 오간다. */
+@Composable
+private fun LogsDestination(
+    inspector: PulseInspector,
+    panes: Panes,
+    range: TimeRange,
+    onRangeChange: (TimeRange) -> Unit,
+    onOpenRequest: (String) -> Unit,
+    modifier: Modifier,
+) {
+    var flow by rememberSaveable { mutableStateOf(true) }
+    Column(modifier) {
+        Box(Modifier.padding(start = Spacing.l, end = Spacing.l, top = Spacing.s)) {
+            TwoChoiceRow(stringResource(R.string.pulse_timeline_flow), stringResource(R.string.pulse_timeline_logs), flow) { flow = it }
+        }
+        if (flow) {
+            SessionTimelinePane(inspector, panes.timeline, range, onRangeChange, onOpenRequest, Modifier.weight(1f))
+        } else {
+            EventsPane(inspector, panes.events, range, onRangeChange, Modifier.weight(1f), onOpenRequest)
+        }
     }
 }
 

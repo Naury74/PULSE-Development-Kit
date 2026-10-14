@@ -48,17 +48,13 @@ internal fun IssuesPane(
 ) {
     var mode by rememberSaveable { mutableIntStateOf(0) }
     Column(modifier) {
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = Spacing.s)) {
-            listOf(R.string.pulse_issues_app, R.string.pulse_issues_network).forEachIndexed { index, label ->
-                SegmentedButton(selected = mode == index, onClick = {
-                    mode = index
-                }, shape = SegmentedButtonDefaults.itemShape(index, 2), icon = {}) {
-                    Text(stringResource(label))
-                }
+        Box(Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s)) {
+            TwoChoiceRow(stringResource(R.string.pulse_issues_app), stringResource(R.string.pulse_issues_network), mode == 0) {
+                mode = if (it) 0 else 1
             }
         }
         if (mode == 0) {
-            AppIssues(inspector, range, onRangeChange, Modifier.weight(1f))
+            AppIssues(inspector, range, onRangeChange, onOpenTransaction, Modifier.weight(1f))
         } else {
             InsightsPane(inspector, window, onWindowChange, onOpenTransaction, Modifier.weight(1f))
         }
@@ -71,10 +67,16 @@ private class IssueGroup(val latest: AppEvent, val count: Int, val firstSeen: Lo
 private val issueKinds = setOf(EventKind.CRASH, EventKind.ERROR, EventKind.MAIN_THREAD_BLOCKED, EventKind.EXIT)
 
 @Composable
-private fun AppIssues(inspector: PulseInspector, range: TimeRange, onRangeChange: (TimeRange) -> Unit, modifier: Modifier) {
+private fun AppIssues(
+    inspector: PulseInspector,
+    range: TimeRange,
+    onRangeChange: (TimeRange) -> Unit,
+    onOpenTransaction: (String) -> Unit,
+    modifier: Modifier,
+) {
     val groups = rememberLive(inspector, range, events = true) {
         val events = inspector.loadEvents(
-            EventQuery(kinds = issueKinds, fromEpochMillis = range.from, toEpochMillis = range.to),
+            EventQuery(kinds = issueKinds, fromEpochMillis = range.from, toEpochMillis = range.to, sessionId = range.sessionId),
             null,
             MAX_ISSUES,
         ).items
@@ -99,7 +101,12 @@ private fun AppIssues(inspector: PulseInspector, range: TimeRange, onRangeChange
             else -> groups.forEach { group -> IssueCard(group) { opened = group.latest } }
         }
     }
-    opened?.let { EventDetailSheet(inspector, it, onRangeChange) { opened = null } }
+    opened?.let { event ->
+        EventDetailSheet(inspector, event, onRangeChange, onDismiss = { opened = null }, onOpenRequest = {
+            opened = null
+            onOpenTransaction(it)
+        }, onOpenEvent = { opened = it })
+    }
 }
 
 @Composable

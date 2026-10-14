@@ -39,9 +39,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-/** 화면 전체가 함께 쓰는 기간. 둘 다 null이면 기간 제한이 없다. [label]은 칩에 보여 줄 이름이다. */
+/** 화면 전체가 함께 쓰는 기간. 둘 다 null이면 기간 제한이 없다. [label]은 칩에 보여 줄 이름, [sessionId]는 실행 하나를 고른 경우다. */
 @Immutable
-internal class TimeRange(val from: Long?, val to: Long?, val label: String?) {
+internal class TimeRange(val from: Long?, val to: Long?, val label: String?, val sessionId: String? = null) {
     val active: Boolean
         get() = from != null || to != null
 
@@ -84,7 +84,7 @@ internal class TimeRange(val from: Long?, val to: Long?, val label: String?) {
         }
 
         fun ofSession(session: SessionSummary, label: String): TimeRange =
-            TimeRange(session.startedAtEpochMillis, session.lastSeenEpochMillis, label)
+            TimeRange(session.startedAtEpochMillis, session.lastSeenEpochMillis.takeUnless { session.current }, label, session.id)
     }
 }
 

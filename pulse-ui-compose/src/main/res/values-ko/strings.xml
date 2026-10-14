@@ -377,7 +377,7 @@
     <string name="pulse_range_session_detail">실행 %1$s · 화면 표시 %2$s</string>
     <string name="pulse_range_session_current">지금</string>
     <string name="pulse_range_apply">적용</string>
-    <string name="pulse_tab_logs">로그</string>
+    <string name="pulse_tab_logs">타임라인</string>
     <string name="pulse_tab_issues">이슈</string>
     <string name="pulse_events_all">전체</string>
     <string name="pulse_events_logs">로그</string>
@@ -468,4 +468,25 @@
     <string name="pulse_remote_token">Bearer 토큰(선택, 다시 보여 주지 않음)</string>
     <string name="pulse_remote_edit_note">토큰은 이 기기의 앱 전용 저장소에 저장됩니다. 자동 테스트에서는 빌드할 때 넣는 방식을 권합니다.</string>
     <string name="pulse_overlay_screenshot_secure">이 화면은 앱이 캡처를 막아 두어(FLAG_SECURE) PULSE도 찍지 않습니다.</string>
+    <string name="pulse_events_actions">행동</string>
+    <string name="pulse_timeline_all">전체</string>
+    <string name="pulse_timeline_requests">요청</string>
+    <string name="pulse_flow_empty">이 기간에 기록된 것이 없습니다.</string>
+    <string name="pulse_timeline_search">URL·메시지·태그 검색</string>
+    <string name="pulse_timeline_flow">전체 흐름</string>
+    <string name="pulse_timeline_logs">앱 로그</string>
+    <string name="pulse_related_title">연결된 근거</string>
+    <string name="pulse_related_empty">가까이 있는 요청·이벤트가 없습니다.</string>
+    <string name="pulse_related_note">기록된 연결(같은 구간·재실행·크래시)은 확실한 연결입니다. 같은 화면·가까운 시간은 함께 일어났다는 뜻일 뿐 원인이라는 뜻은 아닙니다.</string>
+    <string name="pulse_related_span">같은 구간</string>
+    <string name="pulse_related_replay">재실행</string>
+    <string name="pulse_related_crash_exit">크래시·종료</string>
+    <string name="pulse_related_screen">같은 화면</string>
+    <string name="pulse_related_time">근접</string>
+    <string name="pulse_env_title">환경과 플래그</string>
+    <string name="pulse_env_app">앱</string>
+    <string name="pulse_env_device">기기</string>
+    <string name="pulse_env_flags">플래그</string>
+    <string name="pulse_env_flags_empty">아직 플래그가 없습니다. Pulse.setFlag("server", "staging")처럼 알리면 여기 보이고, 바뀐 이력이 타임라인에 남습니다.</string>
+    <string name="pulse_env_flag_history">변경 이력</string>
 </resources>
