@@ -201,7 +201,13 @@ internal fun EventExportSheet(inspector: PulseInspector, filtered: EventQuery, s
         onDismiss()
         scope.launch {
             val count = writeToDocument(context, uri, write)
-            Toast.makeText(context, count?.let { resources.getString(R.string.pulse_export_done, it) } ?: failed, Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                count?.let {
+                    resources.getQuantityString(R.plurals.pulse_export_done, it, it)
+                } ?: failed,
+                Toast.LENGTH_LONG,
+            ).show()
         }
     }
     PulseSheet(

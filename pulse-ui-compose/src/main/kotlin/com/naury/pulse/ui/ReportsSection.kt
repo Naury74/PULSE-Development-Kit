@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,7 +76,7 @@ private fun ReportRow(state: ReportState, reports: PulseReports) {
                 stringResource(severityLabel(state.severity)),
                 state.kind.takeIf { it != ReportKind.MANUAL }?.name,
                 Formatters.dateTime(state.updatedAtEpochMillis),
-                state.attempts.takeIf { it > 0 }?.let { stringResource(R.string.pulse_bugs_attempts, it) },
+                state.attempts.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.pulse_bugs_attempts, it, it) },
                 state.progress?.let { "${(it * PERCENT).toInt()}%" },
             ).joinToString(" · "),
             style = MaterialTheme.typography.labelSmall,

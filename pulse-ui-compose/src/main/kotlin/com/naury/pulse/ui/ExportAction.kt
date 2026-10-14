@@ -40,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -117,7 +118,7 @@ internal fun ExportSheet(
     PulseSheet(
         icon = Icons.Filled.Share,
         title = stringResource(R.string.pulse_export_title),
-        subtitle = selectedIds?.let { stringResource(R.string.pulse_export_selected, it.size) },
+        subtitle = selectedIds?.let { pluralStringResource(R.plurals.pulse_export_selected, it.size, it.size) },
         onDismiss = onDismiss,
         actions = {
             SheetButtons(

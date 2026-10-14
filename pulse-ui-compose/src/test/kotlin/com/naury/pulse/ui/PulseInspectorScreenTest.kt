@@ -207,7 +207,7 @@ class PulseInspectorScreenTest {
         awaitText("Replay request")
 
         compose.onNodeWithText("Allowed host: api.test").assertIsDisplayed()
-        compose.onNodeWithText("Removed because their values were redacted: Authorization", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Headers removed because their values were redacted: Authorization", substring = true).assertIsDisplayed()
         compose.onNode(hasSetTextAction() and hasText("GET")).performTextReplacement("DELETE")
         settle()
         compose.onNodeWithText("Send").assertIsNotEnabled()

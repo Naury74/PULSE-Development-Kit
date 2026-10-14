@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -160,7 +161,7 @@ private fun EndpointRow(endpoint: EndpointStatistics, onClick: () -> Unit) {
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                stringResource(R.string.pulse_endpoint_count, endpoint.count),
+                pluralStringResource(R.plurals.pulse_endpoint_count, endpoint.count, endpoint.count),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
             )

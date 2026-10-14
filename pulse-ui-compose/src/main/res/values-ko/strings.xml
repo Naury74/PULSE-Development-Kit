@@ -176,7 +176,9 @@
     <string name="pulse_export_confirm">저장할 곳 고르기</string>
     <string name="pulse_export_started">내보내는 중…</string>
     <string name="pulse_export_failed">내보내지 못했습니다. 쓰다 만 파일은 지웠습니다.</string>
-    <string name="pulse_export_done">요청 %1$d개를 내보냈습니다.</string>
+    <plurals name="pulse_export_done">
+        <item quantity="other">요청 %1$d개를 내보냈습니다.</item>
+    </plurals>
     <string name="pulse_export_truncated">상한 때문에 최신 요청만 넣었습니다.</string>
     <string name="pulse_export_dropped">다시 마스킹할 수 없어 뺀 본문: %1$d개.</string>
     <string name="pulse_replay">재실행</string>
@@ -301,7 +303,9 @@
     <string name="pulse_show_all">%1$d개 모두 보기</string>
     <string name="pulse_show_less">접기</string>
     <string name="pulse_endpoint_detail">%1$s · %2$s</string>
-    <string name="pulse_endpoint_count">%1$d건</string>
+    <plurals name="pulse_endpoint_count">
+        <item quantity="other">%1$d건</item>
+    </plurals>
     <string name="pulse_endpoint_errors">오류 %1$s</string>
     <string name="pulse_breakdown_title">기준별 분류</string>
     <string name="pulse_breakdown_empty">이 요청들에는 기록되지 않았습니다. 화면·앱 상태·네트워크는 ContextCapture, 라벨은 PulseLabel 태그가 필요합니다.</string>
@@ -330,7 +334,9 @@
     <string name="pulse_headers_app_hint">앱이 만들거나 받은 그대로의 헤더입니다. 실제 전송 때 OkHttp가 더하거나 뺄 수 있습니다.</string>
     <string name="pulse_headers_no_network_request">앱이 직접 붙인 헤더만 보입니다. OkHttp가 실제로 붙이는 헤더는 eventListenerFactory()를 붙이고 요청이 네트워크로 나갔을 때 여기에 나옵니다.</string>
     <string name="pulse_export_range_current">현재 목록</string>
-    <string name="pulse_export_selected">고른 요청 %1$d개</string>
+    <plurals name="pulse_export_selected">
+        <item quantity="other">고른 요청 %1$d개</item>
+    </plurals>
     <string name="pulse_export_format">형식</string>
     <string name="pulse_export_range">범위</string>
     <string name="pulse_export_include">포함할 내용</string>
@@ -527,7 +533,9 @@
     <string name="pulse_severity_trivial">사소</string>
     <string name="pulse_bugs_title">버그 보고</string>
     <string name="pulse_bugs_empty">아직 보고가 없습니다.</string>
-    <string name="pulse_bugs_attempts">%1$d번 시도</string>
+    <plurals name="pulse_bugs_attempts">
+        <item quantity="other">%1$d번 시도</item>
+    </plurals>
     <string name="pulse_bugs_cancel">취소</string>
     <string name="pulse_bugs_retry">다시 보내기</string>
     <string name="pulse_bugs_delete">삭제</string>

@@ -166,7 +166,7 @@ private fun deleteQuietly(context: Context, uri: Uri) {
 }
 
 internal fun exportSummary(context: Context, result: ExportResult): String = buildList {
-    add(context.getString(R.string.pulse_export_done, result.transactionCount))
+    add(context.resources.getQuantityString(R.plurals.pulse_export_done, result.transactionCount, result.transactionCount))
     if (result.truncated) add(context.getString(R.string.pulse_export_truncated))
     if (result.droppedBodyCount > 0) add(context.getString(R.string.pulse_export_dropped, result.droppedBodyCount))
 }.joinToString(" ")
