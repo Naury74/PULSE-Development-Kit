@@ -74,7 +74,15 @@ internal class AppMonitor(
         val runtime = Runtime.getRuntime()
         val java = runtime.totalMemory() - runtime.freeMemory()
         val native = Debug.getNativeHeapAllocatedSize()
-        events.record(EventKind.MEMORY, "java ${java / MIB} MB · native ${native / MIB} MB", value = java + native)
+        // GC 횟수와 이 프로세스가 쓴 CPU 시간도 함께 남겨 메모리 추세와 같이 본다.
+        val gc = Debug.getRuntimeStat("art.gc.gc-count")
+        val cpuMillis = android.os.Process.getElapsedCpuTime()
+        events.record(
+            EventKind.MEMORY,
+            "java ${java / MIB} MB · native ${native / MIB} MB",
+            value = java + native,
+            detail = listOfNotNull(gc?.let { "gc=$it" }, "cpuMillis=$cpuMillis").joinToString(" "),
+        )
     }
 
     private companion object {
