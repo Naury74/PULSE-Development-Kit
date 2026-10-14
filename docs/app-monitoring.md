@@ -14,6 +14,7 @@
 | 메모리 | 앱이 보이는 동안 일정 간격으로 사용량 | `memoryIntervalMillis`(기본 30초, 0이면 끔) |
 | 실행(세션) | 시작 시각, 화면에 보인 시간, 마지막으로 살아 있던 시각, 크래시 여부 | 항상 |
 | logcat | 이 앱 프로세스의 logcat(`--pid`라 권한 불필요, 다른 앱 로그는 읽지 않음) | `logcat`(기본 끔, `debugDefaults()`는 켬), `logcatMinLevel`, `logcatIgnoredTags` |
+| 탭·뒤로 키 | 앱 화면에서 누를 수 있는 대상을 탭하거나 뒤로 키를 누를 때. 대상은 View id(`#login_button`)·클래스나 Compose testTag·role만 남기고 글자·좌표는 남기지 않음. 다이얼로그 등 별도 창과 제스처 뒤로가기는 못 잡음 | `interactions`(기본 끔, `debugDefaults()`는 켬) |
 | 크래시 화면 캡처 | 크래시 직전의 앞 화면 | `screenshotOnCrash`(기본 끔. 화면에 개인정보가 보일 수 있음) |
 
 ```kotlin

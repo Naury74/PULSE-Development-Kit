@@ -85,7 +85,7 @@ RedactionPolicy.strict()
 
 ## 앱 진단
 
-`AppMonitoring(crashes = true, exitReasons = true, logcat = false, logcatMinLevel = DEBUG, logcatIgnoredTags = emptySet(), mainThreadBlockMillis = 2_000, performance = true, memoryIntervalMillis = 30_000, screenshotOnCrash = false)` — [app-monitoring.md](app-monitoring.md).
+`AppMonitoring(crashes = true, exitReasons = true, logcat = false, logcatMinLevel = DEBUG, logcatIgnoredTags = emptySet(), mainThreadBlockMillis = 2_000, performance = true, memoryIntervalMillis = 30_000, screenshotOnCrash = false, interactions = false)`. `debugDefaults()`는 `logcat`과 `interactions`를 켭니다 — [app-monitoring.md](app-monitoring.md).
 
 ## 원격 오류 보고
 
