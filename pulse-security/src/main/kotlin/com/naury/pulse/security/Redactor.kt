@@ -48,6 +48,9 @@ public class Redactor(policy: RedactionPolicy) {
     /** 자유 텍스트(로그 등) 안의 URL과 `name=value` 형태의 민감 값을 가린다. 길이는 자르지 않는다. */
     public fun sanitizeTextPublic(text: String): String = sanitizeText(text)
 
+    /** 키·열 이름이 민감 단어(token, password 등)를 담고 있는지. 값을 통째로 가릴지 정할 때 쓴다. */
+    public fun isSensitiveName(name: String): Boolean = matcher.isSensitiveKey(name)
+
     /** 자유 텍스트 안의 URL과 `name=value` 형태의 민감 값을 가린다. 길이는 자르지 않는다. */
     internal fun sanitizeText(text: String): String {
         val urlsSanitized = urlPattern.replace(text) { sanitizeUrl(it.value) }
