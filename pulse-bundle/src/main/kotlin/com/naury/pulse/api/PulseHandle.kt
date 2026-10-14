@@ -13,6 +13,7 @@ import com.naury.pulse.core.CaptureEngine
 import com.naury.pulse.mock.MockInterceptor
 import com.naury.pulse.mock.MockRegistry
 import com.naury.pulse.monitor.AppMonitor
+import com.naury.pulse.monitor.EnvironmentRegistry
 import com.naury.pulse.monitor.RemoteReporter
 import com.naury.pulse.okhttp.CallTimingRegistry
 import com.naury.pulse.okhttp.PulseEventListenerFactory
@@ -38,6 +39,7 @@ import okhttp3.OkHttpClient
  * 초기화된 PULSE 인스턴스. OkHttpClient에 붙일 [interceptor]·[eventListenerFactory]를 주고, 저장된 기록을 읽는다.
  * 모든 메서드는 스레드 안전하다.
  */
+@Suppress("TooManyFunctions")
 public class PulseHandle private constructor(
     override val config: PulseConfig,
     private val storage: PulseStorage,
@@ -57,6 +59,7 @@ public class PulseHandle private constructor(
     private val insightEngine = InsightEngine(config.insights)
     private val mockRegistry = MockRegistry()
     private val mockInterceptor = MockInterceptor(mockRegistry)
+    private val environment = EnvironmentRegistry(context.applicationContext, events)
 
     override val mocks: PulseMocks = mockRegistry
 
@@ -133,6 +136,41 @@ public class PulseHandle private constructor(
     }
 
     override suspend fun loadAttachment(name: String): ByteArray? = storage.loadAttachment(name)
+
+    override suspend fun loadEvent(id: String): AppEvent? = storage.loadEvent(id)
+
+    override suspend fun loadTimeline(query: TimelineQuery, after: PageCursor?, limit: Int): TimelinePage =
+        storage.loadTimeline(query, after, limit)
+
+    override suspend fun loadRelated(id: String, kind: TimelineItemKind, windowMillis: Long): List<EvidenceLink> =
+        storage.loadRelated(id, kind, windowMillis)
+
+    override val flags: StateFlow<Map<String, String>> = environment.flags
+
+    override fun environment(): EnvironmentSnapshot = environment.snapshot()
+
+    /**
+     * 사용자 행동을 남긴다. [id]는 `checkout.submit`처럼 의미가 드러나는 이름(64자까지)을 쓰고, 입력값 원문은 넣지 않는다.
+     * [attributes]는 32개, 값은 256자까지 남기며 비밀로 보이는 값은 가린다.
+     */
+    @JvmOverloads
+    public fun action(id: String, attributes: Map<String, String> = emptyMap()) {
+        events.action(id, attributes)
+    }
+
+    /** 지금 화면 이름을 알린다(Compose 경로 등). 요청·이벤트의 화면으로 쓰이고, 바뀌면 화면 이동으로 남는다. */
+    public fun screen(name: String) {
+        appContext.screen = name
+        events.navigate(name)
+    }
+
+    /**
+     * 기능 플래그·환경 값(서버 환경, 실험 그룹 등)을 알린다. null이면 지운다. 값이 바뀔 때만 이력을 남긴다.
+     * 값은 마스킹하지 않으므로 비밀을 넣지 않는다. 이름 64자·값 256자·200개까지.
+     */
+    public fun setFlag(name: String, value: String?) {
+        environment.setFlag(name, value)
+    }
 
     /**
      * 로그를 남긴다. [throwable]이 있으면 스택을 함께 저장한다. 메시지 속 URL 쿼리와 `name=value` 형태의 비밀은 저장 전에 가린다.
@@ -256,6 +294,7 @@ public class PulseHandle private constructor(
             val storage = PulseStorage.open(context, config.retention, filter)
             val appContext = AndroidAppContext(context, config.context)
             val engine = CaptureEngine.start(config, storage.sink, contextSource = appContext)
+            appContext.spanSource = { engine.events.currentSpanId }
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, _ -> })
             val reporter = RemoteReporter(context.applicationContext, remote, { storage }, scope).also { reporterHolder[0] = it }
             return PulseHandle(config, storage, engine, appContext, context, reporter).also { handle ->

@@ -57,7 +57,6 @@ internal class PerformanceMonitor(private val events: EventRecorder) : Applicati
     }
 
     override fun onActivityResumed(activity: Activity) {
-        events.currentScreen = activity.javaClass.simpleName
         val counter = FrameCounter(SystemClock.elapsedRealtime())
         frames[activity] = counter
         activity.window.addOnFrameMetricsAvailableListener(counter, handler)

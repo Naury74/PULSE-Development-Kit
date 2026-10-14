@@ -8,8 +8,8 @@ import com.naury.pulse.api.EventKind
 import com.naury.pulse.core.EventRecorder
 import java.lang.ref.WeakReference
 
-/** 앞에 있는 Activity를 약한 참조로 기억한다. 화면 캡처와 화면 이름에 쓴다. */
-internal class ScreenTracker : Application.ActivityLifecycleCallbacks {
+/** 앞에 있는 Activity를 약한 참조로 기억하고, 화면이 바뀌면 이동으로 기록한다. PULSE 자체 화면은 이동으로 치지 않는다. */
+internal class ScreenTracker(private val events: EventRecorder) : Application.ActivityLifecycleCallbacks {
     @Volatile
     private var resumed: WeakReference<Activity>? = null
 
@@ -17,6 +17,7 @@ internal class ScreenTracker : Application.ActivityLifecycleCallbacks {
 
     override fun onActivityResumed(activity: Activity) {
         resumed = WeakReference(activity)
+        if (!activity.javaClass.name.startsWith(PULSE_UI_PACKAGE)) events.navigate(activity.javaClass.simpleName)
     }
 
     override fun onActivityPaused(activity: Activity) {
@@ -32,6 +33,10 @@ internal class ScreenTracker : Application.ActivityLifecycleCallbacks {
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
 
     override fun onActivityDestroyed(activity: Activity) = Unit
+
+    private companion object {
+        const val PULSE_UI_PACKAGE = "com.naury.pulse.ui."
+    }
 }
 
 /**

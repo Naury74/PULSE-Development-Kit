@@ -9,6 +9,7 @@ import android.content.Context
  * release 빌드용 PULSE 진입점. `pulse-bundle`과 같은 이름·시그니처를 갖지만 아무것도 기록하지 않는다.
  * 데이터베이스·파일·스레드·화면을 만들지 않는다.
  */
+@Suppress("TooManyFunctions")
 public object Pulse {
     /** 기록하지 않는 [PulseHandle]을 돌려준다. 설정은 검사하지 않고 보관만 한다. */
     @JvmStatic
@@ -40,4 +41,14 @@ public object Pulse {
 
     @JvmStatic
     public fun endSpan(spanId: String): Unit = Unit
+
+    @JvmStatic
+    @JvmOverloads
+    public fun action(id: String, attributes: Map<String, String> = emptyMap()): Unit = Unit
+
+    @JvmStatic
+    public fun screen(name: String): Unit = Unit
+
+    @JvmStatic
+    public fun setFlag(name: String, value: String?): Unit = Unit
 }

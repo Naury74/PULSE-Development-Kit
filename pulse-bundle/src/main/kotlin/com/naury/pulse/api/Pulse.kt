@@ -8,6 +8,7 @@ import android.content.Context
  * `debugImplementation`에는 이 수집 artifact(`pulse-bundle`)를, `releaseImplementation`에는 같은 이름의 API를 가진
  * `pulse-noop`을 두면 release 빌드에는 수집·저장·화면 코드가 들어가지 않는다.
  */
+@Suppress("TooManyFunctions")
 public object Pulse {
     private val lock = Any()
     private var current: PulseHandle? = null
@@ -70,6 +71,25 @@ public object Pulse {
     @JvmStatic
     public fun endSpan(spanId: String) {
         current()?.endSpan(spanId)
+    }
+
+    /** [PulseHandle.action]. 초기화 전이면 아무것도 하지 않는다. */
+    @JvmStatic
+    @JvmOverloads
+    public fun action(id: String, attributes: Map<String, String> = emptyMap()) {
+        current()?.action(id, attributes)
+    }
+
+    /** [PulseHandle.screen]. */
+    @JvmStatic
+    public fun screen(name: String) {
+        current()?.screen(name)
+    }
+
+    /** [PulseHandle.setFlag]. */
+    @JvmStatic
+    public fun setFlag(name: String, value: String?) {
+        current()?.setFlag(name, value)
     }
 
     internal fun release(handle: PulseHandle) = synchronized(lock) {

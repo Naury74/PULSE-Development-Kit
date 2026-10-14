@@ -21,7 +21,7 @@ internal class AppMonitor(
     private val scope: CoroutineScope,
 ) {
     private val app = context.applicationContext as? Application
-    private val screens = ScreenTracker()
+    private val screens = ScreenTracker(events)
     private val sessions = SessionTracker(events)
     private val performance = PerformanceMonitor(events)
     private val crashes = CrashMonitor(events, sessions, screens, options.screenshotOnCrash)

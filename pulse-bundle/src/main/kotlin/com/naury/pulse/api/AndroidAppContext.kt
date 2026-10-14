@@ -18,9 +18,16 @@ import com.naury.pulse.core.AppContextSource
 internal class AndroidAppContext(context: Context, options: ContextCapture) : AppContextSource {
     private val app = context.applicationContext as? Application
 
+    /** Activity가 바뀌면 그 이름으로, [Pulse.screen]을 부르면 그 이름으로 바뀐다. */
     @Volatile
     override var screen: String? = null
-        private set
+
+    /** 지금 열린 구간을 알려 준다. 수집 엔진을 만든 뒤에 연결한다. */
+    @Volatile
+    var spanSource: () -> String? = { null }
+
+    override val spanId: String?
+        get() = spanSource()
 
     @Volatile
     private var startedActivities = 0
