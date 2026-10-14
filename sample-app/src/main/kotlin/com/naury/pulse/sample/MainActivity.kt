@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -265,11 +266,11 @@ private fun HeroCard(
                     modifier = Modifier.fillMaxWidth().height(6.dp),
                 )
             }
-            Button(onClick = onOpenInspector, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            Button(onClick = onOpenInspector, modifier = Modifier.fillMaxWidth().height(48.dp).testTag("open_inspector")) {
                 Text(stringResource(R.string.open_inspector), fontWeight = FontWeight.SemiBold)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onRunAll, enabled = runAllProgress == null, modifier = Modifier.weight(1f)) {
+                OutlinedButton(onClick = onRunAll, enabled = runAllProgress == null, modifier = Modifier.weight(1f).testTag("run_all")) {
                     Text(stringResource(R.string.run_all))
                 }
                 TextButton(onClick = onClear, enabled = results.isNotEmpty(), modifier = Modifier.weight(1f)) {
@@ -288,6 +289,8 @@ private fun ScenarioCard(scenario: DemoScenario, result: RunResult?, running: Bo
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
+            // 탭 기록(AppMonitoring.interactions)에 "tap #scenario.GET_JSON"처럼 의미 있는 이름으로 남는다.
+            .testTag("scenario.${scenario.name}")
             .clickable(enabled = !running, role = Role.Button, onClick = onRun)
             .semantics(mergeDescendants = true) {},
     ) {
