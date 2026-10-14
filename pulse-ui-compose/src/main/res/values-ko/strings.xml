@@ -585,4 +585,6 @@
     <string name="pulse_package_tampered">만든 뒤에 바뀐 파일이 있습니다: %1$s</string>
     <string name="pulse_package_no_issue">보고가 없는 패키지입니다(실행 전체를 내보낸 것).</string>
     <string name="pulse_package_empty">이 부분은 비어 있습니다.</string>
+    <string name="pulse_data_edit_warning">편집이 켜져 있습니다. 바꾼 값은 앱에 바로 저장되고 되돌릴 수 없습니다. 키를 눌러 바꾸거나 지우세요.</string>
+    <string name="pulse_data_remove">지우기</string>
 </resources>

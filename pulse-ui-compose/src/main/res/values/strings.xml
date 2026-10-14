@@ -587,4 +587,6 @@
     <string name="pulse_package_tampered">Files changed after the package was made: %1$s</string>
     <string name="pulse_package_no_issue">This package has no report (a whole run was exported).</string>
     <string name="pulse_package_empty">Nothing in this section.</string>
+    <string name="pulse_data_edit_warning">Editing is on: changes are saved to this app right away and cannot be undone. Tap a key to change or remove it.</string>
+    <string name="pulse_data_remove">Remove</string>
 </resources>

@@ -11,14 +11,18 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -89,7 +93,7 @@ private fun DataSheet(data: PulseLocalData, source: DataSource, onDismiss: () ->
         },
     ) {
         when {
-            source.kind == DataSourceKind.SHARED_PREFERENCES -> Loaded({ data.preferences(source.name) }) { PreferenceList(it) }
+            source.kind == DataSourceKind.SHARED_PREFERENCES -> PreferencesView(data, source.name)
             table == null -> Loaded({ data.tables(source.name) }) { tables -> TableList(tables) { table = it } }
             else -> TableRows(data, source.name, table!!)
         }
@@ -115,11 +119,28 @@ private fun <T> Loaded(load: suspend () -> T, content: @Composable (T) -> Unit) 
     }
 }
 
+/** 키 목록. 편집을 허용했으면 키를 눌러 값을 바꾸거나 지운다. 바꾸면 목록을 다시 읽는다. */
 @Composable
-private fun PreferenceList(entries: List<DataEntry>) {
+private fun PreferencesView(data: PulseLocalData, name: String) {
+    var version by remember { mutableIntStateOf(0) }
+    var editing by remember { mutableStateOf<DataEntry?>(null) }
+    if (data.canEditPreferences) Notice(stringResource(R.string.pulse_data_edit_warning), MaterialTheme.colorScheme.error)
+    key(version) { Loaded({ data.preferences(name) }) { entries -> PreferenceList(entries, data.canEditPreferences) { editing = it } } }
+    editing?.let { entry ->
+        PreferenceEditDialog(entry, onDismiss = { editing = null }) { value ->
+            data.editPreference(name, entry.key, value)
+            editing = null
+            version++
+        }
+    }
+}
+
+@Composable
+private fun PreferenceList(entries: List<DataEntry>, editable: Boolean, onEdit: (DataEntry) -> Unit) {
     if (entries.isEmpty()) Notice(stringResource(R.string.pulse_data_empty))
     entries.forEach { entry ->
-        Column(Modifier.fillMaxWidth().padding(vertical = Spacing.xs)) {
+        val canEdit = editable && entry.type != "HashSet"
+        Column(Modifier.fillMaxWidth().clickable(enabled = canEdit, role = Role.Button) { onEdit(entry) }.padding(vertical = Spacing.xs)) {
             Text(
                 "${entry.key} · ${entry.type}",
                 style = MaterialTheme.typography.labelMedium,
@@ -128,6 +149,45 @@ private fun PreferenceList(entries: List<DataEntry>) {
             Text(entry.value, style = MonospaceStyle, maxLines = MAX_VALUE_LINES, overflow = TextOverflow.Ellipsis)
         }
     }
+}
+
+/** 값 바꾸기 대화상자. 가린 값은 비워 두고 새 값만 받는다. 형식이 맞지 않으면 오류를 보여 준다. */
+@Composable
+private fun PreferenceEditDialog(entry: DataEntry, onDismiss: () -> Unit, onSave: suspend (String?) -> Unit) {
+    var value by remember { mutableStateOf(if (entry.masked) "" else entry.value) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val save: (String?) -> Unit = { newValue ->
+        scope.launch {
+            error = try {
+                onSave(newValue)
+                null
+            } catch (invalid: IllegalArgumentException) {
+                invalid.message
+            } catch (failed: IllegalStateException) {
+                failed.message
+            }
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("${entry.key} · ${entry.type}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                OutlinedTextField(value, { value = it }, singleLine = true, textStyle = MonospaceStyle, modifier = Modifier.fillMaxWidth())
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            }
+        },
+        confirmButton = { TextButton(onClick = { save(value) }) { Text(stringResource(R.string.pulse_mocks_save)) } },
+        dismissButton = {
+            Row {
+                TextButton(onClick = {
+                    save(null)
+                }) { Text(stringResource(R.string.pulse_data_remove), color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.pulse_cancel)) }
+            }
+        },
+    )
 }
 
 @Composable
