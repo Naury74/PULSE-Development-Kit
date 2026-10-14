@@ -56,6 +56,7 @@ internal fun AppDashboard(inspector: PulseInspector, from: Long?, to: Long?, onR
             ScreenPerformanceCard(stats)
             LogsAndExits(stats)
             SessionsCard(sessions, onRangeChange)
+            if (sessions.size >= 2) SessionCompareButton(inspector, sessions)
         }
     }
 }

@@ -548,4 +548,19 @@
     <string name="pulse_chaos_path">경로 접두사</string>
     <string name="pulse_chaos_probability">적용 비율(%)</string>
     <string name="pulse_chaos_delay">지연(ms)</string>
+    <string name="pulse_runs_open">두 실행 비교</string>
+    <string name="pulse_runs_title">실행 비교</string>
+    <string name="pulse_runs_subtitle">정상 실행과 문제 실행 사이에 무엇이 달라졌는지</string>
+    <string name="pulse_runs_base">기준 실행</string>
+    <string name="pulse_runs_target">확인할 실행</string>
+    <string name="pulse_runs_same">서로 다른 두 실행을 고르세요.</string>
+    <string name="pulse_runs_new_issues">확인할 실행에만 있는 이슈</string>
+    <string name="pulse_runs_flags">값이 다른 플래그</string>
+    <string name="pulse_runs_screens">화면</string>
+    <string name="pulse_runs_only_base">기준에만</string>
+    <string name="pulse_runs_only_target">확인할 실행에만</string>
+    <string name="pulse_runs_endpoints">엔드포인트(변화가 큰 순)</string>
+    <string name="pulse_runs_endpoint_header">요청 · 오류 · 중앙 시간(기준 → 확인할 실행)</string>
+    <string name="pulse_runs_truncated">한쪽 실행이 커서 앞 20,000개 기록만 비교했습니다.</string>
+    <string name="pulse_runs_events">이벤트 수</string>
 </resources>

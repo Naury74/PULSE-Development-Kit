@@ -550,4 +550,19 @@
     <string name="pulse_chaos_path">Path prefix</string>
     <string name="pulse_chaos_probability">Apply to % of requests</string>
     <string name="pulse_chaos_delay">Delay (ms)</string>
+    <string name="pulse_runs_open">Compare two runs</string>
+    <string name="pulse_runs_title">Compare runs</string>
+    <string name="pulse_runs_subtitle">What changed between a good run and a bad one</string>
+    <string name="pulse_runs_base">Baseline run</string>
+    <string name="pulse_runs_target">Run to check</string>
+    <string name="pulse_runs_same">Pick two different runs.</string>
+    <string name="pulse_runs_new_issues">Issues only in the run to check</string>
+    <string name="pulse_runs_flags">Flags that differ</string>
+    <string name="pulse_runs_screens">Screens</string>
+    <string name="pulse_runs_only_base">Only in baseline</string>
+    <string name="pulse_runs_only_target">Only in run to check</string>
+    <string name="pulse_runs_endpoints">Endpoints (biggest change first)</string>
+    <string name="pulse_runs_endpoint_header">requests · errors · median time (baseline → run to check)</string>
+    <string name="pulse_runs_truncated">One run is large, so only its first 20,000 records were compared.</string>
+    <string name="pulse_runs_events">Event counts</string>
 </resources>
