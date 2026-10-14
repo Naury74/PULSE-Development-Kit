@@ -19,7 +19,11 @@ package com.naury.pulse.api
  * @property bodyFormats JSON 말고 더 저장할 본문 형식. 기본은 JSON만.
  * @property monitoring 앱 로그·크래시·종료 이유·성능 수집.
  * @property remote 오류 보고를 원격으로 보내는 설정. null(기본)이면 보내지 않는다.
+ * @property reporting 버그 보고를 보낼 목적지. null(기본)이면 기기에 저장하고 내보내기만 한다.
+ * @property screenshots 화면 캡처 규칙.
  */
+// 생성자는 Builder만 부르며, 인자는 설정 항목과 일대일이다.
+@Suppress("LongParameterList")
 public class PulseConfig private constructor(
     public val captureMode: CaptureMode,
     public val limits: CaptureLimits,
@@ -35,12 +39,14 @@ public class PulseConfig private constructor(
     public val bodyFormats: BodyFormats,
     public val monitoring: AppMonitoring,
     public val remote: RemoteReporting?,
+    public val reporting: Reporting?,
+    public val screenshots: ScreenshotPolicy,
 ) {
     public fun newBuilder(): Builder = Builder(this)
 
     private fun values(): List<Any?> = listOf(
         captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints, bodyFormats,
-        monitoring, remote,
+        monitoring, remote, reporting, screenshots,
     )
 
     override fun equals(other: Any?): Boolean = other is PulseConfig && values() == other.values()
@@ -49,7 +55,8 @@ public class PulseConfig private constructor(
 
     override fun toString(): String = "PulseConfig(captureMode=$captureMode, limits=$limits, retention=$retention, " +
         "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording, insights=$insights, replay=$replay, " +
-        "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats, monitoring=$monitoring, remote=$remote)"
+        "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats, monitoring=$monitoring, remote=$remote, " +
+        "reporting=$reporting, screenshots=$screenshots)"
 
     /** [PulseConfig]를 만든다. 값 검증은 [build]에서 하고, 범위를 벗어나면 [IllegalArgumentException]을 던진다. */
     @Suppress("TooManyFunctions")
@@ -68,6 +75,8 @@ public class PulseConfig private constructor(
         private var bodyFormats = BodyFormats.JSON_ONLY
         private var monitoring = AppMonitoring()
         private var remote: RemoteReporting? = null
+        private var reporting: Reporting? = null
+        private var screenshots = ScreenshotPolicy()
 
         internal constructor(config: PulseConfig) : this() {
             captureMode = config.captureMode
@@ -84,6 +93,8 @@ public class PulseConfig private constructor(
             bodyFormats = config.bodyFormats
             monitoring = config.monitoring
             remote = config.remote
+            reporting = config.reporting
+            screenshots = config.screenshots
         }
 
         public fun captureMode(mode: CaptureMode): Builder = apply { captureMode = mode }
@@ -116,13 +127,18 @@ public class PulseConfig private constructor(
         /** 원격 보고를 켠다. null이면 끈다. */
         public fun remote(remote: RemoteReporting?): Builder = apply { this.remote = remote }
 
+        /** 버그 보고 목적지. null이면 보내지 않고 내보내기만 한다. */
+        public fun reporting(reporting: Reporting?): Builder = apply { this.reporting = reporting }
+
+        public fun screenshots(policy: ScreenshotPolicy): Builder = apply { screenshots = policy }
+
         public fun build(): PulseConfig {
             require(queueCapacity in MIN_QUEUE_CAPACITY..MAX_QUEUE_CAPACITY) {
                 "queueCapacity는 $MIN_QUEUE_CAPACITY..$MAX_QUEUE_CAPACITY 범위여야 합니다: $queueCapacity"
             }
             return PulseConfig(
                 captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints,
-                bodyFormats, monitoring, remote,
+                bodyFormats, monitoring, remote, reporting, screenshots,
             )
         }
     }

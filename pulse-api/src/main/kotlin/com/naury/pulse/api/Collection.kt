@@ -155,7 +155,7 @@ public class PulseLabel(public val name: String) {
 }
 
 /** 요청을 시작할 때의 앱 쪽 맥락. 기록하지 않았거나 알 수 없는 값은 null이다. */
-public class RequestContext(
+public class RequestContext @JvmOverloads constructor(
     /** 앞에 있던 Activity의 짧은 클래스 이름. */
     public val screen: String?,
     /** 앱이 화면에 보였으면 true, 백그라운드였으면 false. */
@@ -164,10 +164,21 @@ public class RequestContext(
     public val networkType: NetworkType?,
     /** 요청에 붙은 [PulseLabel] 이름. */
     public val label: String?,
+    /** 요청을 시작할 때 열려 있던 가장 최근 구간([Pulse.beginSpan])의 ID. */
+    public val spanId: String? = null,
 ) {
     public val isEmpty: Boolean
-        get() = screen == null && foreground == null && networkType == null && label == null
+        get() = screen == null && foreground == null && networkType == null && label == null && spanId == null
 }
+
+/**
+ * 요청에 붙이면 PULSE가 기록하지 않는다. 보고를 올리는 전송 구현처럼 기록에 남으면 안 되는 요청에 쓴다.
+ *
+ * ```
+ * Request.Builder().tag(PulseIgnore::class.java, PulseIgnore)
+ * ```
+ */
+public object PulseIgnore
 
 /** 요청을 시작할 때 기본 네트워크의 종류. */
 public enum class NetworkType { WIFI, CELLULAR, ETHERNET, VPN, OTHER, NONE }

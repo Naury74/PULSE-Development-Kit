@@ -46,6 +46,15 @@ public enum class EventKind {
 
     /** 앱이 포그라운드·백그라운드로 바뀌었다. */
     LIFECYCLE,
+
+    /** 사용자 행동([Pulse.action]). [AppEvent.message]는 `checkout.submit` 같은 행동 ID, [AppEvent.detail]은 속성 JSON이다. */
+    ACTION,
+
+    /** 화면 이동. Activity 전환은 자동으로, Compose 경로 등은 [Pulse.screen]으로 남는다. [AppEvent.message]는 `이전 → 새 화면`. */
+    NAVIGATION,
+
+    /** 환경 값·기능 플래그가 바뀌었다([Pulse.setFlag]). [AppEvent.tag]는 이름, [AppEvent.message]는 `이름 = 새 값`. */
+    CONFIG,
 }
 
 /**
@@ -99,20 +108,18 @@ public class EventQuery @JvmOverloads constructor(
     public val fromEpochMillis: Long? = null,
     public val toEpochMillis: Long? = null,
     public val sessionId: String? = null,
+    /** 이 구간의 이벤트만. */
+    public val spanId: String? = null,
 ) {
-    override fun equals(other: Any?): Boolean = other is EventQuery &&
-        kinds == other.kinds &&
-        minLevel == other.minLevel &&
-        text == other.text &&
-        tag == other.tag &&
-        fromEpochMillis == other.fromEpochMillis &&
-        toEpochMillis == other.toEpochMillis &&
-        sessionId == other.sessionId
+    private fun values(): List<Any?> = listOf(kinds, minLevel, text, tag, fromEpochMillis, toEpochMillis, sessionId, spanId)
 
-    override fun hashCode(): Int = listOf(kinds, minLevel, text, tag, fromEpochMillis, toEpochMillis, sessionId).hashCode()
+    override fun equals(other: Any?): Boolean = other is EventQuery && values() == other.values()
+
+    override fun hashCode(): Int = values().hashCode()
 
     override fun toString(): String =
-        "EventQuery(kinds=$kinds, minLevel=$minLevel, text=$text, tag=$tag, from=$fromEpochMillis, to=$toEpochMillis, session=$sessionId)"
+        "EventQuery(kinds=$kinds, minLevel=$minLevel, text=$text, tag=$tag, from=$fromEpochMillis, to=$toEpochMillis, " +
+            "session=$sessionId, span=$spanId)"
 }
 
 public class EventPage(public val items: List<AppEvent>, public val next: PageCursor?)

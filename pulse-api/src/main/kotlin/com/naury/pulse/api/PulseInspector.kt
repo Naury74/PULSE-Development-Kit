@@ -47,6 +47,17 @@ public interface PulseInspector {
     public val remote: PulseRemote?
         get() = null
 
+    /** 버그 보고 작성·전송. 지원하지 않는 구현은 null. */
+    public val reports: PulseReports?
+        get() = null
+
+    /** 호스트가 알린 기능 플래그·환경 값([Pulse.setFlag]). */
+    public val flags: StateFlow<Map<String, String>>
+        get() = EMPTY_FLAGS
+
+    /** 앱·기기 환경과 플래그. 지원하지 않는 구현은 null. */
+    public fun environment(): EnvironmentSnapshot? = null
+
     /** 앱 이벤트·세션이 바뀔 때마다 값을 낸다. 앱 수집이 없는 구현은 아무것도 내지 않는다. */
     public fun observeEvents(): Flow<Unit> = kotlinx.coroutines.flow.emptyFlow()
 
@@ -59,8 +70,29 @@ public interface PulseInspector {
     /** 앱 실행 시간·크래시·시작 시간·프레임·메모리 집계. 앱 수집이 없는 구현은 null. */
     public suspend fun loadAppStatistics(fromEpochMillis: Long?, toEpochMillis: Long?): AppStatistics? = null
 
+    /** 앱 이벤트 하나. 없거나 지워졌으면 null. */
+    public suspend fun loadEvent(id: String): AppEvent? = null
+
     /** 이벤트 첨부(화면 캡처 PNG). 없거나 지워졌으면 null. */
     public suspend fun loadAttachment(name: String): ByteArray? = null
+
+    /**
+     * 요청과 앱 이벤트를 한 목록으로 최신순 [limit]개(1..500)까지 읽는다. 앱 수집이 없는 구현은 빈 페이지.
+     *
+     * @param after 이전 페이지의 [TimelinePage.next].
+     */
+    public suspend fun loadTimeline(query: TimelineQuery, after: PageCursor?, limit: Int): TimelinePage = TimelinePage(emptyList(), null)
+
+    /**
+     * [id] 항목과 연결된 근거. 같은 구간·재실행 원본처럼 기록에 남은 연결은 [LinkStrength.EXPLICIT],
+     * 같은 실행·같은 화면은 [LinkStrength.CONTEXTUAL], 앞뒤 [windowMillis] 안에 일어난 것은 [LinkStrength.TEMPORAL]이다.
+     * 연결이 강한 순, 가까운 순으로 최대 50개.
+     */
+    public suspend fun loadRelated(
+        id: String,
+        kind: TimelineItemKind,
+        windowMillis: Long = DEFAULT_RELATED_WINDOW_MILLIS,
+    ): List<EvidenceLink> = emptyList()
 
     /** 지금 시각에 마커를 남긴다. 화면(플로팅 버튼 등)에서 쓴다. */
     public fun mark(name: String) {}
@@ -94,6 +126,13 @@ public interface PulseInspector {
 
     /** 저장된 트랜잭션과 본문을 모두 지운다. 지우는 작업은 백그라운드에서 진행한다. */
     public fun clear()
+
+    public companion object {
+        /** [loadRelated]가 시간상 가깝다고 보는 기본 범위(앞뒤 ms). */
+        public const val DEFAULT_RELATED_WINDOW_MILLIS: Long = 5_000
+
+        private val EMPTY_FLAGS: StateFlow<Map<String, String>> = kotlinx.coroutines.flow.MutableStateFlow(emptyMap())
+    }
 }
 
 /** 목록 조회 조건. */
@@ -105,16 +144,19 @@ public class TransactionQuery @JvmOverloads constructor(
     public val fromEpochMillis: Long? = null,
     /** 이 시각(epoch ms) 이전에 시작한 요청만. null이면 제한 없음. */
     public val toEpochMillis: Long? = null,
+    /** 이 앱 실행(세션)의 요청만. null이면 제한 없음. */
+    public val sessionId: String? = null,
+    /** 이 구간 안에서 시작한 요청만([RequestContext.spanId]). null이면 제한 없음. */
+    public val spanId: String? = null,
 ) {
-    override fun equals(other: Any?): Boolean = other is TransactionQuery &&
-        text == other.text &&
-        status == other.status &&
-        fromEpochMillis == other.fromEpochMillis &&
-        toEpochMillis == other.toEpochMillis
+    private fun values(): List<Any?> = listOf(text, status, fromEpochMillis, toEpochMillis, sessionId, spanId)
 
-    override fun hashCode(): Int = listOf(text, status, fromEpochMillis, toEpochMillis).hashCode()
+    override fun equals(other: Any?): Boolean = other is TransactionQuery && values() == other.values()
 
-    override fun toString(): String = "TransactionQuery(text=$text, status=$status, from=$fromEpochMillis, to=$toEpochMillis)"
+    override fun hashCode(): Int = values().hashCode()
+
+    override fun toString(): String =
+        "TransactionQuery(text=$text, status=$status, from=$fromEpochMillis, to=$toEpochMillis, session=$sessionId, span=$spanId)"
 }
 
 /** 상태 필터. */
