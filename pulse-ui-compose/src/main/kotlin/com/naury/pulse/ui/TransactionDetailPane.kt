@@ -99,7 +99,7 @@ internal fun TransactionDetailPane(
         }
     }
     when (val current = load) {
-        DetailLoad.Loading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        DetailLoad.Loading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PulseLoading() }
         DetailLoad.Missing -> Box(modifier.padding(Spacing.l)) { Notice(stringResource(R.string.pulse_detail_missing)) }
         is DetailLoad.Loaded -> DetailTabs(inspector, current.detail, modifier, onOpenTransaction)
     }
@@ -137,9 +137,11 @@ private fun DetailTabs(inspector: PulseInspector, detail: TransactionDetail, mod
                     detail.summary.parentTransactionId?.let { parent -> ParentComparison(inspector, detail, parent, onOpenTransaction) }
                 }
 
-                1 -> MessageTab(inspector, detail.summary.id, MessageKind.REQUEST, detail.request)
+                1 -> MessageTab(inspector, detail.summary.id, MessageKind.REQUEST, detail.request, detail.networkRequestHeaders)
 
-                2 -> detail.response?.let { MessageTab(inspector, detail.summary.id, MessageKind.RESPONSE, it) }
+                2 -> detail.response?.let {
+                    MessageTab(inspector, detail.summary.id, MessageKind.RESPONSE, it, detail.networkResponseHeaders)
+                }
                     ?: Box(Modifier.padding(top = Spacing.s)) { Notice(stringResource(R.string.pulse_no_response)) }
 
                 else -> TimelineTab(detail)
@@ -263,9 +265,14 @@ private fun SummaryTab(detail: TransactionDetail) {
 }
 
 @Composable
-private fun MessageTab(inspector: PulseInspector, transactionId: String, kind: MessageKind, message: HttpMessage) {
-    SectionTitle(stringResource(R.string.pulse_headers_count, message.headers.size))
-    PulseCard { HeaderTable(message.headers) }
+private fun MessageTab(
+    inspector: PulseInspector,
+    transactionId: String,
+    kind: MessageKind,
+    message: HttpMessage,
+    networkHeaders: List<HeaderField>,
+) {
+    HeadersSection(kind, message.headers, networkHeaders)
     SectionTitle(stringResource(R.string.pulse_body))
     if (message.bodyState != BodyState.CAPTURED) {
         Notice(stringResource(message.bodyState.explanation()))
@@ -275,6 +282,67 @@ private fun MessageTab(inspector: PulseInspector, transactionId: String, kind: M
         Notice(stringResource(R.string.pulse_body_redacted_count, message.redactedValueCount), LocalStatusColors.current.clientError)
     }
     BodyViewer(inspector, transactionId, kind, message.contentType)
+}
+
+/**
+ * 앱 단계 헤더와 실제로 오간 헤더를 바꿔 본다. 실제 헤더가 있으면 그쪽을 먼저 보여 주고,
+ * 앱 단계에 없던(OkHttp가 붙이거나 서버가 보내고 OkHttp가 지운) 헤더에는 표시를 단다.
+ */
+@Composable
+private fun HeadersSection(kind: MessageKind, appHeaders: List<HeaderField>, networkHeaders: List<HeaderField>) {
+    var showNetwork by rememberSaveable(kind) { mutableStateOf(networkHeaders.isNotEmpty()) }
+    val shown = if (showNetwork && networkHeaders.isNotEmpty()) networkHeaders else appHeaders
+    SectionTitle(stringResource(R.string.pulse_headers_count, shown.size))
+    if (networkHeaders.isNotEmpty()) {
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(bottom = Spacing.s)) {
+            SegmentedButton(selected = !showNetwork, onClick = {
+                showNetwork = false
+            }, shape = SegmentedButtonDefaults.itemShape(0, 2), icon = {}) {
+                Text(stringResource(R.string.pulse_headers_app, appHeaders.size))
+            }
+            SegmentedButton(selected = showNetwork, onClick = {
+                showNetwork = true
+            }, shape = SegmentedButtonDefaults.itemShape(1, 2), icon = {}) {
+                Text(stringResource(R.string.pulse_headers_network, networkHeaders.size))
+            }
+        }
+    }
+    val appNames = appHeaders.map { it.name.lowercase() }.toSet()
+    val tag = stringResource(
+        if (kind ==
+            MessageKind.REQUEST
+        ) {
+            R.string.pulse_headers_added_by_okhttp
+        } else {
+            R.string.pulse_headers_removed_by_okhttp
+        },
+    )
+    PulseCard {
+        HeaderTable(shown) { header -> if (showNetwork && header.name.lowercase() !in appNames) tag else null }
+        val hint = when {
+            networkHeaders.isEmpty() && kind == MessageKind.REQUEST -> R.string.pulse_headers_no_network_request
+
+            networkHeaders.isEmpty() -> null
+
+            showNetwork -> if (kind ==
+                MessageKind.REQUEST
+            ) {
+                R.string.pulse_headers_network_hint_request
+            } else {
+                R.string.pulse_headers_network_hint_response
+            }
+
+            else -> R.string.pulse_headers_app_hint
+        }
+        hint?.let {
+            Text(
+                stringResource(it),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.s),
+            )
+        }
+    }
 }
 
 @Composable

@@ -2,6 +2,7 @@ package com.naury.pulse.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,7 +25,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -36,6 +39,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,6 +67,7 @@ import androidx.paging.compose.itemKey
 import com.naury.pulse.api.CaptureSource
 import com.naury.pulse.api.PulseInspector
 import com.naury.pulse.api.StatusFilter
+import com.naury.pulse.api.TransactionQuery
 import com.naury.pulse.api.TransactionSummary
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -83,11 +88,16 @@ internal fun TrafficPane(
 ) {
     val searchText by viewModel.searchText.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
-    val health by inspector.captureHealth.collectAsStateWithLifecycle()
     val items = viewModel.transactions.collectAsLazyPagingItems()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var hasNewItems by rememberSaveable { mutableStateOf(false) }
+    // 길게 눌러 고른 요청. 비어 있지 않으면 목록은 고르기 모드다.
+    var picked by rememberSaveable { mutableStateOf(listOf<String>()) }
+    var exportPicked by rememberSaveable { mutableStateOf(false) }
+    val togglePick: (TransactionSummary) -> Unit = { summary ->
+        picked = if (summary.id in picked) picked - summary.id else picked + summary.id
+    }
 
     val focusManager = LocalFocusManager.current
 
@@ -101,22 +111,13 @@ internal fun TrafficPane(
 
     Column(modifier) {
         NotificationPrompt()
-        SearchField(searchText, viewModel::search)
-        StatusFilters(status, viewModel::filter)
-        if (health.droppedEvents > 0 || health.droppedBodies > 0) {
-            Box(Modifier.padding(horizontal = Spacing.l, vertical = Spacing.xs)) {
-                Notice(
-                    stringResource(R.string.pulse_health_warning, health.droppedEvents, health.droppedBodies),
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+        if (picked.isEmpty()) {
+            SearchField(searchText, viewModel::search)
+            StatusFilters(status, viewModel::filter)
+        } else {
+            SelectionBar(picked.size, onClear = { picked = emptyList() }, onExport = { exportPicked = true })
         }
-        val mocksEnabled by inspector.mocks.enabled.collectAsStateWithLifecycle()
-        if (mocksEnabled) {
-            Box(Modifier.padding(horizontal = Spacing.l, vertical = Spacing.xs)) {
-                Notice(stringResource(R.string.pulse_mocks_active_banner), color = MaterialTheme.colorScheme.error)
-            }
-        }
+        CaptureBanners(inspector)
         if (hasNewItems) {
             FilledTonalButton(
                 onClick = {
@@ -136,11 +137,46 @@ internal fun TrafficPane(
                 items,
                 listState,
                 selectedId,
-                onSelect,
+                if (picked.isEmpty()) onSelect else togglePick,
+                PickState(picked.toSet(), togglePick),
                 slowNanos,
                 isFiltered =
                     searchText.isNotBlank() || status != StatusFilter.ALL,
             )
+        }
+    }
+    if (exportPicked) {
+        ExportSheet(inspector, TransactionQuery(searchText, status), picked, scope) { exportPicked = false }
+    }
+}
+
+/** 고르기 모드에서 길게 누르면 고르고, 누르면 고르기를 바꾼다. */
+private class PickState(val picked: Set<String>, val onLongPress: (TransactionSummary) -> Unit) {
+    val active: Boolean
+        get() = picked.isNotEmpty()
+}
+
+@Composable
+private fun SelectionBar(count: Int, onClear: () -> Unit, onExport: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.l, vertical = Spacing.s)
+            .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.medium)
+            .padding(start = Spacing.m, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(R.string.pulse_pick_count, count),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onClear) { Text(stringResource(R.string.pulse_pick_clear)) }
+        Button(onClick = onExport) {
+            Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.padding(end = Spacing.xs))
+            Text(stringResource(R.string.pulse_export))
         }
     }
 }
@@ -218,6 +254,7 @@ private fun TransactionList(
     listState: LazyListState,
     selectedId: String?,
     onSelect: (TransactionSummary) -> Unit,
+    pick: PickState,
     slowNanos: Long,
     isFiltered: Boolean,
 ) {
@@ -229,7 +266,7 @@ private fun TransactionList(
         }
 
         refresh is LoadState.Loading && items.itemCount == 0 -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            PulseLoading()
         }
 
         items.itemCount == 0 && isFiltered -> CenteredMessage(stringResource(R.string.pulse_no_results))
@@ -239,10 +276,17 @@ private fun TransactionList(
         else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
             items(count = items.itemCount, key = items.itemKey { it.id }) { index ->
                 items[index]?.let { summary ->
-                    TransactionRow(summary, selected = summary.id == selectedId, slowNanos = slowNanos, onClick = {
-                        focusManager.clearFocus()
-                        onSelect(summary)
-                    })
+                    TransactionRow(
+                        summary,
+                        selected = summary.id == selectedId,
+                        picked = if (pick.active) summary.id in pick.picked else null,
+                        slowNanos = slowNanos,
+                        onLongClick = { pick.onLongPress(summary) },
+                        onClick = {
+                            focusManager.clearFocus()
+                            onSelect(summary)
+                        },
+                    )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
@@ -251,8 +295,22 @@ private fun TransactionList(
 }
 
 @Composable
-private fun TransactionRow(summary: TransactionSummary, selected: Boolean, slowNanos: Long, onClick: () -> Unit) {
-    val background = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
+@Suppress("LongParameterList")
+private fun TransactionRow(
+    summary: TransactionSummary,
+    selected: Boolean,
+    picked: Boolean?,
+    slowNanos: Long,
+    onLongClick: () -> Unit,
+    onClick: () -> Unit,
+) {
+    val background = if (selected ||
+        picked == true
+    ) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    }
     val (_, statusColor) = statusLabelAndColor(summary)
     Row(
         modifier = Modifier
@@ -260,8 +318,14 @@ private fun TransactionRow(summary: TransactionSummary, selected: Boolean, slowN
             .height(IntrinsicSize.Min)
             .heightIn(min = 64.dp)
             .background(background)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics(mergeDescendants = true) { this.selected = selected },
+            .combinedClickable(
+                role = Role.Button,
+                onClickLabel = null,
+                onLongClickLabel = stringResource(R.string.pulse_pick_action),
+                onLongClick = onLongClick,
+                onClick = onClick,
+            )
+            .semantics(mergeDescendants = true) { this.selected = selected || picked == true },
     ) {
         Box(
             Modifier
@@ -269,6 +333,9 @@ private fun TransactionRow(summary: TransactionSummary, selected: Boolean, slowN
                 .fillMaxHeight()
                 .background(statusColor),
         )
+        picked?.let {
+            Checkbox(checked = it, onCheckedChange = null, modifier = Modifier.align(Alignment.CenterVertically).padding(start = Spacing.s))
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
@@ -276,28 +343,7 @@ private fun TransactionRow(summary: TransactionSummary, selected: Boolean, slowN
                 .weight(1f)
                 .padding(start = Spacing.m, end = Spacing.l, top = Spacing.m, bottom = Spacing.m),
         ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    MethodTag(summary.method)
-                    Text(
-                        text = summary.path,
-                        style = MonospaceStyle,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    SourceTag(summary)
-                    Text(
-                        text = summary.host + " · " + Formatters.clockTime(summary.startedAtEpochMillis),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+            RowInfo(summary, Modifier.weight(1f))
             RowTrailing(summary, slowNanos)
         }
     }
@@ -339,5 +385,52 @@ private fun CenteredMessage(title: String, message: String? = null, action: (@Co
         Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         message?.let { Text(it, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center) }
         action?.invoke()
+    }
+}
+
+/** 행 왼쪽의 메서드·경로와 호스트·시각. */
+@Composable
+private fun RowInfo(summary: TransactionSummary, modifier: Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            MethodTag(summary.method)
+            Text(
+                text = summary.path,
+                style = MonospaceStyle,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            SourceTag(summary)
+            Text(
+                text = summary.host + " · " + Formatters.clockTime(summary.startedAtEpochMillis),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** 수집 이상(버린 이벤트)과 모의 응답이 켜져 있음을 목록 위에 알린다. */
+@Composable
+private fun CaptureBanners(inspector: PulseInspector) {
+    val health by inspector.captureHealth.collectAsStateWithLifecycle()
+    if (health.droppedEvents > 0 || health.droppedBodies > 0) {
+        Box(Modifier.padding(horizontal = Spacing.l, vertical = Spacing.xs)) {
+            Notice(
+                stringResource(R.string.pulse_health_warning, health.droppedEvents, health.droppedBodies),
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+    val mocksEnabled by inspector.mocks.enabled.collectAsStateWithLifecycle()
+    if (mocksEnabled) {
+        Box(Modifier.padding(horizontal = Spacing.l, vertical = Spacing.xs)) {
+            Notice(stringResource(R.string.pulse_mocks_active_banner), color = MaterialTheme.colorScheme.error)
+        }
     }
 }

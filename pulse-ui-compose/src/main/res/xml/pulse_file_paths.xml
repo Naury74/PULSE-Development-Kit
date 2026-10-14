@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 공유하려고 만든 내보내기 파일만 넘긴다. -->
+    <cache-path name="pulse_export" path="pulse-export/" />
+</paths>

@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -76,12 +77,8 @@ internal fun OverviewPane(
     ) {
         FilterBar(filters, stats)
         when {
-            stats == null -> Box(Modifier.fillMaxWidth().padding(Spacing.xl), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-
+            stats == null -> Box(Modifier.fillMaxWidth().padding(Spacing.xl), contentAlignment = Alignment.Center) { PulseLoading() }
             stats.counts.total == 0 -> Box(Modifier.padding(top = Spacing.m)) { Notice(stringResource(R.string.pulse_overview_empty)) }
-
             else -> DashboardContent(stats, filters, onOpenTraffic, onSearchTraffic)
         }
     }
@@ -123,11 +120,12 @@ private fun DashboardContent(
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val wide = maxWidth >= TwoColumnMinWidth
         Column {
+            HealthCard(stats, onOpenTraffic)
             KpiGrid(stats, columns = if (wide) 4 else 2, onOpenTraffic = onOpenTraffic)
             val left: @Composable () -> Unit = {
                 TrendCard(stats)
                 LatencyCard(stats)
-                StatusCard(stats, onOpenTraffic)
+                StatusCard(stats)
             }
             val right: @Composable () -> Unit = {
                 NetworkCard(stats)
@@ -160,6 +158,7 @@ private fun FilterBar(filters: DashboardFilters, stats: TrafficStatistics?) {
         FacetChip(stringResource(R.string.pulse_filter_host), filters.query.host, facets?.hosts.orEmpty(), filters.onHost)
         FacetChip(stringResource(R.string.pulse_filter_screen), filters.query.screen, facets?.screens.orEmpty(), filters.onScreen)
         FacetChip(stringResource(R.string.pulse_filter_label), filters.query.label, facets?.labels.orEmpty(), filters.onLabel)
+        stats?.let { ReportChip(it, filters.query) }
         FilterChip(
             selected = filters.query.includeSynthetic,
             onClick = { filters.onSynthetic(!filters.query.includeSynthetic) },
@@ -169,6 +168,22 @@ private fun FilterBar(filters: DashboardFilters, stats: TrafficStatistics?) {
             border = dashboardChipBorder(filters.query.includeSynthetic),
         )
     }
+}
+
+/** 지금 보이는 통계를 보고서로 공유하는 칩. */
+@Composable
+private fun ReportChip(stats: TrafficStatistics, query: StatsQuery) {
+    var open by remember { mutableStateOf(false) }
+    FilterChip(
+        selected = false,
+        onClick = { open = true },
+        label = { Text(stringResource(R.string.pulse_report_chip)) },
+        leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+        shape = MaterialTheme.shapes.small,
+        colors = dashboardChipColors(),
+        border = dashboardChipBorder(false),
+    )
+    if (open) StatsReportSheet(stats, query) { open = false }
 }
 
 /** 값 하나를 고르는 칩. 고른 값이 있으면 이름과 지우기 단추를 보여 준다. 선택지가 없으면 누를 수 없다. */

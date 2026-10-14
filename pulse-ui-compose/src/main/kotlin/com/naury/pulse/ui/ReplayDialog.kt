@@ -57,18 +57,25 @@ internal fun ReplayDialog(inspector: PulseInspector, transactionId: String, onDi
     val policy = inspector.config.replay ?: return
     val draft by produceState<ReplayDraft?>(null, transactionId) { value = inspector.replayDraft(transactionId) }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxSize()) {
-            val loaded = draft
-            if (loaded == null) {
-                Column(
-                    Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    CircularProgressIndicator()
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+            Column {
+                EditorHeader(
+                    stringResource(R.string.pulse_replay_title),
+                    onDismiss,
+                    subtitle = stringResource(R.string.pulse_replay_subtitle),
+                )
+                val loaded = draft
+                if (loaded == null) {
+                    Column(
+                        Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        PulseLoading()
+                    }
+                } else {
+                    ReplayEditor(inspector, policy, loaded, onDismiss, onOpenTransaction)
                 }
-            } else {
-                ReplayEditor(inspector, policy, loaded, onDismiss, onOpenTransaction)
             }
         }
     }
@@ -100,7 +107,6 @@ private fun ReplayEditor(
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        Text(stringResource(R.string.pulse_replay_title), style = MaterialTheme.typography.titleLarge)
         HostBadge(policy, url)
         if (original.removedHeaders.isNotEmpty()) {
             Notice(stringResource(R.string.pulse_replay_removed_headers, original.removedHeaders.joinToString()))

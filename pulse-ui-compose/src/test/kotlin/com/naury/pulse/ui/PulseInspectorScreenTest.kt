@@ -8,10 +8,12 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import com.google.common.truth.Truth.assertThat
@@ -92,7 +94,7 @@ class PulseInspectorScreenTest {
         settle()
         awaitText("p95 duration")
 
-        compose.onNodeWithText("50.0%").assertIsDisplayed()
+        compose.onAllNodesWithText("50.0%").onFirst().assertIsDisplayed()
         compose.onNodeWithText("900 ms").assertIsDisplayed()
         compose.onNodeWithContentDescription("Requests in 12 intervals", substring = true).assertExists()
         compose.onNodeWithText("Error rate").performClick()
@@ -241,8 +243,9 @@ class PulseInspectorScreenTest {
         compose.onNodeWithText("Save").performClick()
         settle()
         assertThat(inspector.mocks.rules.value).isEmpty()
-        compose.onNodeWithText("Status code").performTextReplacement("503")
-        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithText("Status code").performScrollTo().performTextClearance()
+        compose.onNodeWithText("Status code").performTextInput("503")
+        compose.onNodeWithText("Save").performScrollTo().performClick()
         settle()
         compose.onNodeWithText("Use mock responses").performScrollTo().performClick()
         settle()

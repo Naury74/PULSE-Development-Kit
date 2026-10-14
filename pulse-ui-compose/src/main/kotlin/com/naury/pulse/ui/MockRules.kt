@@ -118,46 +118,64 @@ private fun MockRuleDialog(onDismiss: () -> Unit, onSave: (MockRule) -> Unit) {
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     val invalidNumber = stringResource(R.string.pulse_mocks_invalid_number)
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxSize()) {
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .imePadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(Spacing.l),
-                verticalArrangement = Arrangement.spacedBy(Spacing.s),
-            ) {
-                Text(stringResource(R.string.pulse_mocks_add), style = MaterialTheme.typography.titleLarge)
-                OutlinedTextField(method, { method = it }, label = { Text(stringResource(R.string.pulse_mocks_method)) }, singleLine = true)
-                OutlinedTextField(host, { host = it }, label = { Text(stringResource(R.string.pulse_mocks_host)) }, singleLine = true)
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    PathMatch.entries.forEach { option ->
-                        FilterChip(selected = match == option, onClick = { match = option }, label = { Text(option.name.lowercase()) })
-                    }
-                }
-                OutlinedTextField(path, { path = it }, label = { Text(stringResource(R.string.pulse_mocks_path)) }, singleLine = true)
-                NumberField(status, { status = it }, stringResource(R.string.pulse_mocks_status))
-                OutlinedTextField(
-                    body,
-                    { body = it },
-                    label = { Text(stringResource(R.string.pulse_body)) },
-                    minLines = 2,
-                    textStyle = MonospaceStyle,
-                    modifier = Modifier.fillMaxWidth(),
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+            Column {
+                EditorHeader(
+                    stringResource(R.string.pulse_mocks_add),
+                    onDismiss,
+                    subtitle = stringResource(R.string.pulse_mocks_editor_subtitle),
                 )
-                NumberField(delay, { delay = it }, stringResource(R.string.pulse_mocks_delay))
-                NumberField(uses, { uses = it }, stringResource(R.string.pulse_mocks_uses))
-                NumberField(priority, { priority = it }, stringResource(R.string.pulse_mocks_priority))
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-                SaveOrCancel(onDismiss) {
-                    error = try {
-                        onSave(MockForm(method, host, match, path, status, body, delay, uses, priority).toRule(invalidNumber))
-                        null
-                    } catch (invalid: IllegalArgumentException) {
-                        invalid.message
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(Spacing.l),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                ) {
+                    OutlinedTextField(method, {
+                        method = it
+                    }, label = { Text(stringResource(R.string.pulse_mocks_method)) }, singleLine = true)
+                    OutlinedTextField(host, { host = it }, label = { Text(stringResource(R.string.pulse_mocks_host)) }, singleLine = true)
+                    MatchChips(match) { match = it }
+                    OutlinedTextField(path, { path = it }, label = { Text(stringResource(R.string.pulse_mocks_path)) }, singleLine = true)
+                    NumberField(status, { status = it }, stringResource(R.string.pulse_mocks_status))
+                    BodyField(body) { body = it }
+                    NumberField(delay, { delay = it }, stringResource(R.string.pulse_mocks_delay))
+                    NumberField(uses, { uses = it }, stringResource(R.string.pulse_mocks_uses))
+                    NumberField(priority, { priority = it }, stringResource(R.string.pulse_mocks_priority))
+                    error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                    SaveOrCancel(onDismiss) {
+                        error = try {
+                            onSave(MockForm(method, host, match, path, status, body, delay, uses, priority).toRule(invalidNumber))
+                            null
+                        } catch (invalid: IllegalArgumentException) {
+                            invalid.message
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun BodyField(value: String, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value,
+        onChange,
+        label = { Text(stringResource(R.string.pulse_body)) },
+        minLines = 2,
+        textStyle = MonospaceStyle,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun MatchChips(selected: PathMatch, onSelect: (PathMatch) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        PathMatch.entries.forEach { option ->
+            FilterChip(selected = selected == option, onClick = { onSelect(option) }, label = { Text(option.name.lowercase()) })
         }
     }
 }

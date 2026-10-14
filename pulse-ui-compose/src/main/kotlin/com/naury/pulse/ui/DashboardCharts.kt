@@ -149,32 +149,17 @@ internal fun ProportionRow(label: String, count: Int, total: Int, color: Color, 
 
 /** 결과 구성(성공·4xx·5xx·실패), 상태 코드, 실패 종류. 구성 줄을 누르면 해당 목록으로 간다. */
 @Composable
-internal fun StatusCard(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit) {
+internal fun StatusCard(stats: TrafficStatistics) {
     val counts = stats.counts
     val colors = LocalStatusColors.current
+    if (stats.statusCodes.isEmpty() && stats.failureTypes.isEmpty()) return
     SectionTitle(stringResource(R.string.pulse_status_title))
     PulseCard {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            listOf(
-                Triple(R.string.pulse_filter_success, counts.success, colors.success) to StatusFilter.SUCCESS,
-                Triple(R.string.pulse_filter_client_error, counts.clientError, colors.clientError) to StatusFilter.CLIENT_ERROR,
-                Triple(R.string.pulse_filter_server_error, counts.serverError, colors.serverError) to StatusFilter.SERVER_ERROR,
-                Triple(R.string.pulse_filter_failed, counts.failed, colors.failure) to StatusFilter.FAILED,
-            ).forEach { (row, filter) ->
-                ProportionRow(
-                    stringResource(row.first),
-                    row.second,
-                    counts.total,
-                    row.third,
-                    modifier = Modifier.clickable(role = Role.Button) { onOpenTraffic(filter) },
-                )
-            }
-        }
         if (stats.statusCodes.isNotEmpty()) {
             Text(
                 stringResource(R.string.pulse_status_codes),
                 style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(top = Spacing.m, bottom = Spacing.xs),
+                modifier = Modifier.padding(bottom = Spacing.xs),
             )
             FlowPills(stats.statusCodes.map { entry -> "${entry.key} × ${entry.count}" to statusCodeColor(entry.key.toIntOrNull() ?: 0) })
         }

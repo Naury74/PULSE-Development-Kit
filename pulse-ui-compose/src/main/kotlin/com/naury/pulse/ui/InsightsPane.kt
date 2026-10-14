@@ -67,7 +67,7 @@ internal fun InsightsPane(
         val visible = insights?.filter { it.key() !in dismissed }
         when {
             visible == null -> Box(Modifier.fillMaxWidth().padding(Spacing.xl), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                PulseLoading()
             }
 
             visible.isEmpty() -> Text(stringResource(R.string.pulse_insights_empty), style = MaterialTheme.typography.bodyMedium)

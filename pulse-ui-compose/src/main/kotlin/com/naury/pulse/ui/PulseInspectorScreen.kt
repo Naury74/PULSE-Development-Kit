@@ -226,14 +226,14 @@ private fun DestinationRail(current: Destination, onSelect: (Destination) -> Uni
 
 @Composable
 private fun ClearDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.pulse_clear_title)) },
-        text = { Text(stringResource(R.string.pulse_clear_message)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) { Text(stringResource(R.string.pulse_clear_confirm), color = MaterialTheme.colorScheme.error) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.pulse_cancel)) } },
+    PulseConfirmDialog(
+        icon = Icons.Filled.Delete,
+        title = stringResource(R.string.pulse_clear_title),
+        message = stringResource(R.string.pulse_clear_message),
+        confirmLabel = stringResource(R.string.pulse_clear_confirm),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        destructive = true,
     )
 }
 

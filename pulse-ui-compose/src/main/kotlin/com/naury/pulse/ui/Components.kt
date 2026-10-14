@@ -78,7 +78,7 @@ internal fun Field(label: String, value: String, monospace: Boolean = false) {
 
 /** 이름·값 두 칸 표. 가린 값은 다른 색으로 보여 준다. */
 @Composable
-internal fun HeaderTable(headers: List<HeaderField>) {
+internal fun HeaderTable(headers: List<HeaderField>, tagOf: (HeaderField) -> String? = { null }) {
     if (headers.isEmpty()) {
         Text(
             stringResource(R.string.pulse_headers_empty),
@@ -93,14 +93,14 @@ internal fun HeaderTable(headers: List<HeaderField>) {
             headers.forEachIndexed { index, header ->
                 if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(vertical = Spacing.s)) {
-                    Text(
-                        text = header.name,
-                        style = MonospaceStyle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
+                    Column(
+                        Modifier
                             .weight(HEADER_NAME_WEIGHT)
                             .padding(end = Spacing.m),
-                    )
+                    ) {
+                        Text(text = header.name, style = MonospaceStyle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        tagOf(header)?.let { Pill(it, MaterialTheme.colorScheme.primary, Modifier.padding(top = 2.dp)) }
+                    }
                     Text(
                         text = header.value,
                         style = MonospaceStyle,

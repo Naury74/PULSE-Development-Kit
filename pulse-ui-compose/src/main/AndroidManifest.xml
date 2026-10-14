@@ -32,6 +32,17 @@
             android:name="com.naury.pulse.ui.PulseNotificationReceiver"
             android:exported="false" />
 
+        <!-- 공유할 내보내기 파일. 사용자가 고른 앱에만 읽기 권한을 준다. -->
+        <provider
+            android:name="com.naury.pulse.ui.PulseFileProvider"
+            android:authorities="${applicationId}.pulse.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/pulse_file_paths" />
+        </provider>
+
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"

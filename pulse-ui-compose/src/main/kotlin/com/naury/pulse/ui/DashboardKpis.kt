@@ -69,12 +69,14 @@ internal fun KpiGrid(stats: TrafficStatistics, columns: Int, onOpenTraffic: (Sta
 }
 
 @Composable
-private fun kpis(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit): List<Kpi> {
+private fun kpis(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit): List<Kpi> =
+    trafficKpis(stats, onOpenTraffic) + resourceKpis(stats)
+
+@Composable
+private fun trafficKpis(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit): List<Kpi> {
     val counts = stats.counts
     val errors = counts.clientError + counts.serverError + counts.failed
     val status = LocalStatusColors.current
-    val connections = stats.connections
-    val connectionTotal = connections.reused + connections.newConnections
     return listOf(
         Kpi(
             stringResource(R.string.pulse_stat_requests),
@@ -86,6 +88,8 @@ private fun kpis(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit
             percentText(errors, counts.total),
             stringResource(R.string.pulse_stat_errors_detail, counts.clientError, counts.serverError, counts.failed),
             if (errors > 0) status.serverError else Color.Unspecified,
+            ring = fraction(errors, counts.total),
+            ringColor = status.serverError,
         ) { onOpenTraffic(if (counts.serverError > 0) StatusFilter.SERVER_ERROR else StatusFilter.FAILED) },
         Kpi(
             stringResource(R.string.pulse_stat_p95),
@@ -103,6 +107,16 @@ private fun kpis(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit
             stats.timeToFirstByte.p95Nanos?.let(Formatters::duration) ?: "—",
             stats.timeToFirstByte.p50Nanos?.let { stringResource(R.string.pulse_kpi_p50, Formatters.duration(it)) },
         ),
+    )
+}
+
+@Composable
+private fun resourceKpis(stats: TrafficStatistics): List<Kpi> {
+    val counts = stats.counts
+    val status = LocalStatusColors.current
+    val connections = stats.connections
+    val connectionTotal = connections.reused + connections.newConnections
+    return listOf(
         Kpi(
             stringResource(R.string.pulse_stat_bytes),
             Formatters.bytes(stats.bytes.responseBytes),
@@ -112,11 +126,18 @@ private fun kpis(stats: TrafficStatistics, onOpenTraffic: (StatusFilter) -> Unit
             stringResource(R.string.pulse_kpi_reuse),
             percentText(connections.reused, connectionTotal),
             stringResource(R.string.pulse_kpi_reuse_detail, connections.reused, connectionTotal),
+            ring = fraction(connections.reused, connectionTotal),
+            ringColor = MaterialTheme.colorScheme.primary,
         ),
         Kpi(
             stringResource(R.string.pulse_kpi_cache),
             (connections.cacheHits + connections.conditionalHits).toString(),
             stringResource(R.string.pulse_kpi_cache_detail, connections.cacheHits, connections.conditionalHits),
+            ring = fraction(
+                connections.cacheHits + connections.conditionalHits,
+                connections.cacheHits + connections.conditionalHits + connections.network,
+            ),
+            ringColor = status.success,
         ),
         Kpi(
             stringResource(R.string.pulse_kpi_in_flight),
@@ -131,8 +152,13 @@ private class Kpi(
     val value: String,
     val detail: String? = null,
     val valueColor: Color = Color.Unspecified,
+    /** 0..1이면 오른쪽에 고리로 보여 준다. 모수가 0이면 null. */
+    val ring: Float? = null,
+    val ringColor: Color = Color.Unspecified,
     val onClick: (() -> Unit)? = null,
 )
+
+private fun fraction(part: Int, total: Int): Float? = if (total == 0) null else part.toFloat() / total
 
 @Composable
 private fun KpiTile(kpi: Kpi, modifier: Modifier) {
@@ -141,12 +167,20 @@ private fun KpiTile(kpi: Kpi, modifier: Modifier) {
         .clip(CardShape)
         .background(MaterialTheme.colorScheme.surfaceContainerLow)
         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CardShape)
-    Column(
+    Row(
         (kpi.onClick?.let { base.clickable(role = Role.Button, onClick = it) } ?: base)
             .semantics(mergeDescendants = true) {}
             .padding(Spacing.m),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        KpiText(kpi, Modifier.weight(1f))
+        kpi.ring?.let { RingGauge(it, kpi.ringColor, Modifier.padding(start = Spacing.s)) }
+    }
+}
+
+@Composable
+private fun KpiText(kpi: Kpi, modifier: Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(kpi.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         Text(
             kpi.value,
