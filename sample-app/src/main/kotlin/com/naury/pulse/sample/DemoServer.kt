@@ -2,6 +2,7 @@ package com.naury.pulse.sample
 
 import java.io.IOException
 import java.net.HttpURLConnection.HTTP_BAD_REQUEST
+import java.net.HttpURLConnection.HTTP_CREATED
 import java.net.HttpURLConnection.HTTP_INTERNAL_ERROR
 import java.net.HttpURLConnection.HTTP_MOVED_TEMP
 import java.net.HttpURLConnection.HTTP_NOT_FOUND
@@ -52,6 +53,8 @@ class DemoServer : AutoCloseable {
     private class Routes(private val received: AtomicInteger) : Dispatcher() {
         override fun dispatch(request: RecordedRequest): MockResponse = when (request.url.encodedPath) {
             "/collect" -> collect(request)
+
+            "/reports" -> json("""{"received":"${request.headers["X-Pulse-Report-Id"].orEmpty()}"}""", code = HTTP_CREATED)
 
             "/users/1" -> json("""{"id":1,"name":"Kim","email":"kim@example.com","accessToken":"demo-access-token"}""")
 

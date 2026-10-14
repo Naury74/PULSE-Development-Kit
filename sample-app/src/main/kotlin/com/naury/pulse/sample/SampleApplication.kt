@@ -11,6 +11,8 @@ import com.naury.pulse.api.PulseConfig
 import com.naury.pulse.api.PulseHandle
 import com.naury.pulse.api.RemoteReporting
 import com.naury.pulse.api.ReplayPolicy
+import com.naury.pulse.api.ReportDestination
+import com.naury.pulse.api.Reporting
 import okhttp3.OkHttpClient
 
 class SampleApplication : Application() {
@@ -29,6 +31,13 @@ class SampleApplication : Application() {
 
     /** 프로세스가 사는 동안 하나만 둔다. 첫 요청 때 백그라운드에서 시작한다. */
     val demoServer: DemoServer by lazy { DemoServer() }
+
+    private val demoReports = ReportDestination(
+        id = "demo",
+        endpoint = "http://127.0.0.1:${DemoServer.PORT}/reports",
+        allowedHosts = setOf("127.0.0.1"),
+        allowCleartext = true,
+    )
 
     override fun onCreate() {
         super.onCreate()
@@ -52,6 +61,8 @@ class SampleApplication : Application() {
                     attributes = mapOf("build" to if (debuggable) "debug" else "release"),
                 ),
             )
+            // 버그 보고는 데모 서버의 /reports로 보낸다. 실제 앱은 https 주소와 허용 호스트, 보낼 때마다 토큰을 주는 headerProvider를 쓴다.
+            .reporting(Reporting(manual = demoReports, crash = demoReports))
             .build()
         pulse = Pulse.initialize(this, config)
         // 서버 환경·실험 그룹 같은 값을 알리면 설정 탭에 보이고, 바뀐 이력이 타임라인에 남는다.
