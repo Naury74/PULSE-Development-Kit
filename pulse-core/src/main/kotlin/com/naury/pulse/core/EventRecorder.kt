@@ -137,7 +137,8 @@ public class EventRecorder internal constructor(
         tag = tag?.take(MAX_TAG_CHARS),
         message = redactor.sanitizeTextPublic(message).take(AppEvent.MAX_MESSAGE_CHARS),
         detail = detail?.let { redactor.sanitizeTextPublic(it).take(AppEvent.MAX_DETAIL_CHARS) },
-        screen = currentScreen,
+        // 지난 실행의 이벤트(종료 이유 등)에 지금 화면을 붙이면 틀린 정보가 된다.
+        screen = currentScreen.takeIf { sessionId == recorder.sessionId },
         spanId = spanId,
         durationMillis = durationMillis,
         value = value,
