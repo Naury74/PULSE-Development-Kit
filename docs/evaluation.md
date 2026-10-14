@@ -135,7 +135,7 @@ unzip -o -q pulse-sample-release.apk 'classes*.dex' -d rel && \
 | debug APK 크기 증가 | 약 +12MB (1,605,580 → 13,597,997 bytes) | Compose·Room 등 포함, 축소 안 함. Compose를 이미 쓰는 앱은 더 적음 |
 | 요청당 추가 시간 | 중앙값 약 7~34µs | Mac JVM 루프백 측정, **기기 측정 아님**([benchmarks.md](benchmarks.md)) |
 | 메인 스레드 디스크·네트워크 | 0건 | 에뮬레이터 StrictMode 점검 |
-| 자동 테스트 | 211개 통과 | 단위·Robolectric·UI, CI 동일 |
+| 자동 테스트 | 216개 통과 | 단위·Robolectric·UI, CI 동일 |
 | 공개 API 보호 | ABI 덤프, no-op·debug 시그니처 비교 | CI에서 깨지면 실패 |
 
 ## 준비하면서 확인한 것 (2026-10-13, Android 16 에뮬레이터)
