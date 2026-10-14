@@ -28,7 +28,7 @@
     <string name="scenario_burst">동시 요청 20개</string>
     <string name="scenario_burst_detail">각 요청이 자기 ID와 응답을 유지합니다.</string>
     <string name="scenario_error_burst">오류 몰림</string>
-    <string name="scenario_error_burst_detail">500 응답을 연달아 6번 받아 진단 탭에 오류 몰림이 나옵니다.</string>
+    <string name="scenario_error_burst_detail">500 응답을 연달아 6번 받아 이슈 → 네트워크 진단에 오류 몰림이 나옵니다.</string>
     <string name="scenario_repeated_get">같은 GET 반복</string>
     <string name="scenario_repeated_get_detail">인증 없는 같은 GET을 캐시 없이 6번 보내 캐시 후보가 됩니다.</string>
     <string name="scenario_form_login">form 로그인</string>
@@ -48,9 +48,9 @@
     <string name="sample_subtitle">앱 안 데모 서버 · 기기 밖으로 나가는 요청 없음</string>
     <string name="group_app">앱 진단(네트워크 밖)</string>
     <string name="scenario_logs">디버그 로그</string>
-    <string name="scenario_logs_detail">Pulse.log로 VERBOSE부터 ERROR까지 로그 5개를 남깁니다. 로그 탭에서 수준으로 걸러 보세요.</string>
+    <string name="scenario_logs_detail">Pulse.log로 VERBOSE부터 ERROR까지 로그 5개를 남깁니다. 타임라인 → 앱 로그에서 수준으로 걸러 보세요.</string>
     <string name="scenario_span">구간 안의 요청</string>
-    <string name="scenario_span_detail">마커를 찍고 요청 두 개를 구간으로 감쌉니다. 로그 탭에서 구간을 열고 "구간만 보기"를 누르세요.</string>
+    <string name="scenario_span_detail">마커를 찍고 요청 두 개를 구간으로 감쌉니다. 타임라인 탭에서 구간을 열고 "구간만 보기"를 누르세요.</string>
     <string name="scenario_handled_error">처리한 오류</string>
     <string name="scenario_handled_error_detail">잡은 예외를 Pulse.recordError로 기록합니다. 이슈 탭에 나오고 원격 보고 목록에도 쌓입니다.</string>
     <string name="scenario_remote">원격 보고 왕복</string>
@@ -58,8 +58,8 @@
     <string name="scenario_freeze">메인 스레드 멈춤(3초)</string>
     <string name="scenario_freeze_detail">메인 스레드를 3초 막습니다. 감시기가 JANK로 기록합니다. 모두 실행에서는 뺍니다.</string>
     <string name="scenario_crash">앱 강제 종료(크래시)</string>
-    <string name="scenario_crash_detail">잡지 않은 예외를 던집니다. 앱을 다시 열면 크래시와 종료 이유가 로그·이슈 탭에 나옵니다. 모두 실행에서는 뺍니다.</string>
+    <string name="scenario_crash_detail">잡지 않은 예외를 던집니다. 앱을 다시 열면 크래시와 종료 이유가 타임라인·이슈 탭에 나옵니다. 모두 실행에서는 뺍니다.</string>
     <string name="crash_confirm_title">앱을 종료할까요?</string>
-    <string name="crash_confirm_body">앱이 바로 닫힙니다. 다시 열어 로그·이슈 탭을 확인하세요.</string>
+    <string name="crash_confirm_body">앱이 바로 닫힙니다. 다시 열어 타임라인·이슈 탭을 확인하세요.</string>
     <string name="crash_confirm_ok">종료</string>
 </resources>
