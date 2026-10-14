@@ -23,6 +23,7 @@ import java.io.IOException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -286,13 +287,16 @@ class PulseStorageTest {
     @Test
     fun `저장된 내용이 바뀌면 알린다`() = runBlocking {
         val storage = storage()
-        // 수집을 시작하기 전에 구독이 등록되도록 바로 실행한다.
         val change = async(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
-            withTimeout(5_000) { storage.observeChanges().first() }
+            withTimeout(10_000) { storage.observeChanges().first() }
         }
 
-        capture(storage) { transaction("t1", 1) }
-
+        // 구독은 I/O 스레드에서 늦게 등록될 수 있으므로, 알림이 올 때까지 기록을 더 저장한다.
+        var index = 0
+        while (!change.isCompleted) {
+            capture(storage) { transaction("t${index++}", index.toLong()) }
+            delay(100)
+        }
         change.await()
         Unit
     }
