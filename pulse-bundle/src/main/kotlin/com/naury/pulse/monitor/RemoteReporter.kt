@@ -44,6 +44,7 @@ internal class RemoteReporter(
 ) : PulseRemote {
     private val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
     private val wake = Channel<Unit>(Channel.CONFLATED)
+    private val statusRequests = Channel<Unit>(Channel.CONFLATED)
     private val client by lazy {
         OkHttpClient.Builder().callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS).build()
     }
@@ -58,6 +59,7 @@ internal class RemoteReporter(
     fun isActive(): Boolean = effective() != null
 
     fun start() {
+        scope.launch(Dispatchers.IO) { for (request in statusRequests) computeStatus() }
         refreshStatus()
         // 새 보고가 쌓이면 [COLLECT_MILLIS] 동안 더 모은 뒤 보낸다. 로그가 계속 쌓여도 그 간격으로는 보낸다.
         // 보내고 지운 변경에도 깨지만 보낼 차례인 것이 없으면 요청하지 않는다.
@@ -159,7 +161,7 @@ internal class RemoteReporter(
         val body = JSONObject()
             .put("schema", SCHEMA)
             .put("sentAt", System.currentTimeMillis())
-            .put("app", appInfo())
+            .put("app", appInfo(context, config))
             .put("reports", JSONArray(reports))
             .toString()
         val request = Request.Builder()
@@ -173,23 +175,6 @@ internal class RemoteReporter(
         }
     }
 
-    @Suppress("DEPRECATION")
-    private fun appInfo(): JSONObject {
-        val info = try {
-            context.packageManager.getPackageInfo(context.packageName, 0)
-        } catch (_: PackageManager.NameNotFoundException) {
-            null
-        }
-        val version = info?.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.longVersionCode else it.versionCode.toLong() }
-        return JSONObject()
-            .put("package", context.packageName)
-            .putOpt("versionName", info?.versionName)
-            .putOpt("versionCode", version)
-            .put("sdkInt", Build.VERSION.SDK_INT)
-            .put("device", "${Build.MANUFACTURER} ${Build.MODEL}")
-            .put("attributes", JSONObject(config?.attributes.orEmpty()))
-    }
-
     private fun networkAllowed(): Boolean {
         if (config?.wifiOnly != true) return true
         val manager = context.getSystemService(ConnectivityManager::class.java) ?: return false
@@ -197,26 +182,30 @@ internal class RemoteReporter(
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    /** 상태 다시 계산을 요청한다. 계산은 [statusLoop] 하나가 차례로 해서 늦게 끝난 옛 계산이 새 상태를 덮지 않는다. */
     private fun refreshStatus() {
-        val target = effective()
-        scope.launch(Dispatchers.IO) {
-            val pending = try {
-                storage().pendingReports()
-            } catch (_: RuntimeException) {
-                0
-            }
-            state.value = RemoteStatus(
-                configured = (preferences.getString(KEY_ENDPOINT, null) ?: config?.endpoint) != null,
-                enabled = target != null,
-                endpoint = target?.endpoint ?: preferences.getString(KEY_ENDPOINT, null) ?: config?.endpoint,
-                overridden = preferences.all.isNotEmpty(),
-                pending = pending,
-                sent = sent,
-                lastSuccessEpochMillis = lastSuccess,
-                lastError = lastError,
-            )
+        statusRequests.trySend(Unit)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun computeStatus() {
+        val pending = try {
+            storage().pendingReports()
+        } catch (_: RuntimeException) {
+            0
         }
+        val target = effective()
+        val savedEndpoint = preferences.getString(KEY_ENDPOINT, null)
+        state.value = RemoteStatus(
+            configured = (savedEndpoint ?: config?.endpoint) != null,
+            enabled = target != null,
+            endpoint = target?.endpoint ?: savedEndpoint ?: config?.endpoint,
+            overridden = preferences.all.isNotEmpty(),
+            pending = pending,
+            sent = sent,
+            lastSuccessEpochMillis = lastSuccess,
+            lastError = lastError,
+        )
     }
 
     private class Target(val endpoint: String, val headers: Map<String, String>)
@@ -236,4 +225,22 @@ internal class RemoteReporter(
         const val MAX_ATTEMPTS = 20
         val JSON = "application/json; charset=utf-8".toMediaType()
     }
+}
+
+/** 보고에 붙는 앱·기기 정보. */
+@Suppress("DEPRECATION")
+private fun appInfo(context: Context, config: RemoteReporting?): JSONObject {
+    val info = try {
+        context.packageManager.getPackageInfo(context.packageName, 0)
+    } catch (_: PackageManager.NameNotFoundException) {
+        null
+    }
+    val version = info?.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.longVersionCode else it.versionCode.toLong() }
+    return JSONObject()
+        .put("package", context.packageName)
+        .putOpt("versionName", info?.versionName)
+        .putOpt("versionCode", version)
+        .put("sdkInt", Build.VERSION.SDK_INT)
+        .put("device", "${Build.MANUFACTURER} ${Build.MODEL}")
+        .put("attributes", JSONObject(config?.attributes.orEmpty()))
 }
