@@ -227,19 +227,7 @@ private fun ExportChoicesContent(choices: ExportChoices, showRange: Boolean) {
         SwitchRow(stringResource(R.string.pulse_export_response_bodies), choices.responseBodies) { choices.responseBodies = it }
     }
     SwitchRow(stringResource(R.string.pulse_export_synthetic), choices.synthetic) { choices.synthetic = it }
-    SheetLabel(stringResource(R.string.pulse_export_destination))
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        SegmentedButton(selected = !choices.share, onClick = {
-            choices.share = false
-        }, shape = SegmentedButtonDefaults.itemShape(0, 2), icon = {}) {
-            Text(stringResource(R.string.pulse_export_to_file))
-        }
-        SegmentedButton(selected = choices.share, onClick = {
-            choices.share = true
-        }, shape = SegmentedButtonDefaults.itemShape(1, 2), icon = {}) {
-            Text(stringResource(R.string.pulse_export_to_share))
-        }
-    }
+    DestinationChoice(choices.share) { choices.share = it }
 }
 
 @Composable

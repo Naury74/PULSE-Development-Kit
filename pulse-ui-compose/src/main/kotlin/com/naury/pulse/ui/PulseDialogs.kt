@@ -28,6 +28,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -197,4 +200,28 @@ internal fun EditorHeader(title: String, onClose: () -> Unit, subtitle: String? 
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
+}
+
+/** 둘 중 하나를 고르는 분할 버튼. [firstSelected]가 true면 앞쪽이 선택된 상태다. */
+@Composable
+internal fun TwoChoiceRow(first: String, second: String, firstSelected: Boolean, onSelect: (first: Boolean) -> Unit) {
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        SegmentedButton(selected = firstSelected, onClick = {
+            onSelect(true)
+        }, shape = SegmentedButtonDefaults.itemShape(0, 2), icon = {}) {
+            Text(first)
+        }
+        SegmentedButton(selected = !firstSelected, onClick = {
+            onSelect(false)
+        }, shape = SegmentedButtonDefaults.itemShape(1, 2), icon = {}) {
+            Text(second)
+        }
+    }
+}
+
+/** 파일로 저장할지 공유할지 고르는 줄. */
+@Composable
+internal fun DestinationChoice(share: Boolean, onShare: (Boolean) -> Unit) {
+    SheetLabel(stringResource(R.string.pulse_export_destination))
+    TwoChoiceRow(stringResource(R.string.pulse_export_to_file), stringResource(R.string.pulse_export_to_share), !share) { onShare(!it) }
 }

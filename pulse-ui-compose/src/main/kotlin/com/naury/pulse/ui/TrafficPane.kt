@@ -113,7 +113,8 @@ internal fun TrafficPane(
         NotificationPrompt()
         if (picked.isEmpty()) {
             SearchField(searchText, viewModel::search)
-            StatusFilters(status, viewModel::filter)
+            val range by viewModel.range.collectAsStateWithLifecycle()
+            StatusFilters(status, viewModel::filter) { TimeRangeChip(inspector, range, viewModel::setRange) }
         } else {
             SelectionBar(picked.size, onClear = { picked = emptyList() }, onExport = { exportPicked = true })
         }
@@ -212,7 +213,7 @@ private fun SearchField(text: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun StatusFilters(selected: StatusFilter, onSelect: (StatusFilter) -> Unit) {
+private fun StatusFilters(selected: StatusFilter, onSelect: (StatusFilter) -> Unit, leading: @Composable () -> Unit = {}) {
     val filters = listOf(
         StatusFilter.ALL to R.string.pulse_filter_all,
         StatusFilter.SUCCESS to R.string.pulse_filter_success,
@@ -227,6 +228,7 @@ private fun StatusFilters(selected: StatusFilter, onSelect: (StatusFilter) -> Un
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = Spacing.l, vertical = Spacing.xs),
     ) {
+        leading()
         filters.forEach { (filter, label) ->
             FilterChip(
                 selected = filter == selected,

@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
 internal class PulseUiInitializer : Initializer<Unit> {
     override fun create(context: Context) {
         val app = context.applicationContext
+        (app as? android.app.Application)?.let(PulseOverlay::install)
         if (!app.resources.getBoolean(R.bool.pulse_notification_enabled)) return
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             PulseInspectorRegistry.updates.collectLatest { inspector ->

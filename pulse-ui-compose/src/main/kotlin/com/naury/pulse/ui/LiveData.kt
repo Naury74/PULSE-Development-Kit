@@ -7,6 +7,7 @@ import com.naury.pulse.api.PulseInspector
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 
 private const val REFRESH_DEBOUNCE_MILLIS = 1_000L
@@ -16,9 +17,10 @@ private const val REFRESH_DEBOUNCE_MILLIS = 1_000L
  */
 @OptIn(FlowPreview::class)
 @Composable
-internal fun <T : Any> rememberLive(inspector: PulseInspector, key: Any, load: suspend () -> T): T? {
+internal fun <T : Any> rememberLive(inspector: PulseInspector, key: Any, events: Boolean = false, load: suspend () -> T): T? {
     val value by produceState<T?>(null, inspector, key) {
-        inspector.observeChanges().debounce(REFRESH_DEBOUNCE_MILLIS).onStart { emit(Unit) }.collect {
+        val changes = if (events) merge(inspector.observeChanges(), inspector.observeEvents()) else inspector.observeChanges()
+        changes.debounce(REFRESH_DEBOUNCE_MILLIS).onStart { emit(Unit) }.collect {
             @Suppress("TooGenericExceptionCaught")
             try {
                 value = load()

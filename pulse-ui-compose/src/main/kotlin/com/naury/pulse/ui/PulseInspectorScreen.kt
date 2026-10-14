@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -72,7 +73,7 @@ private const val DETAIL_PANE_WEIGHT = 1f - LIST_PANE_WEIGHT
 /**
  * PULSE 인스펙터 화면. 호스트 앱의 Compose 화면 안에 넣을 수 있다.
  *
- * 개요·트래픽·진단·설정 탭이 있다. 좁은 화면은 아래 탭과 목록·상세를 번갈아 보여 주고,
+ * 개요(네트워크·앱 대시보드)·트래픽·로그·이슈·설정 탭이 있고, 날짜·실행(세션) 기간을 모든 탭이 함께 쓴다. 좁은 화면은 아래 탭과 목록·상세를 번갈아 보여 주고,
  * 너비가 840dp 이상이면 옆 레일과 목록·상세 두 칸으로 보여 준다.
  * 검색어·필터·선택한 요청은 화면 회전과 프로세스 재시작 뒤에도 유지된다.
  *
@@ -86,6 +87,10 @@ public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, 
             key = "pulse-traffic",
             factory = viewModelFactory { initializer { TrafficViewModel(inspector, createSavedStateHandle()) } },
         )
+        val eventsViewModel: EventsViewModel = viewModel(
+            key = "pulse-events",
+            factory = viewModelFactory { initializer { EventsViewModel(inspector, createSavedStateHandle(), trafficViewModel.range) } },
+        )
         val navigation = rememberSaveable(saver = InspectorNavigation.Saver) { InspectorNavigation() }
 
         BoxWithConstraints(modifier.fillMaxSize()) {
@@ -97,7 +102,10 @@ public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, 
                     Destination.TRAFFIC
             }
             val exportQuery = if (navigation.destination == Destination.TRAFFIC && !detailOnly) {
-                { TransactionQuery(trafficViewModel.searchText.value, trafficViewModel.status.value) }
+                {
+                    val range = trafficViewModel.range.value
+                    TransactionQuery(trafficViewModel.searchText.value, trafficViewModel.status.value, range.from, range.to)
+                }
             } else {
                 null
             }
@@ -110,7 +118,7 @@ public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, 
                         DestinationRail(navigation.destination) { navigation.destination = it }
                         VerticalDivider()
                     }
-                    DestinationContent(navigation, inspector, trafficViewModel, wide, Modifier.weight(1f).fillMaxHeight())
+                    DestinationContent(navigation, inspector, trafficViewModel, eventsViewModel, wide, Modifier.weight(1f).fillMaxHeight())
                 }
             }
         }
@@ -148,7 +156,7 @@ private class InspectorNavigation(
             save = { listOf(it.destination.name, it.window.name, it.selectedId, it.confirmClear) },
             restore = {
                 InspectorNavigation(
-                    Destination.valueOf(it[0] as String),
+                    Destination.entries.firstOrNull { entry -> entry.name == it[0] } ?: Destination.TRAFFIC,
                     StatsWindow.valueOf(it[1] as String),
                     it[2] as String?,
                     it[3] as Boolean,
@@ -163,15 +171,20 @@ private fun DestinationContent(
     navigation: InspectorNavigation,
     inspector: PulseInspector,
     trafficViewModel: TrafficViewModel,
+    eventsViewModel: EventsViewModel,
     wide: Boolean,
     modifier: Modifier,
 ) {
     val changeWindow: (StatsWindow) -> Unit = { navigation.window = it }
+    val range by trafficViewModel.range.collectAsStateWithLifecycle()
+    val changeRange: (TimeRange) -> Unit = trafficViewModel::setRange
     when (navigation.destination) {
         Destination.OVERVIEW -> OverviewPane(
             inspector,
             navigation.window,
             changeWindow,
+            range = range,
+            onRangeChange = changeRange,
             onOpenTraffic = { filter ->
                 trafficViewModel.filter(filter)
                 navigation.open(Destination.TRAFFIC, null)
@@ -188,9 +201,17 @@ private fun DestinationContent(
             navigation.selectedId = it
         }, modifier)
 
-        Destination.INSIGHTS -> InsightsPane(inspector, navigation.window, changeWindow, onOpenTransaction = {
-            navigation.open(Destination.TRAFFIC, it)
-        }, modifier)
+        Destination.LOGS -> EventsPane(inspector, eventsViewModel, range, changeRange, modifier)
+
+        Destination.ISSUES -> IssuesPane(
+            inspector,
+            navigation.window,
+            changeWindow,
+            range,
+            changeRange,
+            onOpenTransaction = { navigation.open(Destination.TRAFFIC, it) },
+            modifier = modifier,
+        )
 
         Destination.SETTINGS -> SettingsPane(inspector, onClear = { navigation.confirmClear = true }, modifier = modifier)
     }
@@ -240,7 +261,8 @@ private fun ClearDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
 private enum class Destination(@param:StringRes val label: Int, val icon: ImageVector) {
     OVERVIEW(R.string.pulse_tab_overview, Icons.Filled.Home),
     TRAFFIC(R.string.pulse_tab_traffic, Icons.AutoMirrored.Filled.List),
-    INSIGHTS(R.string.pulse_tab_insights, Icons.Filled.Warning),
+    LOGS(R.string.pulse_tab_logs, Icons.Filled.Info),
+    ISSUES(R.string.pulse_tab_issues, Icons.Filled.Warning),
     SETTINGS(R.string.pulse_tab_settings, Icons.Filled.Settings),
 }
 

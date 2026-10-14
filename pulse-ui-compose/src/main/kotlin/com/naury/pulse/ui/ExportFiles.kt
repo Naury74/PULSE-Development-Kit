@@ -90,10 +90,23 @@ internal suspend fun exportToDocument(
     query: TransactionQuery,
     format: ExportFormat,
     options: ExportOptions,
-): ExportResult? = withContext(Dispatchers.IO) {
+): ExportResult? = writeToDocument(context, uri) { writeExport(it, inspector, query, format, options) }
+
+@Suppress("LongParameterList")
+internal suspend fun exportAndShare(
+    context: Context,
+    name: String,
+    inspector: PulseInspector,
+    query: TransactionQuery,
+    format: ExportFormat,
+    options: ExportOptions,
+    chooserTitle: String,
+): Boolean = writeAndShare(context, name, format.mimeType, chooserTitle) { writeExport(it, inspector, query, format, options) }
+
+/** 사용자가 고른 문서에 쓴다. 실패하거나 취소되면 반쯤 쓴 문서를 지우고, 실패면 null. */
+internal suspend fun <T> writeToDocument(context: Context, uri: Uri, write: suspend (OutputStream) -> T): T? = withContext(Dispatchers.IO) {
     try {
-        context.contentResolver.openOutputStream(uri, "wt")?.use { writeExport(it, inspector, query, format, options) }
-            ?: throw IOException("출력 스트림을 열 수 없습니다.")
+        context.contentResolver.openOutputStream(uri, "wt")?.use { write(it) } ?: throw IOException("출력 스트림을 열 수 없습니다.")
     } catch (cancel: CancellationException) {
         withContext(NonCancellable) { deleteQuietly(context, uri) }
         throw cancel
@@ -104,22 +117,19 @@ internal suspend fun exportToDocument(
 }
 
 /** 앱 캐시의 내보내기 폴더에 쓰고 공유 시트를 연다. 이전 파일은 먼저 지워 캐시에 쌓이지 않게 한다. */
-@Suppress("LongParameterList")
-internal suspend fun exportAndShare(
+internal suspend fun writeAndShare(
     context: Context,
     name: String,
-    inspector: PulseInspector,
-    query: TransactionQuery,
-    format: ExportFormat,
-    options: ExportOptions,
+    mimeType: String,
     chooserTitle: String,
+    write: suspend (OutputStream) -> Unit,
 ): Boolean {
     val file = withContext(Dispatchers.IO) {
         val directory = File(context.cacheDir, PulseFileProvider.DIRECTORY).apply { mkdirs() }
         directory.listFiles()?.forEach { it.delete() }
         val target = File(directory, name)
         try {
-            target.outputStream().use { writeExport(it, inspector, query, format, options) }
+            target.outputStream().use { write(it) }
             target
         } catch (cancel: CancellationException) {
             target.delete()
@@ -136,7 +146,7 @@ internal suspend fun exportAndShare(
         return false
     }
     val send = Intent(Intent.ACTION_SEND)
-        .setType(format.mimeType)
+        .setType(mimeType)
         .putExtra(Intent.EXTRA_STREAM, uri)
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     context.startActivity(Intent.createChooser(send, chooserTitle).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))

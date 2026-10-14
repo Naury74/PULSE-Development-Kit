@@ -3,5 +3,7 @@
     <!-- 호스트 앱의 res/values에 같은 이름으로 false를 넣으면 끈다. -->
     <bool name="pulse_launcher_icon_enabled">true</bool>
     <bool name="pulse_notification_enabled">true</bool>
+    <!-- 화면 위 PULSE 버튼(마커·구간·화면 캡처)의 처음 값. 인스펙터 설정에서 바꿀 수 있다. -->
+    <bool name="pulse_overlay_enabled">false</bool>
     <color name="pulse_brand">#3B5BDB</color>
 </resources>

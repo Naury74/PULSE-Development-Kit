@@ -18,20 +18,31 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 
 /** 검색어·상태 필터를 [SavedStateHandle]에 두어 화면 회전과 프로세스 재시작 뒤에도 유지한다. */
 internal class TrafficViewModel(private val inspector: PulseInspector, private val state: SavedStateHandle) : ViewModel() {
     val searchText: StateFlow<String> = state.getStateFlow(KEY_TEXT, "")
     val status: StateFlow<StatusFilter> = state.getStateFlow(KEY_STATUS, StatusFilter.ALL)
+    private val rangeFrom: StateFlow<Long?> = state.getStateFlow(KEY_FROM, null)
+    private val rangeTo: StateFlow<Long?> = state.getStateFlow(KEY_TO, null)
+    private val rangeLabel: StateFlow<String?> = state.getStateFlow(KEY_LABEL, null)
+
+    /** 모든 탭이 함께 쓰는 기간. */
+    val range: StateFlow<TimeRange> = combine(rangeFrom, rangeTo, rangeLabel) { from, to, label -> TimeRange(from, to, label) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, TimeRange(state[KEY_FROM], state[KEY_TO], state[KEY_LABEL]))
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     val transactions: Flow<PagingData<TransactionSummary>> =
-        combine(searchText.debounce(SEARCH_DEBOUNCE_MILLIS), status) { text, status -> TransactionQuery(text, status) }
+        combine(searchText.debounce(SEARCH_DEBOUNCE_MILLIS), status, range) { text, status, range ->
+            TransactionQuery(text, status, range.from, range.to)
+        }
             .distinctUntilChanged()
             .flatMapLatest { query ->
                 Pager(PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false)) { TransactionPagingSource(inspector, query) }.flow
@@ -46,9 +57,18 @@ internal class TrafficViewModel(private val inspector: PulseInspector, private v
         state[KEY_STATUS] = status
     }
 
+    fun setRange(range: TimeRange) {
+        state[KEY_FROM] = range.from
+        state[KEY_TO] = range.to
+        state[KEY_LABEL] = range.label
+    }
+
     private companion object {
         const val KEY_TEXT = "pulse.search"
         const val KEY_STATUS = "pulse.status"
+        const val KEY_FROM = "pulse.range.from"
+        const val KEY_TO = "pulse.range.to"
+        const val KEY_LABEL = "pulse.range.label"
         const val SEARCH_DEBOUNCE_MILLIS = 250L
         const val PAGE_SIZE = 50
     }

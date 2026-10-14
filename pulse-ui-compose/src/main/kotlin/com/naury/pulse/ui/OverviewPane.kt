@@ -22,6 +22,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -54,12 +57,15 @@ internal fun OverviewPane(
     onOpenTraffic: (StatusFilter) -> Unit,
     modifier: Modifier = Modifier,
     onSearchTraffic: (String) -> Unit = {},
+    range: TimeRange = TimeRange.ALL,
+    onRangeChange: (TimeRange) -> Unit = {},
 ) {
+    var app by rememberSaveable { mutableStateOf(false) }
     var host by rememberSaveable { mutableStateOf<String?>(null) }
     var screen by rememberSaveable { mutableStateOf<String?>(null) }
     var label by rememberSaveable { mutableStateOf<String?>(null) }
     var synthetic by rememberSaveable { mutableStateOf(false) }
-    val query = StatsQuery(window, host, screen, label, synthetic)
+    val query = StatsQuery(window, host, screen, label, synthetic, range.from, range.to)
     val stats = rememberLive(inspector, query) { inspector.loadStatistics(query) }
     val filters = DashboardFilters(
         query = query,
@@ -75,11 +81,35 @@ internal fun OverviewPane(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = Spacing.l, vertical = Spacing.s),
     ) {
-        FilterBar(filters, stats)
+        DashboardModeSwitch(app) { app = it }
+        if (app) {
+            Row(Modifier.padding(top = Spacing.s), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                TimeRangeChip(inspector, range, onRangeChange)
+                if (!range.active) WindowSelector(window, onWindowChange)
+            }
+            val now = System.currentTimeMillis()
+            AppDashboard(inspector, range.from ?: window.millis?.let { now - it }, range.to, onRangeChange)
+            return@Column
+        }
+        FilterBar(filters, stats, inspector, range, onRangeChange)
         when {
             stats == null -> Box(Modifier.fillMaxWidth().padding(Spacing.xl), contentAlignment = Alignment.Center) { PulseLoading() }
             stats.counts.total == 0 -> Box(Modifier.padding(top = Spacing.m)) { Notice(stringResource(R.string.pulse_overview_empty)) }
             else -> DashboardContent(stats, filters, onOpenTraffic, onSearchTraffic)
+        }
+    }
+}
+
+@Composable
+private fun DashboardModeSwitch(app: Boolean, onChange: (Boolean) -> Unit) {
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        listOf(R.string.pulse_dashboard_network, R.string.pulse_dashboard_app).forEachIndexed { index, label ->
+            SegmentedButton(
+                selected = app == (index == 1),
+                onClick = { onChange(index == 1) },
+                shape = SegmentedButtonDefaults.itemShape(index, 2),
+                icon = {},
+            ) { Text(stringResource(label)) }
         }
     }
 }
@@ -146,8 +176,17 @@ private fun DashboardContent(
 }
 
 @Composable
-private fun FilterBar(filters: DashboardFilters, stats: TrafficStatistics?) {
-    WindowSelector(filters.query.window, filters.onWindow)
+private fun FilterBar(
+    filters: DashboardFilters,
+    stats: TrafficStatistics?,
+    inspector: PulseInspector,
+    range: TimeRange,
+    onRangeChange: (TimeRange) -> Unit,
+) {
+    Row(Modifier.padding(top = Spacing.s), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        TimeRangeChip(inspector, range, onRangeChange)
+        if (!range.active) WindowSelector(filters.query.window, filters.onWindow)
+    }
     val facets = stats?.facets
     Row(
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),

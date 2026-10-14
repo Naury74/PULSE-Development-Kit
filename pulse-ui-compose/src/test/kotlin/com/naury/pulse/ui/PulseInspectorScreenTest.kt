@@ -139,7 +139,9 @@ class PulseInspectorScreenTest {
         )
         show(inspector)
 
-        compose.onNodeWithText("Insights").performClick()
+        compose.onNodeWithText("Issues").performClick()
+        settle()
+        compose.onNodeWithText("Network insights").performClick()
         settle()
         awaitText("/users/1")
 

@@ -1,5 +1,8 @@
 package com.naury.pulse.ui
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.platform.LocalConfiguration
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -37,3 +40,8 @@ internal object Formatters {
 
     fun dateTime(epochMillis: Long): String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT).format(Date(epochMillis))
 }
+
+/** 화면 설정이 바뀌면 다시 그리도록 Compose 설정에서 읽는 현재 로케일. */
+@Composable
+@ReadOnlyComposable
+internal fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
