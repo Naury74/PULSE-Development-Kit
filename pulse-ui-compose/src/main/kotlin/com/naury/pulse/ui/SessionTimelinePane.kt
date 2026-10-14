@@ -73,7 +73,8 @@ import kotlinx.coroutines.flow.onStart
 
 /** 통합 타임라인에서 고르는 묶음. [requests]가 true면 요청도 함께 보여 준다. */
 internal enum class TimelineFilter(val label: Int, val kinds: Set<EventKind>, val requests: Boolean) {
-    ALL(R.string.pulse_timeline_all, emptySet(), true),
+    // 일반 로그는 양이 많아 요청·행동·오류를 덮으므로 "주요"에서 빼고 "로그"에서 본다.
+    ALL(R.string.pulse_timeline_all, EventKind.entries.toSet() - EventKind.LOG, true),
     REQUESTS(R.string.pulse_timeline_requests, setOf(EventKind.MARKER), true),
     ISSUES(R.string.pulse_events_issues, EventGroup.ISSUES.kinds, false),
     ACTIONS(R.string.pulse_events_actions, EventGroup.ACTIONS.kinds + EventGroup.MARKERS.kinds, false),

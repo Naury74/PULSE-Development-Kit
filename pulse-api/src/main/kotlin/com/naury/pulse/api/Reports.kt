@@ -100,7 +100,7 @@ public interface PulseReports {
     /** 저장한(마스킹된) 화면 캡처. */
     public suspend fun loadScreenshot(id: String): ByteArray?
 
-    /** [aroundEpochMillis] 앞뒤 [windowMillis] 안에서 보고에 붙일 만한 오류·실패한 요청·느린 요청·경고 로그. */
+    /** [aroundEpochMillis] 앞 [windowMillis]부터 뒤 30초까지에서 보고에 붙일 만한 오류·실패한 요청·느린 요청·경고 로그·행동. */
     public suspend fun recommendEvidence(
         sessionId: String?,
         aroundEpochMillis: Long,
@@ -121,7 +121,7 @@ public interface PulseReports {
 
     public companion object {
         /** [recommendEvidence]의 기본 범위(앞뒤 ms). */
-        public const val DEFAULT_EVIDENCE_WINDOW_MILLIS: Long = 60_000
+        public const val DEFAULT_EVIDENCE_WINDOW_MILLIS: Long = 5 * 60_000
     }
 }
 

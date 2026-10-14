@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.naury.pulse.api.PulseReports
+import com.naury.pulse.api.ReportKind
 import com.naury.pulse.api.ReportState
 import com.naury.pulse.api.ReportStatus
 
@@ -69,7 +70,7 @@ private fun ReportRow(state: ReportState, reports: PulseReports) {
         Text(
             listOfNotNull(
                 stringResource(severityLabel(state.severity)),
-                state.kind.name,
+                state.kind.takeIf { it != ReportKind.MANUAL }?.name,
                 Formatters.dateTime(state.updatedAtEpochMillis),
                 state.attempts.takeIf { it > 0 }?.let { stringResource(R.string.pulse_bugs_attempts, it) },
                 state.progress?.let { "${(it * PERCENT).toInt()}%" },

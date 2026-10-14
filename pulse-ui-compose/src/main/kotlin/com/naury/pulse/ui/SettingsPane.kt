@@ -50,6 +50,8 @@ internal fun SettingsPane(inspector: PulseInspector, onClear: () -> Unit, modifi
             RecordingSwitch(inspector, recording)
             OverlaySwitch()
         }
+        inspector.reports?.let { ReportsSection(it) }
+
         Box(Modifier.padding(top = Spacing.s)) { Notice(stringResource(R.string.pulse_settings_readonly)) }
 
         ConfigSections(config)
@@ -66,8 +68,6 @@ internal fun SettingsPane(inspector: PulseInspector, onClear: () -> Unit, modifi
                 ),
             )
         }
-
-        inspector.reports?.let { ReportsSection(it) }
 
         EnvironmentSection(inspector)
 

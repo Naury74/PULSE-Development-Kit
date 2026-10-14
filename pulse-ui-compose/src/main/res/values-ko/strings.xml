@@ -469,7 +469,7 @@
     <string name="pulse_remote_edit_note">토큰은 이 기기의 앱 전용 저장소에 저장됩니다. 자동 테스트에서는 빌드할 때 넣는 방식을 권합니다.</string>
     <string name="pulse_overlay_screenshot_secure">이 화면은 앱이 캡처를 막아 두어(FLAG_SECURE) PULSE도 찍지 않습니다.</string>
     <string name="pulse_events_actions">행동</string>
-    <string name="pulse_timeline_all">전체</string>
+    <string name="pulse_timeline_all">주요</string>
     <string name="pulse_timeline_requests">요청</string>
     <string name="pulse_flow_empty">이 기간에 기록된 것이 없습니다.</string>
     <string name="pulse_timeline_search">URL·메시지·태그 검색</string>

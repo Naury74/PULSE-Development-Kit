@@ -78,7 +78,7 @@ internal class ReportService(
 
     override suspend fun recommendEvidence(sessionId: String?, aroundEpochMillis: Long, windowMillis: Long): List<EvidenceRef> {
         val from = aroundEpochMillis - windowMillis
-        val to = aroundEpochMillis + windowMillis
+        val to = aroundEpochMillis + AFTER_MILLIS
         val handle = inspector()
         val issues = handle.loadEvents(
             EventQuery(kinds = ISSUE_KINDS, fromEpochMillis = from, toEpochMillis = to, sessionId = sessionId),
@@ -115,7 +115,12 @@ internal class ReportService(
             .items
             .filter { (it.statusCode ?: 0) >= HTTP_ERROR || it.state in FAILED_STATES || (it.durationNanos ?: 0) >= slowNanos }
         val events = (issues + warnings + actions).sortedBy { it.timestampEpochMillis }.map { event ->
-            EvidenceRef(TimelineItemKind.EVENT, event.id, "${event.kind} ${event.message.lineSequence().first().take(TITLE_CHARS)}")
+            val attributes = event.detail?.takeIf { event.kind == EventKind.ACTION }?.let { " " + compactAttributes(it) }.orEmpty()
+            EvidenceRef(
+                TimelineItemKind.EVENT,
+                event.id,
+                "${event.kind} ${event.message.lineSequence().first().take(TITLE_CHARS)}$attributes",
+            )
         }
         val requestRefs = requests.sortedBy { it.startedAtEpochMillis }.map { request ->
             EvidenceRef(TimelineItemKind.REQUEST, request.id, "${request.method} ${request.path} ${request.statusCode ?: request.state}")
@@ -238,5 +243,12 @@ internal class ReportService(
         const val TITLE_CHARS = 80
         const val NANOS_PER_MILLI = 1_000_000L
         const val REPORT_SCHEMA = "pulse.report.v1"
+        const val AFTER_MILLIS = 30_000L
+
+        /** `{"scenario":"GET_JSON"}`를 `scenario=GET_JSON`으로. 재현 단계 초안에 그대로 쓴다. */
+        fun compactAttributes(json: String): String = runCatching {
+            val obj = JSONObject(json)
+            obj.keys().asSequence().joinToString(" ") { "$it=${obj.optString(it)}" }
+        }.getOrDefault("")
     }
 }

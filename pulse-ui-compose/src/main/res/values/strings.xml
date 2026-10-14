@@ -471,7 +471,7 @@
     <string name="pulse_remote_edit_note">The token is stored in this app\'s private storage on this device. Prefer injecting it at build time for automated runs.</string>
     <string name="pulse_overlay_screenshot_secure">This screen blocks screenshots (FLAG_SECURE), so PULSE does not capture it.</string>
     <string name="pulse_events_actions">Actions</string>
-    <string name="pulse_timeline_all">All</string>
+    <string name="pulse_timeline_all">Main</string>
     <string name="pulse_timeline_requests">Requests</string>
     <string name="pulse_flow_empty">Nothing recorded in this period.</string>
     <string name="pulse_timeline_search">Search URLs, messages, tags</string>
