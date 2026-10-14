@@ -28,12 +28,37 @@ internal class CapturePipeline(private val queue: CaptureQueue, private val sani
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    /**
+     * 묶음을 저장한다. 다른 연결이 잠시 쓰기 잠금을 잡고 있는 경우(같은 파일을 닫고 바로 다시 연 경우 등)를 넘기려고
+     * 짧게 기다리며 몇 번 다시 시도한다. 저장소는 실패한 묶음을 되돌리므로 다시 써도 중복되지 않는다.
+     */
     private fun write(records: List<CaptureRecord>) {
-        try {
-            sink.write(records)
-        } catch (_: Exception) {
-            queue.recordWriteFailure()
+        var attempt = 0
+        while (!tryWrite(records)) {
+            if (!pause(attempt++)) {
+                queue.recordWriteFailure()
+                return
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun tryWrite(records: List<CaptureRecord>): Boolean = try {
+        sink.write(records)
+        true
+    } catch (_: Exception) {
+        false
+    }
+
+    /** [attempt]번째 실패 뒤 기다린다. 더 기다릴 차례가 없거나 끊겼으면 false. */
+    private fun pause(attempt: Int): Boolean {
+        val wait = RETRY_DELAYS_MILLIS.getOrNull(attempt) ?: return false
+        return try {
+            Thread.sleep(wait)
+            true
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            false
         }
     }
 
@@ -64,5 +89,6 @@ internal class CapturePipeline(private val queue: CaptureQueue, private val sani
         const val THREAD_NAME = "pulse-capture-writer"
         const val MAX_BATCH = 200
         const val POLL_MILLIS = 250L
+        val RETRY_DELAYS_MILLIS = longArrayOf(50, 200, 800)
     }
 }

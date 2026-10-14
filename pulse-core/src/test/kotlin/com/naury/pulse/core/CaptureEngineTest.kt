@@ -74,13 +74,11 @@ class CaptureEngineTest {
     }
 
     @Test
-    fun `저장 실패는 세고 다음 기록을 계속 저장한다`() {
+    fun `계속 실패하는 묶음은 세고 다음 기록을 계속 저장한다`() {
         val firstAttempt = CountDownLatch(1)
-        var calls = 0
         val engine = start(
             sink = CaptureSink { records ->
-                calls++
-                if (calls == 1) {
+                if (records.any { it.transactionId == "t1" }) {
                     firstAttempt.countDown()
                     error("disk full")
                 }
@@ -95,6 +93,23 @@ class CaptureEngineTest {
 
         assertThat(engine.health.value.writeFailures).isEqualTo(1)
         assertThat(written.map { it.transactionId }).containsExactly("t2")
+    }
+
+    @Test
+    fun `잠깐 실패한 묶음은 다시 시도해 저장한다`() {
+        var calls = 0
+        val engine = start(
+            sink = CaptureSink { records ->
+                if (++calls == 1) error("database is locked")
+                written += records
+            },
+        )
+
+        engine.recorder.finished("t1", TransactionState.COMPLETED, 1, null)
+        engine.close()
+
+        assertThat(engine.health.value.writeFailures).isEqualTo(0)
+        assertThat(written.map { it.transactionId }).containsExactly("t1")
     }
 
     @Test
