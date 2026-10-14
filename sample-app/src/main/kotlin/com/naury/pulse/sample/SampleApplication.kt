@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.os.StrictMode
 import com.naury.pulse.api.BodyFormats
 import com.naury.pulse.api.CaptureFilter
+import com.naury.pulse.api.ChaosPolicy
 import com.naury.pulse.api.EndpointGrouping
 import com.naury.pulse.api.Pulse
 import com.naury.pulse.api.PulseConfig
@@ -63,6 +64,8 @@ class SampleApplication : Application() {
             )
             // 버그 보고는 데모 서버의 /reports로 보낸다. 실제 앱은 https 주소와 허용 호스트, 보낼 때마다 토큰을 주는 headerProvider를 쓴다.
             .reporting(Reporting(manual = demoReports, crash = demoReports))
+            // 장애 모사는 앱 안 데모 서버에만 허용한다. 설정 탭에서 규칙을 켜면 지연·실패·503 등을 재현할 수 있다.
+            .chaos(ChaosPolicy(setOf("127.0.0.1", "localhost")))
             .build()
         pulse = Pulse.initialize(this, config)
         // 서버 환경·실험 그룹 같은 값을 알리면 설정 탭에 보이고, 바뀐 이력이 타임라인에 남는다.
