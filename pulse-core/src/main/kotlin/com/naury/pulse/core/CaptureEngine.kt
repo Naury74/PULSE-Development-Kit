@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 /** 수집 큐·저장 스레드·[CaptureRecorder]를 묶는다. [start]로 만들고 [close]로 멈춘다. */
 public class CaptureEngine private constructor(
     public val recorder: CaptureRecorder,
+    public val events: EventRecorder,
     private val queue: CaptureQueue,
     private val pipeline: CapturePipeline,
 ) {
@@ -37,7 +38,7 @@ public class CaptureEngine private constructor(
             val recorder = CaptureRecorder(config, clock, queue, redactor, sessionId, contextSource)
             val pipeline = CapturePipeline(queue, BodySanitizer(redactor, config.bodyFormats), sink)
             pipeline.start()
-            return CaptureEngine(recorder, queue, pipeline)
+            return CaptureEngine(recorder, EventRecorder(recorder, redactor, queue, sink), queue, pipeline)
         }
 
         /** 저장을 기다리는 원본 본문 메모리 상한. 가장 큰 본문 네 개 또는 8 MiB 중 큰 값이다. */

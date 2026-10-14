@@ -45,6 +45,9 @@ public class Redactor(policy: RedactionPolicy) {
         return if (sanitized.length > MAX_MESSAGE_LENGTH) sanitized.take(MAX_MESSAGE_LENGTH) + "…" else sanitized
     }
 
+    /** 자유 텍스트(로그 등) 안의 URL과 `name=value` 형태의 민감 값을 가린다. 길이는 자르지 않는다. */
+    public fun sanitizeTextPublic(text: String): String = sanitizeText(text)
+
     /** 자유 텍스트 안의 URL과 `name=value` 형태의 민감 값을 가린다. 길이는 자르지 않는다. */
     internal fun sanitizeText(text: String): String {
         val urlsSanitized = urlPattern.replace(text) { sanitizeUrl(it.value) }

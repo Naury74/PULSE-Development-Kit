@@ -2,7 +2,9 @@ package com.naury.pulse.core
 
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
+import com.naury.pulse.api.EventKind
 import com.naury.pulse.api.HeaderField
+import com.naury.pulse.api.LogLevel
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.RequestContext
 import com.naury.pulse.api.ResponseSource
@@ -88,3 +90,34 @@ internal class RawBody(
     val contentType: String?,
     val transferredBytes: Long,
 ) : QueuedEvent
+
+/** 앱 이벤트 하나. 문자열은 마스킹을 마친 값이다. [attachmentPng]가 있으면 저장소가 파일로 쓰고 이름을 이벤트에 남긴다. */
+public class EventRecord internal constructor(
+    override val transactionId: String,
+    public val sessionId: String,
+    public val timestampEpochMillis: Long,
+    public val kind: EventKind,
+    public val level: LogLevel?,
+    public val tag: String?,
+    public val message: String,
+    public val detail: String?,
+    public val screen: String?,
+    public val spanId: String?,
+    public val durationMillis: Long?,
+    public val value: Long?,
+    public val attachmentPng: ByteArray?,
+) : CaptureRecord
+
+/**
+ * 세션 상태 갱신. [foregroundMillis]는 지금까지의 합이고 [exitReason]이 있으면 세션이 끝났다는 뜻이다.
+ * [targetSessionId]가 다른 세션이면(지난 실행의 종료 이유) 그 세션을 고친다.
+ */
+public class SessionRecord internal constructor(
+    public val targetSessionId: String,
+    public val lastSeenEpochMillis: Long?,
+    public val foregroundMillis: Long?,
+    public val exitReason: String?,
+    public val crashed: Boolean?,
+) : CaptureRecord {
+    override val transactionId: String = targetSessionId
+}

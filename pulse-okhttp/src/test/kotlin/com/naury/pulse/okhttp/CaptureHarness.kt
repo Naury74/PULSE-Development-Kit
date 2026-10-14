@@ -6,9 +6,11 @@ import com.naury.pulse.core.BodyRecord
 import com.naury.pulse.core.CaptureEngine
 import com.naury.pulse.core.CaptureRecord
 import com.naury.pulse.core.CaptureSink
+import com.naury.pulse.core.EventRecord
 import com.naury.pulse.core.FinishRecord
 import com.naury.pulse.core.RequestRecord
 import com.naury.pulse.core.ResponseRecord
+import com.naury.pulse.core.SessionRecord
 import com.naury.pulse.core.TimingRecord
 import java.util.concurrent.CopyOnWriteArrayList
 import okhttp3.EventListener
@@ -59,6 +61,8 @@ class Captured(val records: List<CaptureRecord>) {
             is BodyRecord -> record.text.orEmpty()
             is FinishRecord -> listOfNotNull(record.failureType, record.failureMessage).joinToString()
             is TimingRecord -> ""
+            is EventRecord -> listOfNotNull(record.message, record.detail).joinToString()
+            is SessionRecord -> ""
         }
     }
 }
