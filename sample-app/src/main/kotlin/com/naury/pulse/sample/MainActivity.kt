@@ -120,6 +120,8 @@ private fun SampleScreen(runner: DemoRunner, recording: RecordingState, onOpenIn
     var confirmCrash by remember { mutableStateOf(false) }
     val runAll = DemoScenario.entries.filter { it.inRunAll }
     suspend fun run(scenario: DemoScenario) {
+        // 의미 있는 행동 ID로 남기면 타임라인과 버그 보고의 재현 단계에 쓰인다.
+        Pulse.action("sample.run", mapOf("scenario" to scenario.name))
         running[scenario] = true
         val start = System.nanoTime()
         val text = runner.run(scenario)

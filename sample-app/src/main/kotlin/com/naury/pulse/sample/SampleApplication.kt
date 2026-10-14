@@ -54,6 +54,9 @@ class SampleApplication : Application() {
             )
             .build()
         pulse = Pulse.initialize(this, config)
+        // 서버 환경·실험 그룹 같은 값을 알리면 설정 탭에 보이고, 바뀐 이력이 타임라인에 남는다.
+        Pulse.setFlag("server", "demo-local")
+        Pulse.setFlag("checkout.newFlow", "on")
         Thread({ demoServer.start() }, "demo-server").start()
     }
 }
