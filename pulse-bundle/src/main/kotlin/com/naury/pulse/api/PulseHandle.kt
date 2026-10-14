@@ -17,6 +17,7 @@ import com.naury.pulse.mock.MockInterceptor
 import com.naury.pulse.mock.MockRegistry
 import com.naury.pulse.monitor.AppMonitor
 import com.naury.pulse.monitor.EnvironmentRegistry
+import com.naury.pulse.monitor.LocalDataReader
 import com.naury.pulse.monitor.RemoteReporter
 import com.naury.pulse.monitor.ReportService
 import com.naury.pulse.okhttp.CallTimingRegistry
@@ -66,6 +67,9 @@ public class PulseHandle private constructor(
     private val mockInterceptor = MockInterceptor(mockRegistry, chaosRegistry)
 
     override val chaos: PulseChaos? = chaosRegistry
+
+    override val localData: PulseLocalData? =
+        config.dataInspection?.let { LocalDataReader(context.applicationContext, it, config.redaction) }
     private val environment = EnvironmentRegistry(context.applicationContext, events)
     private val reportService = ReportService(config, storage, { this }, environment::snapshot, scope)
 
