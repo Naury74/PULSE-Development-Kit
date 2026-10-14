@@ -171,3 +171,66 @@ public class RequestContext(
 
 /** 요청을 시작할 때 기본 네트워크의 종류. */
 public enum class NetworkType { WIFI, CELLULAR, ETHERNET, VPN, OTHER, NONE }
+
+/**
+ * 네트워크 말고 앱 자체에서 모을 것. 모두 기기 안에서만 기록하고 [RedactionPolicy]로 글자 속 비밀을 가린다.
+ *
+ * @property crashes 처리되지 않은 예외로 죽을 때 스택·스레드·화면을 죽기 직전에 저장한다. 기존 핸들러에 그대로 넘긴다.
+ * @property exitReasons 다음 실행 때 지난 실행이 끝난 이유(Android 11+ ApplicationExitInfo: 네이티브 크래시·ANR·메모리 부족 등)를 기록한다.
+ * @property logcat 이 앱 프로세스의 logcat을 읽어 로그로 저장한다. 다른 앱의 로그는 읽지 않는다(권한이 필요 없다).
+ * @property logcatMinLevel logcat에서 이 수준 이상만 저장한다.
+ * @property logcatIgnoredTags 저장하지 않을 logcat 태그(예: 시끄러운 라이브러리).
+ * @property mainThreadBlockMillis 메인 스레드가 이보다 오래(ms) 멈추면 그때의 스택과 함께 기록한다. 0이면 끈다. 250 이상.
+ * @property performance 콜드 스타트 시간, 화면 로딩 시간, 화면별 프레임 끊김을 기록한다.
+ * @property memoryIntervalMillis 앱이 화면에 보이는 동안 이 간격(ms)으로 메모리 사용량을 기록한다. 0이면 끈다. 5,000 이상.
+ * @property screenshotOnCrash 크래시 직전에 앞 화면을 캡처해 함께 저장한다. 화면에 개인정보가 보일 수 있어 기본은 끔.
+ */
+public class AppMonitoring @JvmOverloads constructor(
+    public val crashes: Boolean = true,
+    public val exitReasons: Boolean = true,
+    public val logcat: Boolean = false,
+    public val logcatMinLevel: LogLevel = LogLevel.DEBUG,
+    public val logcatIgnoredTags: Set<String> = emptySet(),
+    public val mainThreadBlockMillis: Long = DEFAULT_BLOCK_MILLIS,
+    public val performance: Boolean = true,
+    public val memoryIntervalMillis: Long = DEFAULT_MEMORY_INTERVAL_MILLIS,
+    public val screenshotOnCrash: Boolean = false,
+) {
+    init {
+        require(mainThreadBlockMillis == 0L || mainThreadBlockMillis >= MIN_BLOCK_MILLIS) {
+            "mainThreadBlockMillis는 0 또는 $MIN_BLOCK_MILLIS 이상이어야 합니다."
+        }
+        require(memoryIntervalMillis == 0L || memoryIntervalMillis >= MIN_MEMORY_INTERVAL_MILLIS) {
+            "memoryIntervalMillis는 0 또는 $MIN_MEMORY_INTERVAL_MILLIS 이상이어야 합니다."
+        }
+    }
+
+    private fun values(): List<Any> = listOf(
+        crashes, exitReasons, logcat, logcatMinLevel, logcatIgnoredTags, mainThreadBlockMillis, performance, memoryIntervalMillis,
+        screenshotOnCrash,
+    )
+
+    override fun equals(other: Any?): Boolean = other is AppMonitoring && values() == other.values()
+
+    override fun hashCode(): Int = values().hashCode()
+
+    override fun toString(): String = "AppMonitoring(${values().joinToString()})"
+
+    public companion object {
+        public const val DEFAULT_BLOCK_MILLIS: Long = 2_000
+        public const val MIN_BLOCK_MILLIS: Long = 250
+        public const val DEFAULT_MEMORY_INTERVAL_MILLIS: Long = 30_000
+        public const val MIN_MEMORY_INTERVAL_MILLIS: Long = 5_000
+
+        /** 앱 쪽 수집을 모두 끈다. */
+        @JvmField
+        public val OFF: AppMonitoring = AppMonitoring(
+            crashes = false,
+            exitReasons = false,
+            logcat = false,
+            mainThreadBlockMillis = 0,
+            performance = false,
+            memoryIntervalMillis = 0,
+        )
+    }
+}

@@ -17,6 +17,7 @@ package com.naury.pulse.api
  * @property context 요청과 함께 기록할 화면·앱 상태·네트워크 종류.
  * @property endpoints 통계에서 엔드포인트를 묶는 방법.
  * @property bodyFormats JSON 말고 더 저장할 본문 형식. 기본은 JSON만.
+ * @property monitoring 앱 로그·크래시·종료 이유·성능 수집.
  */
 public class PulseConfig private constructor(
     public val captureMode: CaptureMode,
@@ -31,6 +32,7 @@ public class PulseConfig private constructor(
     public val context: ContextCapture,
     public val endpoints: EndpointGrouping,
     public val bodyFormats: BodyFormats,
+    public val monitoring: AppMonitoring,
 ) {
     public fun newBuilder(): Builder = Builder(this)
 
@@ -46,15 +48,17 @@ public class PulseConfig private constructor(
         filter == other.filter &&
         context == other.context &&
         endpoints == other.endpoints &&
-        bodyFormats == other.bodyFormats
+        bodyFormats == other.bodyFormats &&
+        monitoring == other.monitoring
 
     override fun hashCode(): Int = listOf(
         captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints, bodyFormats,
+        monitoring,
     ).hashCode()
 
     override fun toString(): String = "PulseConfig(captureMode=$captureMode, limits=$limits, retention=$retention, " +
         "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording, insights=$insights, replay=$replay, " +
-        "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats)"
+        "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats, monitoring=$monitoring)"
 
     /** [PulseConfig]를 만든다. 값 검증은 [build]에서 하고, 범위를 벗어나면 [IllegalArgumentException]을 던진다. */
     @Suppress("TooManyFunctions")
@@ -71,6 +75,7 @@ public class PulseConfig private constructor(
         private var context = ContextCapture()
         private var endpoints = EndpointGrouping()
         private var bodyFormats = BodyFormats.JSON_ONLY
+        private var monitoring = AppMonitoring()
 
         internal constructor(config: PulseConfig) : this() {
             captureMode = config.captureMode
@@ -85,6 +90,7 @@ public class PulseConfig private constructor(
             context = config.context
             endpoints = config.endpoints
             bodyFormats = config.bodyFormats
+            monitoring = config.monitoring
         }
 
         public fun captureMode(mode: CaptureMode): Builder = apply { captureMode = mode }
@@ -112,13 +118,15 @@ public class PulseConfig private constructor(
 
         public fun bodyFormats(formats: BodyFormats): Builder = apply { bodyFormats = formats }
 
+        public fun monitoring(monitoring: AppMonitoring): Builder = apply { this.monitoring = monitoring }
+
         public fun build(): PulseConfig {
             require(queueCapacity in MIN_QUEUE_CAPACITY..MAX_QUEUE_CAPACITY) {
                 "queueCapacity는 $MIN_QUEUE_CAPACITY..$MAX_QUEUE_CAPACITY 범위여야 합니다: $queueCapacity"
             }
             return PulseConfig(
                 captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints,
-                bodyFormats,
+                bodyFormats, monitoring,
             )
         }
     }
@@ -132,9 +140,12 @@ public class PulseConfig private constructor(
         @JvmStatic
         public fun defaults(): PulseConfig = Builder().build()
 
-        /** 개발 빌드용 설정: JSON 본문을 마스킹한 뒤 저장한다. 그 밖의 값은 [defaults]와 같다. */
+        /** 개발 빌드용 설정: JSON 본문을 마스킹한 뒤 저장하고, 이 앱의 logcat도 저장한다. 그 밖의 값은 [defaults]와 같다. */
         @JvmStatic
-        public fun debugDefaults(): PulseConfig = Builder().captureMode(CaptureMode.METADATA_AND_SAFE_BODIES).build()
+        public fun debugDefaults(): PulseConfig = Builder()
+            .captureMode(CaptureMode.METADATA_AND_SAFE_BODIES)
+            .monitoring(AppMonitoring(logcat = true))
+            .build()
     }
 }
 
@@ -186,13 +197,16 @@ public class CaptureLimits @JvmOverloads constructor(
  * @property maxTransactions 보관할 트랜잭션 수, 1 이상.
  * @property maxAgeMillis 트랜잭션 보관 기간(ms), 1 이상.
  * @property maxBodyBytes 저장한 본문 파일 합계 상한(바이트), 1 이상.
+ * @property maxEvents 보관할 앱 이벤트(로그·마커·오류 등) 수, 1 이상. 화면 캡처 파일도 함께 지운다.
  */
 public class RetentionPolicy @JvmOverloads constructor(
     public val maxTransactions: Int = DEFAULT_MAX_TRANSACTIONS,
     public val maxAgeMillis: Long = DEFAULT_MAX_AGE_MILLIS,
     public val maxBodyBytes: Long = DEFAULT_MAX_BODY_BYTES,
+    public val maxEvents: Int = DEFAULT_MAX_EVENTS,
 ) {
     init {
+        require(maxEvents >= 1) { "maxEvents는 1 이상이어야 합니다." }
         require(maxTransactions >= 1) { "maxTransactions는 1 이상이어야 합니다." }
         require(maxAgeMillis >= 1) { "maxAgeMillis는 1 이상이어야 합니다." }
         require(maxBodyBytes >= 1) { "maxBodyBytes는 1 이상이어야 합니다." }
@@ -201,16 +215,18 @@ public class RetentionPolicy @JvmOverloads constructor(
     override fun equals(other: Any?): Boolean = other is RetentionPolicy &&
         maxTransactions == other.maxTransactions &&
         maxAgeMillis == other.maxAgeMillis &&
-        maxBodyBytes == other.maxBodyBytes
+        maxBodyBytes == other.maxBodyBytes &&
+        maxEvents == other.maxEvents
 
-    override fun hashCode(): Int = listOf(maxTransactions, maxAgeMillis, maxBodyBytes).hashCode()
+    override fun hashCode(): Int = listOf(maxTransactions, maxAgeMillis, maxBodyBytes, maxEvents).hashCode()
 
     public companion object {
         public const val DEFAULT_MAX_TRANSACTIONS: Int = 10_000
         public const val DEFAULT_MAX_AGE_MILLIS: Long = 7L * 24 * 60 * 60 * 1000
         public const val DEFAULT_MAX_BODY_BYTES: Long = 100L * 1024 * 1024
+        public const val DEFAULT_MAX_EVENTS: Int = 50_000
     }
 
     override fun toString(): String =
-        "RetentionPolicy(maxTransactions=$maxTransactions, maxAgeMillis=$maxAgeMillis, maxBodyBytes=$maxBodyBytes)"
+        "RetentionPolicy(maxTransactions=$maxTransactions, maxAgeMillis=$maxAgeMillis, maxBodyBytes=$maxBodyBytes, maxEvents=$maxEvents)"
 }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * 모든 메서드는 어느 스레드에서 불러도 된다. suspend 함수는 내부에서 I/O 디스패처로 옮겨 실행한다.
  */
+@Suppress("TooManyFunctions")
 public interface PulseInspector {
     public val recordingState: StateFlow<RecordingState>
 
@@ -41,6 +42,33 @@ public interface PulseInspector {
 
     /** [query] 조건의 트래픽 집계. 기본 구현은 기간만 쓴다. */
     public suspend fun loadStatistics(query: StatsQuery): TrafficStatistics = loadStatistics(query.window)
+
+    /** 앱 이벤트·세션이 바뀔 때마다 값을 낸다. 앱 수집이 없는 구현은 아무것도 내지 않는다. */
+    public fun observeEvents(): Flow<Unit> = kotlinx.coroutines.flow.emptyFlow()
+
+    /** [query]에 맞는 앱 이벤트를 최신순으로 [limit]개(1..500)까지 읽는다. 앱 수집이 없는 구현은 빈 페이지. */
+    public suspend fun loadEvents(query: EventQuery, after: PageCursor?, limit: Int): EventPage = EventPage(emptyList(), null)
+
+    /** [fromEpochMillis]..[toEpochMillis]에 걸친 앱 실행(세션)을 최신순으로 [limit]개까지. null이면 그쪽 끝 제한 없음. */
+    public suspend fun loadSessions(fromEpochMillis: Long?, toEpochMillis: Long?, limit: Int): List<SessionSummary> = emptyList()
+
+    /** 앱 실행 시간·크래시·시작 시간·프레임·메모리 집계. 앱 수집이 없는 구현은 null. */
+    public suspend fun loadAppStatistics(fromEpochMillis: Long?, toEpochMillis: Long?): AppStatistics? = null
+
+    /** 이벤트 첨부(화면 캡처 PNG). 없거나 지워졌으면 null. */
+    public suspend fun loadAttachment(name: String): ByteArray? = null
+
+    /** 지금 시각에 마커를 남긴다. 화면(플로팅 버튼 등)에서 쓴다. */
+    public fun mark(name: String) {}
+
+    /** 구간을 시작하고 구간 ID를 돌려준다. 기록하지 않는 구현은 null. */
+    public fun beginSpan(name: String): String? = null
+
+    /** [spanId] 구간을 끝낸다. 없는 ID면 아무것도 하지 않는다. */
+    public fun endSpan(spanId: String) {}
+
+    /** 화면 캡처(PNG)를 이벤트로 남긴다. */
+    public fun recordScreenshot(png: ByteArray, note: String?) {}
 
     /** [window] 기간 기록에 진단 규칙을 적용한 결과. 심각도가 높은 순, 같은 심각도는 근거가 많은 순이다. */
     public suspend fun loadInsights(window: StatsWindow): List<Insight>
