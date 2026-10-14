@@ -469,4 +469,5 @@
     <string name="pulse_remote_edit_subtitle">Overrides the endpoint built into the app on this device</string>
     <string name="pulse_remote_token">Bearer token (optional, not shown again)</string>
     <string name="pulse_remote_edit_note">The token is stored in this app\'s private storage on this device. Prefer injecting it at build time for automated runs.</string>
+    <string name="pulse_overlay_screenshot_secure">This screen blocks screenshots (FLAG_SECURE), so PULSE does not capture it.</string>
 </resources>

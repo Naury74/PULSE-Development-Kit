@@ -17,6 +17,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.PopupMenu
@@ -176,6 +177,11 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
 
     private fun screenshot(activity: Activity) {
         val inspector = PulseInspectorRegistry.current ?: return
+        // 앱이 스크린샷을 막은 화면(FLAG_SECURE)은 PULSE도 찍지 않는다.
+        if (activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0) {
+            toast(activity, activity.getString(R.string.pulse_overlay_screenshot_secure))
+            return
+        }
         val view = activity.window.decorView
         val own = bubble
         own?.visibility = View.INVISIBLE

@@ -467,4 +467,5 @@
     <string name="pulse_remote_edit_subtitle">이 기기에서만 앱에 들어 있는 주소를 덮어씁니다</string>
     <string name="pulse_remote_token">Bearer 토큰(선택, 다시 보여 주지 않음)</string>
     <string name="pulse_remote_edit_note">토큰은 이 기기의 앱 전용 저장소에 저장됩니다. 자동 테스트에서는 빌드할 때 넣는 방식을 권합니다.</string>
+    <string name="pulse_overlay_screenshot_secure">이 화면은 앱이 캡처를 막아 두어(FLAG_SECURE) PULSE도 찍지 않습니다.</string>
 </resources>

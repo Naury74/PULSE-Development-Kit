@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Looper
+import android.view.WindowManager
 import com.naury.pulse.api.EventKind
 import com.naury.pulse.api.LogLevel
 import com.naury.pulse.core.EventRecorder
@@ -58,13 +59,16 @@ internal class CrashMonitor(
 
     companion object {
         private const val MAX_WIDTH = 720
+
+        /** 앱이 스크린샷을 막은 화면인지. PULSE도 같은 경계를 지킨다. */
+        fun isSecure(activity: Activity): Boolean = activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0
         private const val PNG_QUALITY = 100
 
-        /** 앞 화면을 줄여서 PNG로 만든다. 그릴 수 없으면 null. 메인 스레드에서만 부른다. */
+        /** 앞 화면을 줄여서 PNG로 만든다. 그릴 수 없거나 앱이 캡처를 막은 화면(FLAG_SECURE)이면 null. 메인 스레드에서만 부른다. */
         @Suppress("TooGenericExceptionCaught")
         fun capture(activity: Activity): ByteArray? = try {
             val view = activity.window.decorView
-            if (view.width == 0 || view.height == 0) {
+            if (view.width == 0 || view.height == 0 || isSecure(activity)) {
                 null
             } else {
                 val scale = minOf(1f, MAX_WIDTH.toFloat() / view.width)
