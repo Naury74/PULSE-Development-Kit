@@ -2,6 +2,7 @@ package com.naury.pulse.monitor
 
 import android.app.Activity
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -99,8 +100,10 @@ internal class PerformanceMonitor(private val events: EventRecorder) : Applicati
         @Synchronized
         override fun onFrameMetricsAvailable(window: Window, metrics: FrameMetrics, dropCount: Int) {
             val nanos = metrics.getMetric(FrameMetrics.TOTAL_DURATION)
+            // Android 12+는 화면 주사율에 맞춘 마감 시각을 주므로 90·120Hz 화면에서도 기준이 맞다.
+            val deadline = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) metrics.getMetric(FrameMetrics.DEADLINE) else 0L
             total++
-            if (nanos > SLOW_FRAME_NANOS) slow++
+            if (nanos > (if (deadline > 0) deadline else SLOW_FRAME_NANOS)) slow++
             if (nanos > FROZEN_FRAME_NANOS) frozen++
         }
 

@@ -76,6 +76,11 @@ internal class ExitReasons(private val context: Context, private val events: Eve
         const val PREFERENCES = "com.naury.pulse.monitor"
         const val KEY_LAST_TIMESTAMP = "last_exit_timestamp"
         const val MAX_EXITS = 16
+
+        // Android 13·14에서 추가된 값. 낮은 API에서도 이름을 붙이려고 숫자로 둔다.
+        const val REASON_FREEZER = 14
+        const val REASON_PACKAGE_STATE_CHANGE = 15
+        const val REASON_PACKAGE_UPDATED = 16
         const val MAX_TRACE_BYTES = 64 * 1024
         const val KIB = 1024L
 
@@ -99,6 +104,10 @@ internal class ExitReasons(private val context: Context, private val events: Eve
             ApplicationExitInfo.REASON_SIGNALED -> "SIGNALED"
             ApplicationExitInfo.REASON_USER_REQUESTED -> "USER_REQUESTED"
             ApplicationExitInfo.REASON_USER_STOPPED -> "USER_STOPPED"
+            ApplicationExitInfo.REASON_OTHER -> "OTHER"
+            REASON_FREEZER -> "FREEZER"
+            REASON_PACKAGE_STATE_CHANGE -> "PACKAGE_STATE_CHANGE"
+            REASON_PACKAGE_UPDATED -> "PACKAGE_UPDATED"
             else -> "OTHER($reason)"
         }
     }
