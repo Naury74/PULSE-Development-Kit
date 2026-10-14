@@ -187,6 +187,7 @@ private fun snapshotContext(source: AppContextSource?, options: ContextCapture, 
             foreground = if (options.appState) source?.foreground else null,
             networkType = if (options.networkType) source?.networkType else null,
             label = label,
+            spanId = source?.spanId,
         )
     } catch (_: RuntimeException) {
         RequestContext(null, null, null, label)

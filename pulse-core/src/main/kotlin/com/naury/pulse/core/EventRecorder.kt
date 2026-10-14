@@ -10,6 +10,7 @@ import java.util.UUID
  * 앱 이벤트(로그·마커·구간·오류·성능)를 마스킹해 저장 큐에 넣는다. 어느 스레드에서 불러도 되고, 실패는 밖으로 던지지 않는다.
  * 크래시처럼 프로세스가 곧 끝나는 경우는 [recordNow]로 큐를 거치지 않고 바로 저장한다.
  */
+@Suppress("TooManyFunctions")
 public class EventRecorder internal constructor(
     private val recorder: CaptureRecorder,
     private val redactor: Redactor,
@@ -101,6 +102,31 @@ public class EventRecorder internal constructor(
         record(EventKind.SPAN_END, span.name, spanId = spanId, durationMillis = millis)
     }
 
+    /** 가장 최근에 시작해 아직 열려 있는 구간. 그동안 시작한 요청에 붙인다. */
+    public val currentSpanId: String?
+        get() = openSpans.entries.maxByOrNull { it.value.startNanos }?.key
+
+    /** 사용자 행동. [attributes]는 [MAX_ATTRIBUTES]개, 값은 [MAX_ATTRIBUTE_CHARS]자까지 JSON으로 [AppEvent.detail]에 넣는다. */
+    public fun action(id: String, attributes: Map<String, String>) {
+        val detail = attributes.entries.take(MAX_ATTRIBUTES).takeIf { it.isNotEmpty() }?.joinToString(",", "{", "}") { (key, value) ->
+            "\"${jsonEscape(key.take(MAX_TAG_CHARS))}\":\"${jsonEscape(value.take(MAX_ATTRIBUTE_CHARS))}\""
+        }
+        record(EventKind.ACTION, id.take(MAX_TAG_CHARS), tag = ACTION_TAG, detail = detail)
+    }
+
+    /** 화면이 바뀌었으면 이동을 기록하고 지금 화면으로 삼는다. 같은 화면이면 아무것도 하지 않는다. */
+    public fun navigate(screen: String) {
+        val previous = currentScreen
+        if (previous == screen) return
+        currentScreen = screen
+        record(EventKind.NAVIGATION, "${previous ?: "-"} → $screen", tag = NAVIGATION_TAG)
+    }
+
+    /** 플래그·환경 값이 바뀌었다. 값이 null이면 지운 것이다. */
+    public fun config(name: String, value: String?) {
+        record(EventKind.CONFIG, "$name = ${value ?: "(removed)"}", tag = name.take(MAX_TAG_CHARS))
+    }
+
     /** 세션의 마지막 확인 시각과 포그라운드 시간을 갱신한다. */
     public fun touchSession(lastSeenEpochMillis: Long, foregroundMillis: Long) {
         enqueue { SessionRecord(recorder.sessionId, lastSeenEpochMillis, foregroundMillis, null, null) }
@@ -156,10 +182,24 @@ public class EventRecorder internal constructor(
 
     private class OpenSpan(val name: String, val startNanos: Long)
 
+    private fun jsonEscape(value: String): String = buildString {
+        value.forEach { char ->
+            when {
+                char == '"' || char == '\\' -> append('\\').append(char)
+                char < ' ' -> append("\\u%04x".format(char.code))
+                else -> append(char)
+            }
+        }
+    }
+
     public companion object {
         public const val CRASH_REASON: String = "CRASH"
         public const val CRASH_WRITE_TIMEOUT_MILLIS: Long = 2_000
         private const val NANOS_PER_MILLI = 1_000_000L
         private const val MAX_TAG_CHARS = 64
+        private const val MAX_ATTRIBUTES = 32
+        private const val MAX_ATTRIBUTE_CHARS = 256
+        private const val ACTION_TAG = "action"
+        private const val NAVIGATION_TAG = "navigation"
     }
 }

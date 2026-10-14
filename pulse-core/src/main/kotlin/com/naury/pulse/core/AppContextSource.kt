@@ -10,4 +10,8 @@ public interface AppContextSource {
     public val screen: String?
     public val foreground: Boolean?
     public val networkType: NetworkType?
+
+    /** 지금 열려 있는 가장 최근 구간의 ID. */
+    public val spanId: String?
+        get() = null
 }

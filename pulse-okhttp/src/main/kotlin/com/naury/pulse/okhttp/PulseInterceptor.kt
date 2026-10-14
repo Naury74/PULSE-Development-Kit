@@ -1,5 +1,6 @@
 package com.naury.pulse.okhttp
 
+import com.naury.pulse.api.PulseIgnore
 import com.naury.pulse.core.CaptureRecorder
 import com.naury.pulse.core.CaptureTag
 import okhttp3.Interceptor
@@ -14,7 +15,7 @@ public class PulseInterceptor(private val recorder: CaptureRecorder, private val
     @Suppress("TooGenericExceptionCaught")
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
-        if (!recorder.isRecording) return chain.proceed(request)
+        if (!recorder.isRecording || request.tag(PulseIgnore::class.java) != null) return chain.proceed(request)
         val tag = request.tag(CaptureTag::class.java)
         // 재실행·모의 응답처럼 PULSE가 직접 만든 요청은 필터와 상관없이 기록한다.
         if (tag == null && !accepts(request)) return chain.proceed(request)
