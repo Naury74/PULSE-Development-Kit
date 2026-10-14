@@ -540,4 +540,14 @@
     <string name="pulse_bug_status_failed">FAILED</string>
     <string name="pulse_bug_status_canceled">CANCELED</string>
     <string name="pulse_overlay_report">Report a bug…</string>
+    <string name="pulse_chaos_title">Network chaos</string>
+    <string name="pulse_chaos_warning">Only for these hosts: %1$s. Works only on clients that include mockInterceptor(). Rules are lost when the app restarts.</string>
+    <string name="pulse_chaos_enabled">Apply chaos rules</string>
+    <string name="pulse_chaos_rule_summary">%1$d%% of matching requests · delay %2$d ms</string>
+    <string name="pulse_chaos_add">Add chaos rule</string>
+    <string name="pulse_chaos_sheet_subtitle">Delay, fail, time out or answer 429/500/503 instead of the server</string>
+    <string name="pulse_chaos_host">Host (must be allowed)</string>
+    <string name="pulse_chaos_path">Path prefix</string>
+    <string name="pulse_chaos_probability">Apply to % of requests</string>
+    <string name="pulse_chaos_delay">Delay (ms)</string>
 </resources>

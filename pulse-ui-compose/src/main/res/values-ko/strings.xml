@@ -538,4 +538,14 @@
     <string name="pulse_bug_status_failed">실패</string>
     <string name="pulse_bug_status_canceled">취소됨</string>
     <string name="pulse_overlay_report">버그 보고…</string>
+    <string name="pulse_chaos_title">네트워크 장애 모사</string>
+    <string name="pulse_chaos_warning">허용한 호스트에만 적용합니다: %1$s. mockInterceptor()를 붙인 클라이언트에서만 동작하고, 앱을 다시 시작하면 규칙이 사라집니다.</string>
+    <string name="pulse_chaos_enabled">장애 모사 규칙 적용</string>
+    <string name="pulse_chaos_rule_summary">맞는 요청의 %1$d%% · 지연 %2$d ms</string>
+    <string name="pulse_chaos_add">장애 규칙 추가</string>
+    <string name="pulse_chaos_sheet_subtitle">서버 대신 지연·연결 실패·시간 초과·429/500/503을 만듭니다</string>
+    <string name="pulse_chaos_host">호스트(허용 목록에 있어야 함)</string>
+    <string name="pulse_chaos_path">경로 접두사</string>
+    <string name="pulse_chaos_probability">적용 비율(%)</string>
+    <string name="pulse_chaos_delay">지연(ms)</string>
 </resources>

@@ -75,6 +75,8 @@ internal fun SettingsPane(inspector: PulseInspector, onClear: () -> Unit, modifi
 
         MockRulesSection(inspector.mocks)
 
+        inspector.chaos?.let { ChaosSection(it) }
+
         SectionTitle(stringResource(R.string.pulse_settings_data))
         OutlinedButton(onClick = onClear, modifier = Modifier.padding(bottom = Spacing.xl)) {
             Text(stringResource(R.string.pulse_clear), color = MaterialTheme.colorScheme.error)
