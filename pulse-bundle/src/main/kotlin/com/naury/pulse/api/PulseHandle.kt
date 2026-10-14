@@ -13,11 +13,13 @@ import com.naury.pulse.core.CaptureEngine
 import com.naury.pulse.mock.MockInterceptor
 import com.naury.pulse.mock.MockRegistry
 import com.naury.pulse.monitor.AppMonitor
+import com.naury.pulse.monitor.RemoteReporter
 import com.naury.pulse.okhttp.CallTimingRegistry
 import com.naury.pulse.okhttp.PulseEventListenerFactory
 import com.naury.pulse.okhttp.PulseInterceptor
 import com.naury.pulse.replay.ReplayDrafts
 import com.naury.pulse.replay.ReplayEngine
+import com.naury.pulse.storage.OutboxFilter
 import com.naury.pulse.storage.PulseStorage
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +44,10 @@ public class PulseHandle private constructor(
     private val engine: CaptureEngine,
     private val appContext: AndroidAppContext,
     context: Context,
+    private val reporter: RemoteReporter,
 ) : PulseInspector {
+    override val remote: PulseRemote = reporter
+
     // 디스크 정리·삭제 실패는 수집만 못 하게 할 뿐 호스트 앱을 멈추면 안 된다.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, _ -> })
     private val timingRegistry = CallTimingRegistry()
@@ -174,12 +179,10 @@ public class PulseHandle private constructor(
 
     override suspend fun loadStatistics(query: StatsQuery): TrafficStatistics {
         val now = System.currentTimeMillis()
-        val (samples, limited) = storage.loadSamples(
-            query.window.fromEpochMillis(now),
-            TrafficStatistics.MAX_SAMPLES,
-            query.includeSynthetic,
-        )
-        return withContext(Dispatchers.Default) { StatisticsCalculator.compute(query, samples, now, limited, config.endpoints) }
+        val from = query.fromEpochMillis ?: query.window.fromEpochMillis(now)
+        val to = query.toEpochMillis ?: now
+        val (samples, limited) = storage.loadSamples(from, TrafficStatistics.MAX_SAMPLES, query.includeSynthetic, to)
+        return withContext(Dispatchers.Default) { StatisticsCalculator.compute(query, samples, to, limited, config.endpoints) }
     }
 
     override suspend fun loadInsights(window: StatsWindow): List<Insight> {
@@ -219,6 +222,7 @@ public class PulseHandle private constructor(
     public fun close() {
         Pulse.release(this)
         monitor.close()
+        reporter.close()
         engine.close()
         appContext.close()
         scope.cancel()
@@ -239,11 +243,24 @@ public class PulseHandle private constructor(
         private const val MAX_STATISTICS_EVENTS = 50_000
 
         fun create(context: Context, config: PulseConfig): PulseHandle {
-            val storage = PulseStorage.open(context, config.retention)
+            // 보낼 목록에 넣을지는 저장 스레드에서 정하므로, 실행 중에 원격 보고를 켜고 끈 값이 바로 반영되게 늦게 묶는다.
+            val reporterHolder = arrayOfNulls<RemoteReporter>(1)
+            val remote = config.remote
+            val filter = OutboxFilter(
+                kinds = remote?.kinds ?: RemoteReporting.DEFAULT_KINDS,
+                minLogLevel = remote?.minLogLevel,
+                networkFailures = remote?.networkFailures ?: true,
+                maxPending = remote?.maxPending ?: RemoteReporting.DEFAULT_MAX_PENDING,
+                enabled = { reporterHolder[0]?.isActive() == true },
+            )
+            val storage = PulseStorage.open(context, config.retention, filter)
             val appContext = AndroidAppContext(context, config.context)
             val engine = CaptureEngine.start(config, storage.sink, contextSource = appContext)
-            return PulseHandle(config, storage, engine, appContext, context).also { handle ->
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, _ -> })
+            val reporter = RemoteReporter(context.applicationContext, remote, { storage }, scope).also { reporterHolder[0] = it }
+            return PulseHandle(config, storage, engine, appContext, context, reporter).also { handle ->
                 handle.monitor.start()
+                reporter.start()
                 handle.scope.launch {
                     storage.startSession(engine.recorder.sessionId, System.currentTimeMillis())
                     handle.monitor.recordExitReasons()
