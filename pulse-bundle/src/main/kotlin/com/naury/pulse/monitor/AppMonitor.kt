@@ -27,6 +27,7 @@ internal class AppMonitor(
     private val crashes = CrashMonitor(events, sessions, screens, options.screenshotOnCrash)
     private val exits = ExitReasons(context.applicationContext, events, storage)
     private val watchdog = options.mainThreadBlockMillis.takeIf { it > 0 }?.let { MainThreadWatchdog(events, it) }
+    private val interactions = if (options.interactions) InteractionTracker(events) else null
     private val logcat = if (options.logcat) LogcatCollector(events, options.logcatMinLevel, options.logcatIgnoredTags) else null
 
     val currentScreenTracker: ScreenTracker
@@ -36,6 +37,7 @@ internal class AppMonitor(
         app?.registerActivityLifecycleCallbacks(screens)
         app?.registerActivityLifecycleCallbacks(sessions)
         if (options.performance) app?.registerActivityLifecycleCallbacks(performance)
+        interactions?.let { app?.registerActivityLifecycleCallbacks(it) }
         if (options.crashes) crashes.install()
         watchdog?.start()
         logcat?.start()
@@ -64,6 +66,7 @@ internal class AppMonitor(
         app?.unregisterActivityLifecycleCallbacks(screens)
         app?.unregisterActivityLifecycleCallbacks(sessions)
         app?.unregisterActivityLifecycleCallbacks(performance)
+        interactions?.let { app?.unregisterActivityLifecycleCallbacks(it) }
         crashes.uninstall()
         watchdog?.stop()
         logcat?.stop()

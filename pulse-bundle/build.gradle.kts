@@ -18,6 +18,9 @@ dependencies {
     implementation(project(":pulse-mock"))
     implementation(project(":pulse-export"))
     implementation(libs.kotlinx.coroutines.android)
+    // 탭한 Compose 노드를 찾을 때만 쓴다. Compose가 없는 앱에서는 이 코드에 들어가지 않는다.
+    compileOnly(platform(libs.androidx.compose.bom))
+    compileOnly(libs.androidx.compose.ui)
 
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
