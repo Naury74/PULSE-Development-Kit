@@ -16,23 +16,38 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-/** PULSE가 기록하는 여러 경우를 재현하는 요청 묶음. */
-enum class DemoScenario(@StringRes val title: Int, @StringRes val description: Int) {
-    GET_JSON(R.string.scenario_get_json, R.string.scenario_get_json_detail),
-    POST_LOGIN(R.string.scenario_post_login, R.string.scenario_post_login_detail),
-    NOT_FOUND(R.string.scenario_not_found, R.string.scenario_not_found_detail),
-    SERVER_ERROR(R.string.scenario_server_error, R.string.scenario_server_error_detail),
-    REDIRECT(R.string.scenario_redirect, R.string.scenario_redirect_detail),
-    GZIP(R.string.scenario_gzip, R.string.scenario_gzip_detail),
-    LARGE(R.string.scenario_large, R.string.scenario_large_detail),
-    IMAGE(R.string.scenario_image, R.string.scenario_image_detail),
-    TIMEOUT(R.string.scenario_timeout, R.string.scenario_timeout_detail),
-    CANCEL(R.string.scenario_cancel, R.string.scenario_cancel_detail),
-    BURST(R.string.scenario_burst, R.string.scenario_burst_detail),
-    ERROR_BURST(R.string.scenario_error_burst, R.string.scenario_error_burst_detail),
-    REPEATED_GET(R.string.scenario_repeated_get, R.string.scenario_repeated_get_detail),
-    FORM_LOGIN(R.string.scenario_form_login, R.string.scenario_form_login_detail),
-    HEALTH_CHECK(R.string.scenario_health, R.string.scenario_health_detail),
+/** 화면에서 시나리오를 묶는 범주. */
+enum class ScenarioGroup(@StringRes val title: Int) {
+    BASIC(R.string.group_basic),
+    ERRORS(R.string.group_errors),
+    BODIES(R.string.group_bodies),
+    DIAGNOSTICS(R.string.group_diagnostics),
+    OPTIONS(R.string.group_options),
+}
+
+/** PULSE가 기록하는 여러 경우를 재현하는 요청 묶음. [endpoint]는 화면에 보여 줄 메서드와 경로다. */
+enum class DemoScenario(
+    @StringRes val title: Int,
+    @StringRes val description: Int,
+    val group: ScenarioGroup,
+    val method: String,
+    val endpoint: String,
+) {
+    GET_JSON(R.string.scenario_get_json, R.string.scenario_get_json_detail, ScenarioGroup.BASIC, "GET", "/users/1"),
+    POST_LOGIN(R.string.scenario_post_login, R.string.scenario_post_login_detail, ScenarioGroup.BASIC, "POST", "/login"),
+    FORM_LOGIN(R.string.scenario_form_login, R.string.scenario_form_login_detail, ScenarioGroup.BASIC, "POST", "/oauth/token"),
+    REDIRECT(R.string.scenario_redirect, R.string.scenario_redirect_detail, ScenarioGroup.BASIC, "GET", "/redirect"),
+    GZIP(R.string.scenario_gzip, R.string.scenario_gzip_detail, ScenarioGroup.BASIC, "GET", "/gzip"),
+    NOT_FOUND(R.string.scenario_not_found, R.string.scenario_not_found_detail, ScenarioGroup.ERRORS, "GET", "/missing"),
+    SERVER_ERROR(R.string.scenario_server_error, R.string.scenario_server_error_detail, ScenarioGroup.ERRORS, "GET", "/error"),
+    TIMEOUT(R.string.scenario_timeout, R.string.scenario_timeout_detail, ScenarioGroup.ERRORS, "GET", "/slow"),
+    CANCEL(R.string.scenario_cancel, R.string.scenario_cancel_detail, ScenarioGroup.ERRORS, "GET", "/slow"),
+    LARGE(R.string.scenario_large, R.string.scenario_large_detail, ScenarioGroup.BODIES, "GET", "/large"),
+    IMAGE(R.string.scenario_image, R.string.scenario_image_detail, ScenarioGroup.BODIES, "GET", "/image"),
+    BURST(R.string.scenario_burst, R.string.scenario_burst_detail, ScenarioGroup.DIAGNOSTICS, "GET", "/items/{1..20}"),
+    ERROR_BURST(R.string.scenario_error_burst, R.string.scenario_error_burst_detail, ScenarioGroup.DIAGNOSTICS, "GET", "/error ×6"),
+    REPEATED_GET(R.string.scenario_repeated_get, R.string.scenario_repeated_get_detail, ScenarioGroup.DIAGNOSTICS, "GET", "/config ×6"),
+    HEALTH_CHECK(R.string.scenario_health, R.string.scenario_health_detail, ScenarioGroup.OPTIONS, "GET", "/health"),
 }
 
 /** [clientFactory]는 첫 시나리오를 실행할 때 I/O 스레드에서 부른다. */

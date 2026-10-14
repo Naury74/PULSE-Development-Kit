@@ -35,4 +35,15 @@
     <string name="scenario_form_login_detail">application/x-www-form-urlencoded with a password. Stored with the password redacted.</string>
     <string name="scenario_health">Health check (filtered)</string>
     <string name="scenario_health_detail">/health is excluded by CaptureFilter, so it does not appear in PULSE.</string>
+    <string name="group_basic">Basic requests</string>
+    <string name="group_errors">Errors and failures</string>
+    <string name="group_bodies">Body handling</string>
+    <string name="group_diagnostics">Load and insights</string>
+    <string name="group_options">Capture options</string>
+    <string name="run_all">Run all</string>
+    <string name="running_all">Running %1$d / %2$d</string>
+    <string name="clear_results">Clear results</string>
+    <string name="run">Run</string>
+    <string name="session_summary">This session: %1$d run · %2$d ok · %3$d errors</string>
+    <string name="sample_subtitle">Demo server inside the app · nothing leaves the device</string>
 </resources>

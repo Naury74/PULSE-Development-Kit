@@ -35,4 +35,15 @@
     <string name="scenario_form_login_detail">비밀번호가 든 form 본문. 비밀번호를 가린 채 저장합니다.</string>
     <string name="scenario_health">상태 확인(기록 제외)</string>
     <string name="scenario_health_detail">/health는 CaptureFilter로 제외해 PULSE에 나오지 않습니다.</string>
+    <string name="group_basic">기본 요청</string>
+    <string name="group_errors">오류·실패</string>
+    <string name="group_bodies">본문 처리</string>
+    <string name="group_diagnostics">부하·진단</string>
+    <string name="group_options">수집 옵션</string>
+    <string name="run_all">모두 실행</string>
+    <string name="running_all">실행 중 %1$d / %2$d</string>
+    <string name="clear_results">결과 지우기</string>
+    <string name="run">실행</string>
+    <string name="session_summary">이번 실행: %1$d개 · 성공 %2$d · 오류 %3$d</string>
+    <string name="sample_subtitle">앱 안 데모 서버 · 기기 밖으로 나가는 요청 없음</string>
 </resources>
