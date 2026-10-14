@@ -100,6 +100,7 @@ internal fun TrafficPane(
     }
 
     val focusManager = LocalFocusManager.current
+    val range by viewModel.range.collectAsStateWithLifecycle()
 
     // 사용자가 맨 위에 있으면 바로 새로고침하고, 아래를 보고 있으면 위치를 빼앗지 않고 알림만 띄운다.
     // 다른 탭에 있는 동안 바뀐 내용도 보이도록 화면에 들어올 때 한 번 새로고침한다.
@@ -113,7 +114,6 @@ internal fun TrafficPane(
         NotificationPrompt()
         if (picked.isEmpty()) {
             SearchField(searchText, viewModel::search)
-            val range by viewModel.range.collectAsStateWithLifecycle()
             StatusFilters(status, viewModel::filter) { TimeRangeChip(inspector, range, viewModel::setRange) }
         } else {
             SelectionBar(picked.size, onClear = { picked = emptyList() }, onExport = { exportPicked = true })
@@ -141,13 +141,12 @@ internal fun TrafficPane(
                 if (picked.isEmpty()) onSelect else togglePick,
                 PickState(picked.toSet(), togglePick),
                 slowNanos,
-                isFiltered =
-                    searchText.isNotBlank() || status != StatusFilter.ALL,
+                isFiltered = searchText.isNotBlank() || status != StatusFilter.ALL || range.active,
             )
         }
     }
     if (exportPicked) {
-        ExportSheet(inspector, TransactionQuery(searchText, status), picked, scope) { exportPicked = false }
+        ExportSheet(inspector, TransactionQuery(searchText, status, range.from, range.to), picked, scope) { exportPicked = false }
     }
 }
 

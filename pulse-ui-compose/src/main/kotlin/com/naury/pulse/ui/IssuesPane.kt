@@ -78,7 +78,7 @@ private fun AppIssues(inspector: PulseInspector, range: TimeRange, onRangeChange
             null,
             MAX_ISSUES,
         ).items
-        events.groupBy { it.kind to it.message.lineSequence().first().take(SIGNATURE_LENGTH) }
+        events.groupBy { it.kind to signature(it) }
             .map { (_, list) ->
                 IssueGroup(list.first(), list.size, list.last().timestampEpochMillis, list.mapNotNull { it.screen }.toSet())
             }
@@ -145,6 +145,11 @@ private fun IssueCard(group: IssueGroup, onClick: () -> Unit) {
 private val SEVERITY_ORDER = listOf(EventKind.CRASH, EventKind.EXIT, EventKind.ERROR)
 
 private fun severity(kind: EventKind): Int = SEVERITY_ORDER.indexOf(kind).let { if (it < 0) SEVERITY_ORDER.size else it }
+
+/** 같은 원인으로 묶는 기준. 메시지 첫 줄에서 숫자(시간·ID·길이)를 지워 "멈춤 2516 ms"와 "멈춤 2169 ms"를 한 묶음으로 본다. */
+private fun signature(event: AppEvent): String = event.message.lineSequence().first().take(SIGNATURE_LENGTH).replace(DIGITS, "#")
+
+private val DIGITS = Regex("\\d+")
 
 private const val MAX_ISSUES = 500
 private const val SIGNATURE_LENGTH = 160

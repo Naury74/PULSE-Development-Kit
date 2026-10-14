@@ -428,10 +428,11 @@
     <string name="pulse_app_memory_average">average %1$s</string>
     <string name="pulse_app_usage_by_day">Usage by day</string>
     <string name="pulse_app_usage_summary">Run time over %1$d days, total %2$s</string>
-    <string name="pulse_app_day_row">runs %1$d · %2$s · requests %3$d · crashes %4$d</string>
+    <string name="pulse_app_day_row">runs %1$d · %2$s · requests %3$d</string>
+    <string name="pulse_app_day_crashes">crashes %1$d</string>
     <string name="pulse_app_screens">Screens</string>
     <string name="pulse_app_screen_detail">loads %1$d · p50 %2$s · p95 %3$s · frames %4$d</string>
-    <string name="pulse_app_screens_note">The ring shows the share of frames slower than 16 ms.</string>
+    <string name="pulse_app_screens_note">The ring shows the share of frames that missed their display deadline (16.7 ms before Android 12).</string>
     <string name="pulse_app_logs_exits">Logs and exits</string>
     <string name="pulse_app_exit_reasons">How previous runs ended</string>
     <string name="pulse_app_recent_runs">Recent app runs</string>

@@ -426,10 +426,11 @@
     <string name="pulse_app_memory_average">평균 %1$s</string>
     <string name="pulse_app_usage_by_day">날짜별 사용</string>
     <string name="pulse_app_usage_summary">%1$d일 동안의 실행 시간, 합계 %2$s</string>
-    <string name="pulse_app_day_row">실행 %1$d · %2$s · 요청 %3$d · 크래시 %4$d</string>
+    <string name="pulse_app_day_row">실행 %1$d · %2$s · 요청 %3$d</string>
+    <string name="pulse_app_day_crashes">크래시 %1$d</string>
     <string name="pulse_app_screens">화면</string>
     <string name="pulse_app_screen_detail">로딩 %1$d · p50 %2$s · p95 %3$s · 프레임 %4$d</string>
-    <string name="pulse_app_screens_note">고리는 16ms를 넘긴 느린 프레임의 비율입니다.</string>
+    <string name="pulse_app_screens_note">고리는 화면 주사율에 맞춘 마감 시각(Android 12 미만은 16.7ms)을 넘긴 느린 프레임의 비율입니다.</string>
     <string name="pulse_app_logs_exits">로그와 종료</string>
     <string name="pulse_app_exit_reasons">지난 실행이 끝난 이유</string>
     <string name="pulse_app_recent_runs">최근 앱 실행</string>

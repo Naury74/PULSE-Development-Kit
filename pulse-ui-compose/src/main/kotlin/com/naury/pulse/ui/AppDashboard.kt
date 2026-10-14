@@ -174,17 +174,15 @@ private fun UsageByDay(stats: AppStatistics) {
                 .semantics { contentDescription = summary },
         ) {
             val slot = size.width / stats.days.size
-            val gap = 2.dp.toPx()
+            // 날이 적으면 막대가 카드를 다 채우지 않도록 폭을 줄이고 칸 가운데에 둔다.
+            val width = minOf(slot - 2.dp.toPx(), MAX_BAR_WIDTH.toPx())
+            val inset = (slot - width) / 2
             drawLine(track, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
             stats.days.forEachIndexed { index, day ->
                 if (day.runtimeMillis == 0L) return@forEachIndexed
                 val height = size.height * BAR_HEADROOM * day.runtimeMillis / max
-                drawRoundRect(bar, Offset(index * slot, size.height - height), Size(slot - gap, height), CornerRadius(3.dp.toPx()))
-                if (day.crashes >
-                    0
-                ) {
-                    drawCircle(crash, 3.dp.toPx(), Offset(index * slot + (slot - gap) / 2, size.height - height - 6.dp.toPx()))
-                }
+                drawRoundRect(bar, Offset(index * slot + inset, size.height - height), Size(width, height), CornerRadius(3.dp.toPx()))
+                if (day.crashes > 0) drawCircle(crash, 3.dp.toPx(), Offset(index * slot + slot / 2, size.height - height - 6.dp.toPx()))
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = Spacing.xs)) {
@@ -199,16 +197,24 @@ private fun UsageByDay(stats: AppStatistics) {
             Row(Modifier.fillMaxWidth().padding(top = Spacing.xs), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Text(format.format(Date(day.dayStartEpochMillis)), style = MonospaceStyle, modifier = Modifier.weight(1f))
                 Text(
-                    stringResource(R.string.pulse_app_day_row, day.sessions, millis(day.runtimeMillis), day.requests, day.crashes),
+                    stringResource(R.string.pulse_app_day_row, day.sessions, millis(day.runtimeMillis), day.requests),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (day.crashes > 0) crash else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (day.crashes > 0) {
+                    Text(
+                        stringResource(R.string.pulse_app_day_crashes, day.crashes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = crash,
+                    )
+                }
             }
         }
     }
 }
 
 private const val MAX_DAY_ROWS = 7
+private val MAX_BAR_WIDTH = 28.dp
 
 @Composable
 private fun ScreenPerformanceCard(stats: AppStatistics) {
