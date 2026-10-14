@@ -167,11 +167,11 @@ public class PulseConfig private constructor(
         @JvmStatic
         public fun defaults(): PulseConfig = Builder().build()
 
-        /** 개발 빌드용 설정: JSON 본문을 마스킹한 뒤 저장하고, 이 앱의 logcat도 저장한다. 그 밖의 값은 [defaults]와 같다. */
+        /** 개발 빌드용 설정: JSON 본문을 마스킹한 뒤 저장하고, 이 앱의 logcat과 탭·뒤로 키도 기록한다. 그 밖의 값은 [defaults]와 같다. */
         @JvmStatic
         public fun debugDefaults(): PulseConfig = Builder()
             .captureMode(CaptureMode.METADATA_AND_SAFE_BODIES)
-            .monitoring(AppMonitoring(logcat = true))
+            .monitoring(AppMonitoring(logcat = true, interactions = true))
             .build()
     }
 }

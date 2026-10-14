@@ -195,6 +195,8 @@ public enum class NetworkType { WIFI, CELLULAR, ETHERNET, VPN, OTHER, NONE }
  * @property performance 콜드 스타트 시간, 화면 로딩 시간, 화면별 프레임 끊김을 기록한다.
  * @property memoryIntervalMillis 앱이 화면에 보이는 동안 이 간격(ms)으로 메모리 사용량을 기록한다. 0이면 끈다. 5,000 이상.
  * @property screenshotOnCrash 크래시 직전에 앞 화면을 캡처해 함께 저장한다. 화면에 개인정보가 보일 수 있어 기본은 끔.
+ * @property interactions 앱 화면의 탭과 뒤로 키를 행동([EventKind.ACTION], 태그 `interaction`)으로 남긴다. 누른 대상은 View id·클래스나
+ *   Compose testTag·role로만 남기고 글자 내용과 좌표는 남기지 않는다. 다이얼로그 등 별도 창과 제스처 뒤로가기는 잡지 못한다.
  */
 public class AppMonitoring @JvmOverloads constructor(
     public val crashes: Boolean = true,
@@ -206,6 +208,7 @@ public class AppMonitoring @JvmOverloads constructor(
     public val performance: Boolean = true,
     public val memoryIntervalMillis: Long = DEFAULT_MEMORY_INTERVAL_MILLIS,
     public val screenshotOnCrash: Boolean = false,
+    public val interactions: Boolean = false,
 ) {
     init {
         require(mainThreadBlockMillis == 0L || mainThreadBlockMillis >= MIN_BLOCK_MILLIS) {
@@ -218,7 +221,7 @@ public class AppMonitoring @JvmOverloads constructor(
 
     private fun values(): List<Any> = listOf(
         crashes, exitReasons, logcat, logcatMinLevel, logcatIgnoredTags, mainThreadBlockMillis, performance, memoryIntervalMillis,
-        screenshotOnCrash,
+        screenshotOnCrash, interactions,
     )
 
     override fun equals(other: Any?): Boolean = other is AppMonitoring && values() == other.values()

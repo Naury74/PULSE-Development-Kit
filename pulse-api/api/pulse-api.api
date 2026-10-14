@@ -39,10 +39,12 @@ public final class com/naury/pulse/api/AppMonitoring {
 	public fun <init> (ZZZLcom/naury/pulse/api/LogLevel;Ljava/util/Set;JZ)V
 	public fun <init> (ZZZLcom/naury/pulse/api/LogLevel;Ljava/util/Set;JZJ)V
 	public fun <init> (ZZZLcom/naury/pulse/api/LogLevel;Ljava/util/Set;JZJZ)V
-	public synthetic fun <init> (ZZZLcom/naury/pulse/api/LogLevel;Ljava/util/Set;JZJZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ZZZLcom/naury/pulse/api/LogLevel;Ljava/util/Set;JZJZZ)V
+	public synthetic fun <init> (ZZZLcom/naury/pulse/api/LogLevel;Ljava/util/Set;JZJZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCrashes ()Z
 	public final fun getExitReasons ()Z
+	public final fun getInteractions ()Z
 	public final fun getLogcat ()Z
 	public final fun getLogcatIgnoredTags ()Ljava/util/Set;
 	public final fun getLogcatMinLevel ()Lcom/naury/pulse/api/LogLevel;
