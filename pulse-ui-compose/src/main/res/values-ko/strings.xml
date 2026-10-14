@@ -575,4 +575,14 @@
     <string name="pulse_layout_truncated">앞 3,000개 노드만 보여 줍니다.</string>
     <string name="pulse_layout_nodes">노드(▪ View, ◆ Compose)</string>
     <string name="pulse_layout_no_image">화면 캡처 없음(캡처를 막은 화면).</string>
+    <string name="pulse_package_open">패키지 열기</string>
+    <string name="pulse_package_title">재현 패키지</string>
+    <string name="pulse_package_summary">보고</string>
+    <string name="pulse_package_timeline">타임라인</string>
+    <string name="pulse_package_requests">요청</string>
+    <string name="pulse_package_failed">패키지를 읽지 못했습니다: %1$s</string>
+    <string name="pulse_package_verified">모든 파일이 manifest.json의 체크섬과 맞습니다.</string>
+    <string name="pulse_package_tampered">만든 뒤에 바뀐 파일이 있습니다: %1$s</string>
+    <string name="pulse_package_no_issue">보고가 없는 패키지입니다(실행 전체를 내보낸 것).</string>
+    <string name="pulse_package_empty">이 부분은 비어 있습니다.</string>
 </resources>

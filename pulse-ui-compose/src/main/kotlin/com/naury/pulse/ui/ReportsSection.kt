@@ -31,7 +31,10 @@ internal fun ReportsSection(reports: PulseReports) {
     val states by reports.states.collectAsStateWithLifecycle()
     SectionTitle(stringResource(R.string.pulse_bugs_title))
     PulseCard {
-        OutlinedButton(onClick = { ReportRequests.pending = ComposeRequest() }) { Text(stringResource(R.string.pulse_bug_new)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            OutlinedButton(onClick = { ReportRequests.pending = ComposeRequest() }) { Text(stringResource(R.string.pulse_bug_new)) }
+            OpenPackageButton()
+        }
         if (states.isEmpty()) {
             Text(
                 stringResource(R.string.pulse_bugs_empty),

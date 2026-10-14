@@ -577,4 +577,14 @@
     <string name="pulse_layout_truncated">Only the first 3,000 nodes are shown.</string>
     <string name="pulse_layout_nodes">Nodes (▪ View, ◆ Compose)</string>
     <string name="pulse_layout_no_image">No screenshot (this screen blocks capture).</string>
+    <string name="pulse_package_open">Open package</string>
+    <string name="pulse_package_title">Reproduction package</string>
+    <string name="pulse_package_summary">Report</string>
+    <string name="pulse_package_timeline">Timeline</string>
+    <string name="pulse_package_requests">Requests</string>
+    <string name="pulse_package_failed">Could not read this package: %1$s</string>
+    <string name="pulse_package_verified">All files match the checksums in manifest.json.</string>
+    <string name="pulse_package_tampered">Files changed after the package was made: %1$s</string>
+    <string name="pulse_package_no_issue">This package has no report (a whole run was exported).</string>
+    <string name="pulse_package_empty">Nothing in this section.</string>
 </resources>
