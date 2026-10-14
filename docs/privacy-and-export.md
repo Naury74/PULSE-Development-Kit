@@ -18,6 +18,10 @@
 
 화면 캡처(플로팅 버튼, `screenshotOnCrash`)는 화면에 보이는 그대로 저장하므로 마스킹되지 않습니다. 기본은 꺼져 있고, 켜면 내보내기·공유 전에 확인하세요.
 
+## 버그 보고
+
+보고의 글자는 저장 전에 가리고, 화면 캡처는 작성기에서 가린 영역의 픽셀을 덮어쓴 이미지만 저장합니다(편집 전 캡처는 메모리에만). 앱이 캡처를 막은 화면(`FLAG_SECURE`)과 `ScreenshotPolicy.blockedScreens`는 찍지 않습니다. 내보내기·보내기 전에 "개인정보를 확인했습니다"를 체크해야 하고, 목적지는 코드 설정의 허용 호스트로만 보냅니다. 자세한 내용은 [bug-reports.md](bug-reports.md).
+
 ## 원격 보고
 
 `PulseConfig.remote`를 넣거나 설정 탭에서 켠 경우에만 크래시·오류 등을 마스킹한 값 그대로 지정한 서버로 보냅니다. 인증 헤더는 PULSE 기록에 남지 않고, 설정 탭에서 넣은 토큰은 이 앱 전용 저장소(SharedPreferences)에만 저장해 다시 보여 주지 않습니다. 자세한 내용은 [remote-reporting.md](remote-reporting.md).

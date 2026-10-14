@@ -40,6 +40,10 @@
 - **마커·구간**: `Pulse.mark`·`beginSpan`/`endSpan` 또는 앱 화면 위 플로팅 버튼으로 테스트 중 시점과 구간을 표시하고, 그 시점 앞뒤나 구간만 모든 탭에서 따로 봄. 화면 캡처도 함께 남김
 - **이슈·앱 대시보드**: 크래시·오류·멈춤·종료를 원인별로 묶고, 크래시 없는 실행 비율·날짜별 실행 시간·화면별 느린 프레임을 보여 줌
 - **날짜·실행으로 보기**: 오늘·어제·7일·30일, 달력 범위, 실행 하나를 골라 모든 탭에 적용(야간 자동 테스트 결과 확인)
+- **통합 타임라인**: 요청·행동(`Pulse.action`)·화면 이동·오류·성능을 한 목록으로. 구간 안의 요청은 구간과 이어지고, 상세의 "연결된 근거"가 같은 구간·같은 화면·근접을 등급으로 구분해 보여 줌
+- **버그 보고**: 플로팅 버튼에서 지금 화면을 붙여 보고를 쓰고, 캡처의 개인정보를 픽셀째 가리고, 추천 근거를 골라 재현 패키지(ZIP)로 내보내거나 호스트가 정한 목적지(허용 호스트·매번 받는 인증 헤더·재시도·중복 방지, 또는 직접 만든 전송)로 보냄
+- **환경과 플래그**: 앱·기기 정보와 `Pulse.setFlag`로 알린 서버 환경·실험 값, 바뀐 이력
+- **네트워크 장애 모사**(선택): 허용한 호스트에만 지연·연결 실패·시간 초과·429/500/503
 - **원격 오류 보고**(선택): 크래시·오류·멈춤을 묶어 팀 서버로 보냄. 앱이 죽어도 다음 실행 때 보내고, 주소·토큰은 코드·빌드 값·설정 탭에서 지정
 - **release 빌드**: 같은 API의 `pulse-noop`으로 바꾸면 수집·저장·화면 코드가 들어가지 않음
 
@@ -86,6 +90,7 @@ Compose 화면 안에 넣으려면 `PulseInspectorScreen(inspector = pulse, onCl
 | [configuration.md](docs/configuration.md) | `PulseConfig`의 모든 설정과 기본값 |
 | [app-monitoring.md](docs/app-monitoring.md) | 로그·크래시·성능·마커, 날짜로 보기, 로그 내보내기 |
 | [remote-reporting.md](docs/remote-reporting.md) | 원격 오류 보고 설정과 받는 쪽 형식 |
+| [bug-reports.md](docs/bug-reports.md) | 버그 보고 작성·화면 가리기, 재현 패키지, 보고 목적지·직접 전송, 장애 모사 |
 | [capture-semantics.md](docs/capture-semantics.md) | 무엇을 언제 기록하는지, 본문 상태, 타이밍의 의미 |
 | [privacy-and-export.md](docs/privacy-and-export.md) | 마스킹 규칙, 저장 위치, 내보내기 |
 | [replay-and-mocks.md](docs/replay-and-mocks.md) | 재실행과 모의 응답의 안전 장치 |

@@ -22,11 +22,17 @@
 - 날짜·실행으로 보기: 오늘·어제·7일·30일, 달력 범위, 실행 하나. `TransactionQuery`·`StatsQuery`에 `fromEpochMillis`/`toEpochMillis`.
 - 앱 화면 위 플로팅 버튼(마커·이름 마커·구간·화면 캡처, 기본 꺼짐).
 - 원격 오류 보고 `RemoteReporting`·`PulseRemote`: 저장할 때 보낼 목록에 넣어 앱이 죽어도 다음 실행 때 보내고, 실패하면 간격을 늘려 다시 보냄. 설정 탭에서 기기마다 주소·토큰·켜기를 바꿈. 스키마 v7.
+- 통합 타임라인(`loadTimeline`, `TimelineQuery`)과 연결된 근거(`loadRelated`, 기록된 연결·같은 화면·근접 등급). 구간 안에서 시작한 요청에 구간 ID(`RequestContext.spanId`), `TransactionQuery`·`EventQuery`에 `sessionId`·`spanId`. 스키마 v8.
+- `Pulse.action`·`Pulse.screen`·`Pulse.setFlag`와 이벤트 종류 `ACTION`·`NAVIGATION`·`CONFIG`, 환경 정보(`environment()`, `flags`). `PulseIgnore` 태그.
+- 버그 보고(`PulseReports`): 작성기, 화면 캡처 가리기(픽셀 덮어쓰기)·표시 편집기, 근거 추천, 초안 저장, 재현 패키지(`ReproPackageWriter`, `pulse.repro.v1`).
+- 보고 목적지(`Reporting`, `ReportDestination`): 허용 호스트, 보낼 때마다 부르는 `ReportHeaderProvider`, JSON·multipart, 재시도·중복 방지 헤더, 직접 전송(`ReportTransport`).
+- `ScreenshotPolicy`와 `FLAG_SECURE` 화면 캡처 차단.
+- 네트워크 장애 모사(`ChaosPolicy`, `ChaosRule`, `PulseChaos`).
 - 샘플 앱: 앱 진단 시나리오(로그·구간·처리 오류·원격 보고 왕복·멈춤·크래시)와 데모 서버의 `/collect`.
 
 ### 바뀜
 - `loadStatistics(window)`는 재실행·모의 응답 기록을 빼고 셉니다. 넣으려면 `StatsQuery(includeSynthetic = true)`.
-- 인스펙터 탭 구성: 개요·트래픽·로그·이슈·설정. 진단은 이슈 탭의 "네트워크 진단"으로 옮김.
+- 인스펙터 탭 구성: 개요·트래픽·타임라인(전체 흐름·앱 로그)·이슈·설정. 진단은 이슈 탭의 "네트워크 진단"으로 옮김.
 - `RetentionPolicy`에 `maxEvents`(기본 50,000) 추가.
 
 ## [0.1.0-alpha01] — 배포 준비 중

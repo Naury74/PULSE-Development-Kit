@@ -18,6 +18,9 @@
 | `bodyFormats` | `BodyFormats.JSON_ONLY` | JSON 말고 form·텍스트 본문도 저장할지 |
 | `monitoring` | 크래시·종료 이유·멈춤(2초)·성능·메모리 켬, logcat 끔 | 앱 쪽 수집. `debugDefaults()`는 logcat도 켬. [app-monitoring.md](app-monitoring.md) |
 | `remote` | `null`(꺼짐) | 크래시·오류를 서버로 보냄. [remote-reporting.md](remote-reporting.md) |
+| `reporting` | `null`(내보내기만) | 버그 보고 종류별 목적지. [bug-reports.md](bug-reports.md) |
+| `screenshots` | `ScreenshotPolicy()` | 캡처하지 않을 화면. `FLAG_SECURE` 화면은 항상 찍지 않음 |
+| `chaos` | `null`(꺼짐) | 네트워크 장애 모사를 허용할 호스트 |
 
 ## 기록할 요청 거르기
 
