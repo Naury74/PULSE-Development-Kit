@@ -11,6 +11,7 @@ class DraftStepsTest {
             listOf("NAVIGATION MainActivity → CartActivity", "ERROR boom", "MARKER 결제 전")
 
         assertThat(draftSteps(titles)).containsExactly(
+            "sample.run scenario=S1",
             "sample.run scenario=S2",
             "sample.run scenario=S3",
             "sample.run scenario=S4",
