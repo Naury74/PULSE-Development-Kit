@@ -29,7 +29,6 @@ public class AppStatisticsInput(
 public object AppStatisticsCalculator {
     private const val P50 = 50
     private const val P95 = 95
-    private const val DAY_MILLIS = 24L * 60 * 60 * 1000
     private const val MAX_DAYS = 120
     private val crashReasons = setOf("CRASH", "CRASH_NATIVE", "ANR")
 
@@ -40,13 +39,14 @@ public object AppStatisticsCalculator {
         val runtimes = sessions.map { clippedRuntime(it, from, to) }
         val startups = events.filter { it.kind == EventKind.STARTUP }.mapNotNull { it.durationMillis }.sorted()
         val memory = events.filter { it.kind == EventKind.MEMORY }.mapNotNull { it.value }
+        val crashes = crashEvents(events)
         return AppStatistics(
             sessions = sessions.size,
             crashFreeSessions = sessions.count { !it.crashed && it.exitReason !in crashReasons },
             runtimeMillis = runtimes.sum(),
             foregroundMillis = sessions.sumOf { it.foregroundMillis },
             averageSessionMillis = if (sessions.isEmpty()) null else runtimes.sum() / sessions.size,
-            crashes = events.count(::isCrash),
+            crashes = crashes.size,
             errors = events.count { it.kind == EventKind.ERROR },
             mainThreadBlocks = events.count { it.kind == EventKind.MAIN_THREAD_BLOCKED },
             exitReasons = events.filter { it.kind == EventKind.EXIT }.mapNotNull { it.tag }
@@ -56,7 +56,7 @@ public object AppStatisticsCalculator {
             memoryPeakBytes = memory.maxOrNull(),
             memoryAverageBytes = if (memory.isEmpty()) null else memory.sum() / memory.size,
             logLevels = input.logLevels,
-            days = days(sessions, events, input.requestTimes, from, to, timeZone),
+            days = days(sessions, crashes, input.requestTimes, from, to, timeZone),
             markers = events.count { it.kind == EventKind.MARKER },
         )
     }
@@ -88,30 +88,43 @@ public object AppStatisticsCalculator {
     @Suppress("LongParameterList")
     private fun days(
         sessions: List<SessionSummary>,
-        events: List<AppEvent>,
+        crashes: List<AppEvent>,
         requests: List<Long>,
         from: Long?,
         to: Long,
         zone: TimeZone,
     ): List<DayUsage> {
         val first = from ?: sessions.minOfOrNull { it.startedAtEpochMillis } ?: return emptyList()
-        val days = generateSequence(startOfDay(first, zone)) { it + DAY_MILLIS }.takeWhile { it <= to }.take(MAX_DAYS).toList()
+        val days = generateSequence(startOfDay(first, zone)) { nextDay(it, zone) }.takeWhile { it <= to }.take(MAX_DAYS).toList()
         return days.map { day ->
-            val end = day + DAY_MILLIS
+            val end = nextDay(day, zone)
             val inDay = sessions.filter { it.startedAtEpochMillis < end && it.lastSeenEpochMillis >= day }
             DayUsage(
                 dayStartEpochMillis = day,
                 sessions = inDay.size,
                 runtimeMillis = inDay.sumOf { clippedRuntime(it, day, end) },
                 foregroundMillis = inDay.filter { it.startedAtEpochMillis >= day }.sumOf { it.foregroundMillis },
-                crashes = events.count { isCrash(it) && it.timestampEpochMillis in day until end },
+                crashes = crashes.count { it.timestampEpochMillis in day until end },
                 requests = requests.count { it in day until end },
             )
         }
     }
 
-    private fun isCrash(event: AppEvent): Boolean =
-        event.kind == EventKind.CRASH || (event.kind == EventKind.EXIT && event.tag in crashReasons)
+    /**
+     * 크래시 하나에 앱 안 기록(CRASH)과 다음 실행의 종료 이유(EXIT)가 함께 남으므로, 같은 실행에 CRASH가 있으면 EXIT는 세지 않는다.
+     * 네이티브 크래시·ANR처럼 EXIT만 남는 경우는 센다.
+     */
+    private fun crashEvents(events: List<AppEvent>): List<AppEvent> {
+        val inApp = events.filter { it.kind == EventKind.CRASH }
+        val crashedSessions = inApp.mapTo(HashSet()) { it.sessionId }
+        val exits = events.filter { it.kind == EventKind.EXIT && it.tag in crashReasons && it.sessionId !in crashedSessions }
+        return inApp + exits
+    }
+
+    private fun nextDay(dayStart: Long, zone: TimeZone): Long = Calendar.getInstance(zone).apply {
+        timeInMillis = dayStart
+        add(Calendar.DAY_OF_MONTH, 1)
+    }.timeInMillis
 
     private fun startOfDay(epochMillis: Long, zone: TimeZone): Long = Calendar.getInstance(zone).apply {
         timeInMillis = epochMillis
