@@ -570,4 +570,9 @@
     <string name="pulse_data_back">표 목록</string>
     <string name="pulse_data_empty">비어 있습니다.</string>
     <string name="pulse_data_more">더 보기</string>
+    <string name="pulse_overlay_tree">화면 구조 보기</string>
+    <string name="pulse_layout_subtitle">노드 %1$d개 · 누르면 영역을 표시합니다</string>
+    <string name="pulse_layout_truncated">앞 3,000개 노드만 보여 줍니다.</string>
+    <string name="pulse_layout_nodes">노드(▪ View, ◆ Compose)</string>
+    <string name="pulse_layout_no_image">화면 캡처 없음(캡처를 막은 화면).</string>
 </resources>

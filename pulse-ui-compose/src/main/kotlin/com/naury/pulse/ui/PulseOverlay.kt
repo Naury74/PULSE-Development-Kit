@@ -50,6 +50,7 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
     private const val MENU_OPEN = 5
     private const val MENU_HIDE = 6
     private const val MENU_REPORT = 7
+    private const val MENU_TREE = 8
 
     private var installed = false
     private var markerCount = 0
@@ -122,6 +123,7 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
         menu.menu.add(0, MENU_SPAN, MENU_SPAN, spanLabel)
         menu.menu.add(0, MENU_REPORT, MENU_REPORT, activity.getString(R.string.pulse_overlay_report))
         menu.menu.add(0, MENU_SCREENSHOT, MENU_SCREENSHOT, activity.getString(R.string.pulse_overlay_screenshot))
+        menu.menu.add(0, MENU_TREE, MENU_TREE, activity.getString(R.string.pulse_overlay_tree))
         menu.menu.add(0, MENU_OPEN, MENU_OPEN, activity.getString(R.string.pulse_overlay_open))
         menu.menu.add(0, MENU_HIDE, MENU_HIDE, activity.getString(R.string.pulse_overlay_hide))
         menu.setOnMenuItemClickListener { item ->
@@ -139,6 +141,8 @@ internal object PulseOverlay : Application.ActivityLifecycleCallbacks {
                 MENU_SCREENSHOT -> screenshot(activity)
 
                 MENU_REPORT -> openReport(activity, bubble)
+
+                MENU_TREE -> openTree(activity, bubble)
 
                 MENU_OPEN -> activity.startActivity(Intent(activity, PulseInspectorActivity::class.java))
 
@@ -350,5 +354,18 @@ private const val MAX_CAPTURE_WIDTH = 1080
 private fun openReport(activity: Activity, hide: View?) {
     if (PulseInspectorRegistry.current?.reports == null) return
     ReportRequests.pending = ComposeRequest(png = captureScreen(activity, hide))
+    activity.startActivity(Intent(activity, PulseInspectorActivity::class.java))
+}
+
+/** 지금 화면의 구조를 잡아 인스펙터에서 연다. 플로팅 버튼은 구조와 캡처에서 뺀다. */
+private fun openTree(activity: Activity, hide: View?) {
+    val png = captureScreen(activity, hide)
+    hide?.visibility = View.GONE
+    val snapshot = try {
+        ViewHierarchy.capture(activity.javaClass.simpleName, activity.window.decorView, png)
+    } finally {
+        hide?.visibility = View.VISIBLE
+    }
+    UiSnapshots.pending = snapshot
     activity.startActivity(Intent(activity, PulseInspectorActivity::class.java))
 }

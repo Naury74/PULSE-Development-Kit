@@ -124,6 +124,8 @@ public fun PulseInspectorScreen(inspector: PulseInspector, onClose: () -> Unit, 
             }
         }
 
+        UiSnapshots.pending?.let { snapshot -> HierarchySheet(snapshot) { UiSnapshots.pending = null } }
+
         ReportRequests.pending?.let { request -> ReportComposer(inspector, request) { ReportRequests.pending = null } }
 
         if (navigation.confirmClear) {

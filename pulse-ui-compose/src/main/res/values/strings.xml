@@ -572,4 +572,9 @@
     <string name="pulse_data_back">Tables</string>
     <string name="pulse_data_empty">Empty.</string>
     <string name="pulse_data_more">Load more</string>
+    <string name="pulse_overlay_tree">Screen structure</string>
+    <string name="pulse_layout_subtitle">%1$d nodes · tap a node to outline it</string>
+    <string name="pulse_layout_truncated">Only the first 3,000 nodes are shown.</string>
+    <string name="pulse_layout_nodes">Nodes (▪ View, ◆ Compose)</string>
+    <string name="pulse_layout_no_image">No screenshot (this screen blocks capture).</string>
 </resources>
