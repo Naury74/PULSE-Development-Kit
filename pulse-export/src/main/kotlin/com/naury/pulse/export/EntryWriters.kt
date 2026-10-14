@@ -19,7 +19,17 @@ internal class SafeEntry(
     val requestBody: String?,
     val responseBody: String?,
     val failureMessage: String?,
-)
+    val networkRequestHeaders: List<HeaderField> = emptyList(),
+    val networkResponseHeaders: List<HeaderField> = emptyList(),
+    val preferNetworkHeaders: Boolean = false,
+) {
+    /** 한 벌만 쓰는 형식(HAR·Markdown)에 넣을 요청 헤더. */
+    val primaryRequestHeaders: List<HeaderField>
+        get() = if (preferNetworkHeaders && networkRequestHeaders.isNotEmpty()) networkRequestHeaders else requestHeaders
+
+    val primaryResponseHeaders: List<HeaderField>
+        get() = if (preferNetworkHeaders && networkResponseHeaders.isNotEmpty()) networkResponseHeaders else responseHeaders
+}
 
 internal interface EntryWriter {
     fun begin(json: JsonStreamWriter, generatedAtEpochMillis: Long, generator: String)
@@ -69,8 +79,10 @@ internal object PulseJsonEntryWriter : EntryWriter {
             .name("protocol").value(entry.detail.protocol)
             .name("failureType").value(summary.failureType)
             .name("failureMessage").value(entry.failureMessage)
-        message(json, "request", entry.detail.request, entry.requestHeaders, entry.requestBody)
-        entry.detail.response?.let { message(json, "response", it, entry.responseHeaders, entry.responseBody) }
+        message(json, "request", entry.detail.request, entry.requestHeaders, entry.networkRequestHeaders, entry.requestBody)
+        entry.detail.response?.let {
+            message(json, "response", it, entry.responseHeaders, entry.networkResponseHeaders, entry.responseBody)
+        }
         json.name("timings").beginArray()
         entry.detail.timings.forEach { phase ->
             json.beginObject()
@@ -86,9 +98,18 @@ internal object PulseJsonEntryWriter : EntryWriter {
             .endObject()
     }
 
-    private fun message(json: JsonStreamWriter, name: String, message: HttpMessage, headers: List<HeaderField>, body: String?) {
+    @Suppress("LongParameterList")
+    private fun message(
+        json: JsonStreamWriter,
+        name: String,
+        message: HttpMessage,
+        headers: List<HeaderField>,
+        networkHeaders: List<HeaderField>,
+        body: String?,
+    ) {
         json.name(name).beginObject()
         json.headers("headers", headers)
+        json.headers("networkHeaders", networkHeaders)
         json.name("contentType").value(message.contentType)
             .name("declaredContentLength").value(message.declaredContentLength)
             .name("bodyState").value(
@@ -165,7 +186,7 @@ internal object HarEntryWriter : EntryWriter {
             .name("url").value(entry.url)
             .name("httpVersion").value(httpVersion(detail.protocol))
             .name("cookies").beginArray().endArray()
-        json.headers("headers", entry.requestHeaders)
+        json.headers("headers", entry.primaryRequestHeaders)
         json.name("queryString").beginArray()
         queryParameters(entry.url).forEach { (name, value) ->
             json.beginObject().name("name").value(name).name("value").value(value).endObject()
@@ -187,7 +208,7 @@ internal object HarEntryWriter : EntryWriter {
             .name("statusText").value("")
             .name("httpVersion").value(httpVersion(detail.protocol))
             .name("cookies").beginArray().endArray()
-        json.headers("headers", entry.responseHeaders)
+        json.headers("headers", entry.primaryResponseHeaders)
         json.name("content").beginObject()
             .name("size").value(summary.responseBodyBytes ?: UNKNOWN)
             .name("mimeType").value(detail.response?.contentType.orEmpty())
