@@ -20,8 +20,12 @@ import kotlinx.coroutines.withContext
  * 등록한 SharedPreferences·SQLite DB를 읽기 전용으로 읽는다. DB는 `OPEN_READONLY`로 열고 쓰지 않는다.
  * 이름이 민감한 키·열은 값을 통째로 가리고, 나머지 값도 글자 속 비밀(URL 쿼리, `name=value`)을 가린다.
  */
-internal class LocalDataReader(private val context: Context, private val options: DataInspection, policy: RedactionPolicy) :
-    PulseLocalData {
+internal class LocalDataReader(
+    private val context: Context,
+    private val options: DataInspection,
+    policy: RedactionPolicy,
+    private val onEdited: (name: String, key: String, removed: Boolean) -> Unit = { _, _, _ -> },
+) : PulseLocalData {
     private val redactor = Redactor(policy)
 
     override fun sources(): List<DataSource> = options.sharedPreferences.sorted().map { name ->
@@ -43,6 +47,40 @@ internal class LocalDataReader(private val context: Context, private val options
                 masked = masked,
             )
         }
+    }
+
+    override val canEditPreferences: Boolean
+        get() = options.allowPreferenceEdits
+
+    override suspend fun editPreference(name: String, key: String, value: String?) {
+        check(options.allowPreferenceEdits) { "편집을 허용하지 않았습니다(DataInspection.allowPreferenceEdits)." }
+        require(name in options.sharedPreferences) { "등록하지 않은 SharedPreferences입니다: $name" }
+        withContext(Dispatchers.IO) {
+            val preferences = context.getSharedPreferences(name, Context.MODE_PRIVATE)
+            val editor = preferences.edit()
+            if (value == null) {
+                editor.remove(key)
+            } else {
+                when (val current = preferences.all[key]) {
+                    is Boolean -> editor.putBoolean(
+                        key,
+                        value.toBooleanStrictOrNull() ?: throw IllegalArgumentException("true 또는 false여야 합니다."),
+                    )
+
+                    is Int -> editor.putInt(key, value.toIntOrNull() ?: throw IllegalArgumentException("정수여야 합니다."))
+
+                    is Long -> editor.putLong(key, value.toLongOrNull() ?: throw IllegalArgumentException("정수여야 합니다."))
+
+                    is Float -> editor.putFloat(key, value.toFloatOrNull() ?: throw IllegalArgumentException("숫자여야 합니다."))
+
+                    is String, null -> editor.putString(key, value)
+
+                    else -> throw IllegalArgumentException("이 형식은 바꿀 수 없습니다: ${current.javaClass.simpleName}")
+                }
+            }
+            check(editor.commit()) { "저장하지 못했습니다." }
+        }
+        onEdited(name, key, value == null)
     }
 
     override suspend fun tables(database: String): List<DataTable> = withContext(Dispatchers.IO) {

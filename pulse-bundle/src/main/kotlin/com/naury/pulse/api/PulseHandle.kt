@@ -72,7 +72,12 @@ public class PulseHandle private constructor(
     override val chaos: PulseChaos? = chaosRegistry
 
     override val localData: PulseLocalData? =
-        config.dataInspection?.let { LocalDataReader(context.applicationContext, it, config.redaction) }
+        config.dataInspection?.let { options ->
+            LocalDataReader(context.applicationContext, options, config.redaction) { name, key, removed ->
+                // 값은 남기지 않는다. 무엇을 바꿨는지만 타임라인에 보인다.
+                events.record(EventKind.CONFIG, "$name.$key ${if (removed) "(removed)" else "(edited)"}", tag = "pulse.data")
+            }
+        }
     private val environment = EnvironmentRegistry(context.applicationContext, events)
     private val reportService = ReportService(config, storage, { this }, environment::snapshot, scope)
 

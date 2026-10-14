@@ -5,7 +5,9 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.naury.pulse.api.RedactionPolicy.Companion.REDACTED
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Before
@@ -18,6 +20,7 @@ class LocalDataTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val original = Thread.getDefaultUncaughtExceptionHandler()
     private lateinit var data: PulseLocalData
+    private lateinit var handle: PulseHandle
 
     @Before
     fun setUp() {
@@ -31,11 +34,18 @@ class LocalDataTest {
             db.execSQL("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, password TEXT, avatar BLOB)")
             repeat(5) { db.execSQL("INSERT INTO users (name, password, avatar) VALUES ('kim$it', 'pw-$it', x'0102')") }
         }
-        val handle = Pulse.initialize(
+        handle = Pulse.initialize(
             context,
             PulseConfig.debugDefaults().newBuilder()
                 .monitoring(AppMonitoring.OFF)
-                .dataInspection(DataInspection(sharedPreferences = setOf("settings", "absent"), databases = setOf("app.db"), maxRows = 2))
+                .dataInspection(
+                    DataInspection(
+                        sharedPreferences = setOf("settings", "absent"),
+                        databases = setOf("app.db"),
+                        maxRows = 2,
+                        allowPreferenceEdits = true,
+                    ),
+                )
                 .build(),
         )
         data = requireNotNull(handle.localData)
@@ -78,5 +88,28 @@ class LocalDataTest {
         assertThat(row["avatar"]).isEqualTo("BLOB 2 B")
         assertThat(data.rows("app.db", "users", 4).hasMore).isFalse()
         assertThrows(IllegalArgumentException::class.java) { runBlocking { data.rows("app.db", "users; DROP TABLE users", 0) } }
+    }
+
+    @Test
+    fun `편집을 허용하면 형식을 지켜 바꾸고 지우며 키 이름만 이벤트로 남긴다`() = runBlocking<Unit> {
+        data.editPreference("settings", "launches", "7")
+        data.editPreference("settings", "auth_token", "new-secret")
+        data.editPreference("settings", "theme", null)
+        assertThrows(IllegalArgumentException::class.java) { runBlocking { data.editPreference("settings", "launches", "seven") } }
+
+        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        assertThat(prefs.getInt("launches", 0)).isEqualTo(7)
+        assertThat(prefs.getString("auth_token", null)).isEqualTo("new-secret")
+        assertThat(prefs.contains("theme")).isFalse()
+        val edits = withTimeout(10_000) {
+            var items = emptyList<AppEvent>()
+            while (items.size < 3) {
+                delay(20)
+                items = handle.loadEvents(EventQuery(kinds = setOf(EventKind.CONFIG), tag = "pulse.data"), null, 10).items
+            }
+            items.map { it.message }
+        }
+        assertThat(edits).containsExactly("settings.launches (edited)", "settings.auth_token (edited)", "settings.theme (removed)")
+        assertThat(edits.joinToString()).doesNotContain("new-secret")
     }
 }
