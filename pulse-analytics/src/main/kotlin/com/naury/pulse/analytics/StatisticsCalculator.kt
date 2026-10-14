@@ -55,7 +55,8 @@ public object StatisticsCalculator {
                 (query.screen == null || sample.context?.screen == query.screen) &&
                 (query.label == null || sample.context?.label == query.label)
         }
-        val from = query.window.millis?.let { nowEpochMillis - it } ?: selected.minOfOrNull { it.startedAtEpochMillis }
+        val from =
+            query.fromEpochMillis ?: query.window.millis?.let { nowEpochMillis - it } ?: selected.minOfOrNull { it.startedAtEpochMillis }
         val endpoints = Breakdowns.endpoints(selected, EndpointTemplater(grouping))
         return TrafficStatistics(
             window = query.window,
