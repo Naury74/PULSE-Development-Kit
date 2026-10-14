@@ -23,6 +23,9 @@ internal class ExportSanitizer(policy: RedactionPolicy) {
 
     fun message(message: String?): String? = redactor.sanitizeMessage(message)
 
+    /** 길이를 자르지 않고 글자 속 비밀만 다시 가린다. */
+    fun text(text: String): String = redactor.sanitizeTextPublic(text)
+
     /** 다시 마스킹한 본문. 마스킹할 수 없으면 null. [contentType]이 없거나 저장할 수 없는 형식이면 JSON으로 본다. */
     fun body(text: String?, contentType: String? = null): String? {
         if (text == null) return null
