@@ -8,9 +8,11 @@ import com.naury.pulse.api.TransactionState
 import com.naury.pulse.core.BodyRecord
 import com.naury.pulse.core.CaptureRecord
 import com.naury.pulse.core.CaptureSink
+import com.naury.pulse.core.EventRecord
 import com.naury.pulse.core.FinishRecord
 import com.naury.pulse.core.RequestRecord
 import com.naury.pulse.core.ResponseRecord
+import com.naury.pulse.core.SessionRecord
 import com.naury.pulse.core.TimingRecord
 
 /**
@@ -24,6 +26,8 @@ internal class CaptureWriter(
     private val wallClock: () -> Long,
 ) : CaptureSink {
     private val dao = database.transactions()
+    private val events = database.events()
+    private val eventWriter = EventWriter(events, blobs)
     private val lock = Any()
     private var batchesSinceRetention = 0
 
@@ -47,17 +51,19 @@ internal class CaptureWriter(
     fun startSession(sessionId: String, startedAtEpochMillis: Long) = synchronized(lock) {
         dao.insertSession(SessionEntity(sessionId, startedAtEpochMillis))
         dao.markInterrupted(sessionId)
-        blobs.deleteUnreferenced(dao.allBlobFiles().toSet())
+        blobs.deleteUnreferenced((dao.allBlobFiles() + events.allAttachments()).toSet())
         enforceRetention()
-        dao.deleteEmptySessions(keep = sessionId)
+        dao.deleteEmptySessions(keep = sessionId, cutoff = wallClock() - retention.maxAgeMillis)
     }
 
     fun clear() = synchronized(lock) {
         dao.deleteAllTransactions()
+        events.deleteAll()
         blobs.deleteAll()
     }
 
     fun enforceRetention() = synchronized(lock) {
+        eventWriter.enforceRetention(wallClock() - retention.maxAgeMillis, retention.maxEvents)
         delete(dao.idsOlderThan(wallClock() - retention.maxAgeMillis))
         val overflow = dao.count() - retention.maxTransactions
         if (overflow > 0) delete(dao.oldestIds(overflow))
@@ -102,6 +108,10 @@ internal class CaptureWriter(
             )
 
             is TimingRecord -> insertTimings(record)
+
+            is EventRecord -> eventWriter.insert(record, writtenBlobs)
+
+            is SessionRecord -> eventWriter.updateSession(record, wallClock())
         }
     }
 

@@ -156,6 +156,10 @@ internal interface TransactionDao {
     @Query("DELETE FROM transactions")
     fun deleteAllTransactions()
 
-    @Query("DELETE FROM sessions WHERE id NOT IN (SELECT DISTINCT sessionId FROM transactions) AND id != :keep")
-    fun deleteEmptySessions(keep: String)
+    /** 보관 기간이 지났고 남은 요청·이벤트가 없는 세션을 지운다. 실행 시간 통계에 쓰므로 기간 안의 세션은 남긴다. */
+    @Query(
+        """DELETE FROM sessions WHERE id != :keep AND COALESCE(lastSeenEpochMillis, startedAtEpochMillis) < :cutoff
+        AND id NOT IN (SELECT DISTINCT sessionId FROM transactions) AND id NOT IN (SELECT DISTINCT sessionId FROM app_events)""",
+    )
+    fun deleteEmptySessions(keep: String, cutoff: Long)
 }

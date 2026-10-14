@@ -117,8 +117,8 @@ internal class TransactionReader(private val dao: TransactionDao, private val bl
     private fun MessageEntity.toHttpMessage(headers: List<HeaderField>) =
         HttpMessage(headers, contentType, declaredContentLength, bodyState, storedBodyBytes, redactedValueCount)
 
-    private companion object {
-        const val MAX_PAGE_SIZE = 500
+    internal companion object {
+        private const val MAX_PAGE_SIZE = 500
 
         fun escapeLike(text: String) = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     }

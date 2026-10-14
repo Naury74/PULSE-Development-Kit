@@ -23,6 +23,21 @@ internal class BlobStore(private val directory: File) {
 
     fun read(name: String): String? = file(name).takeIf { it.isFile }?.readText(Charsets.UTF_8)
 
+    /** 이진 파일(화면 캡처). 텍스트와 같은 방식으로 임시 파일을 거친다. */
+    fun writeBytes(name: String, bytes: ByteArray): Long {
+        val target = file(name)
+        directory.mkdirs()
+        val temporary = File(directory, "$name$TEMPORARY_SUFFIX")
+        temporary.writeBytes(bytes)
+        if (!temporary.renameTo(target)) {
+            temporary.delete()
+            throw IOException("첨부 파일을 저장하지 못했습니다.")
+        }
+        return bytes.size.toLong()
+    }
+
+    fun readBytes(name: String): ByteArray? = file(name).takeIf { it.isFile }?.readBytes()
+
     fun delete(names: Collection<String>) {
         names.forEach { file(it).delete() }
     }

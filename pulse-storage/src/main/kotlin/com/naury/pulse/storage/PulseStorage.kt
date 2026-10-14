@@ -2,10 +2,15 @@ package com.naury.pulse.storage
 
 import android.content.Context
 import androidx.room.Room
+import com.naury.pulse.analytics.AppStatisticsInput
 import com.naury.pulse.analytics.TrafficSample
+import com.naury.pulse.api.EventKind
+import com.naury.pulse.api.EventPage
+import com.naury.pulse.api.EventQuery
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.PageCursor
 import com.naury.pulse.api.RetentionPolicy
+import com.naury.pulse.api.SessionSummary
 import com.naury.pulse.api.TransactionDetail
 import com.naury.pulse.api.TransactionPage
 import com.naury.pulse.api.TransactionQuery
@@ -25,6 +30,7 @@ import kotlinx.coroutines.withContext
  * 만들 때는 디스크에 손대지 않고, DB와 폴더는 처음 쓸 때 연다. 조회 함수는 I/O 디스패처로 옮겨 실행하므로 어느 스레드에서 불러도 되고,
  * [sink]·[startSession]은 저장 스레드·백그라운드에서만 부른다.
  */
+@Suppress("TooManyFunctions")
 public class PulseStorage private constructor(
     databaseFactory: () -> PulseDatabase,
     bodyDirectory: () -> File,
@@ -36,6 +42,7 @@ public class PulseStorage private constructor(
     private val blobs by lazy { BlobStore(bodyDirectory()) }
     private val writer by lazy { CaptureWriter(database, blobs, retention, wallClock) }
     private val reader by lazy { TransactionReader(database.transactions(), blobs) }
+    private val eventReader by lazy { EventReader(database.events(), blobs) }
 
     public val sink: CaptureSink = CaptureSink { records -> writer.write(records) }
 
@@ -57,6 +64,32 @@ public class PulseStorage private constructor(
         includeSynthetic: Boolean = false,
     ): Pair<List<TrafficSample>, Boolean> = withContext(Dispatchers.IO) { reader.samples(fromEpochMillis, limit, includeSynthetic) }
 
+    public suspend fun loadEvents(query: EventQuery, after: PageCursor?, limit: Int): EventPage =
+        withContext(Dispatchers.IO) { eventReader.page(query, after, limit) }
+
+    public suspend fun loadSessions(from: Long?, to: Long?, limit: Int, currentSessionId: String?): List<SessionSummary> =
+        withContext(Dispatchers.IO) { eventReader.sessions(from, to, limit, currentSessionId) }
+
+    /** 앱 상태 집계에 쓸 재료. 이벤트는 종류별로 최신 [eventLimit]개까지. */
+    public suspend fun loadAppStatisticsInput(from: Long?, to: Long?, currentSessionId: String?, eventLimit: Int): AppStatisticsInput =
+        withContext(Dispatchers.IO) {
+            AppStatisticsInput(
+                sessions = eventReader.sessions(from, to, MAX_SESSIONS, currentSessionId),
+                events = eventReader.statisticsEvents(STATISTICS_KINDS, from, to, eventLimit),
+                logLevels = eventReader.logLevels(from, to),
+                requestTimes = eventReader.requestTimes(from, to),
+            )
+        }
+
+    public suspend fun loadAttachment(name: String): ByteArray? = withContext(Dispatchers.IO) { eventReader.attachment(name) }
+
+    /** 지금 세션 바로 전의 세션. 지난 실행이 끝난 이유를 붙일 때 쓴다. 저장 스레드·백그라운드에서만 부른다. */
+    public fun previousSession(currentSessionId: String): SessionSummary? = eventReader.previousSession(currentSessionId)
+
+    public fun observeEventChanges(): Flow<Unit> = flow {
+        emitAll(database.invalidationTracker.createFlow("app_events", "sessions", emitInitialState = false))
+    }.map { }.flowOn(Dispatchers.IO)
+
     public fun observeChanges(): Flow<Unit> = flow {
         emitAll(database.invalidationTracker.createFlow("transactions", "messages", "timing_phases", emitInitialState = false))
     }.map { }.flowOn(Dispatchers.IO)
@@ -70,6 +103,11 @@ public class PulseStorage private constructor(
     }
 
     public companion object {
+        private const val MAX_SESSIONS = 5_000
+        private val STATISTICS_KINDS = listOf(
+            EventKind.CRASH, EventKind.ERROR, EventKind.MAIN_THREAD_BLOCKED, EventKind.EXIT, EventKind.STARTUP,
+            EventKind.SCREEN_LOAD, EventKind.FRAMES, EventKind.MEMORY, EventKind.MARKER,
+        )
         private const val DIRECTORY = "pulse"
         private const val DATABASE_FILE = "pulse.db"
         private const val BODY_DIRECTORY = "bodies"

@@ -7,6 +7,8 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.naury.pulse.api.BodyState
 import com.naury.pulse.api.CaptureSource
+import com.naury.pulse.api.EventKind
+import com.naury.pulse.api.LogLevel
 import com.naury.pulse.api.MessageKind
 import com.naury.pulse.api.NetworkType
 import com.naury.pulse.api.ResponseSource
@@ -14,7 +16,41 @@ import com.naury.pulse.api.TimingPhaseType
 import com.naury.pulse.api.TransactionState
 
 @Entity(tableName = "sessions")
-internal data class SessionEntity(@PrimaryKey val id: String, val startedAtEpochMillis: Long)
+internal data class SessionEntity(
+    @PrimaryKey val id: String,
+    val startedAtEpochMillis: Long,
+    @ColumnInfo(defaultValue = "NULL") val lastSeenEpochMillis: Long? = null,
+    @ColumnInfo(defaultValue = "0") val foregroundMillis: Long = 0,
+    @ColumnInfo(defaultValue = "NULL") val exitReason: String? = null,
+    @ColumnInfo(defaultValue = "0") val crashed: Boolean = false,
+)
+
+/** 앱 이벤트. [levelRank]는 수준 비교용([LogLevel.ordinal]), 수준이 없으면 null. */
+@Entity(
+    tableName = "app_events",
+    indices = [
+        Index("timestampEpochMillis", "id"),
+        Index("kind", "timestampEpochMillis"),
+        Index("sessionId", "timestampEpochMillis"),
+        Index("spanId"),
+    ],
+)
+internal data class EventEntity(
+    @PrimaryKey val id: String,
+    val sessionId: String,
+    val timestampEpochMillis: Long,
+    val kind: EventKind,
+    val level: LogLevel?,
+    val levelRank: Int?,
+    val tag: String?,
+    val message: String,
+    val detail: String?,
+    val screen: String?,
+    val spanId: String?,
+    val durationMillis: Long?,
+    val value: Long?,
+    val attachment: String?,
+)
 
 @Entity(
     tableName = "transactions",

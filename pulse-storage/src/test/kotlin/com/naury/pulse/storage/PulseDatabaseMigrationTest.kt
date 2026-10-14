@@ -67,6 +67,26 @@ class PulseDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `v5에서 v6으로 올리면 세션 기록이 남고 이벤트 표가 생긴다`() {
+        helper.createDatabase(DATABASE, 5).use { database ->
+            database.execSQL("INSERT INTO sessions (id, startedAtEpochMillis) VALUES ('s1', 1)")
+        }
+
+        helper.runMigrationsAndValidate(DATABASE, 6, true).use { migrated ->
+            migrated.query("SELECT foregroundMillis, crashed, lastSeenEpochMillis FROM sessions WHERE id = 's1'").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getLong(0)).isEqualTo(0)
+                assertThat(cursor.getInt(1)).isEqualTo(0)
+                assertThat(cursor.isNull(2)).isTrue()
+            }
+            migrated.query("SELECT COUNT(*) FROM app_events").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getInt(0)).isEqualTo(0)
+            }
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-test.db"
     }
