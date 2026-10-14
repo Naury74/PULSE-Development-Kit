@@ -47,6 +47,10 @@ public interface PulseInspector {
     public val remote: PulseRemote?
         get() = null
 
+    /** 네트워크 장애 모사. [PulseConfig.chaos]가 없거나 지원하지 않는 구현은 null. */
+    public val chaos: PulseChaos?
+        get() = null
+
     /** 버그 보고 작성·전송. 지원하지 않는 구현은 null. */
     public val reports: PulseReports?
         get() = null

@@ -21,6 +21,7 @@ package com.naury.pulse.api
  * @property remote 오류 보고를 원격으로 보내는 설정. null(기본)이면 보내지 않는다.
  * @property reporting 버그 보고를 보낼 목적지. null(기본)이면 기기에 저장하고 내보내기만 한다.
  * @property screenshots 화면 캡처 규칙.
+ * @property chaos 네트워크 장애 모사를 허용할 호스트. null(기본)이면 장애 모사를 쓸 수 없다.
  */
 // 생성자는 Builder만 부르며, 인자는 설정 항목과 일대일이다.
 @Suppress("LongParameterList")
@@ -41,12 +42,13 @@ public class PulseConfig private constructor(
     public val remote: RemoteReporting?,
     public val reporting: Reporting?,
     public val screenshots: ScreenshotPolicy,
+    public val chaos: ChaosPolicy?,
 ) {
     public fun newBuilder(): Builder = Builder(this)
 
     private fun values(): List<Any?> = listOf(
         captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints, bodyFormats,
-        monitoring, remote, reporting, screenshots,
+        monitoring, remote, reporting, screenshots, chaos,
     )
 
     override fun equals(other: Any?): Boolean = other is PulseConfig && values() == other.values()
@@ -56,7 +58,7 @@ public class PulseConfig private constructor(
     override fun toString(): String = "PulseConfig(captureMode=$captureMode, limits=$limits, retention=$retention, " +
         "redaction=$redaction, queueCapacity=$queueCapacity, startRecording=$startRecording, insights=$insights, replay=$replay, " +
         "filter=$filter, context=$context, endpoints=$endpoints, bodyFormats=$bodyFormats, monitoring=$monitoring, remote=$remote, " +
-        "reporting=$reporting, screenshots=$screenshots)"
+        "reporting=$reporting, screenshots=$screenshots, chaos=$chaos)"
 
     /** [PulseConfig]를 만든다. 값 검증은 [build]에서 하고, 범위를 벗어나면 [IllegalArgumentException]을 던진다. */
     @Suppress("TooManyFunctions")
@@ -77,6 +79,7 @@ public class PulseConfig private constructor(
         private var remote: RemoteReporting? = null
         private var reporting: Reporting? = null
         private var screenshots = ScreenshotPolicy()
+        private var chaos: ChaosPolicy? = null
 
         internal constructor(config: PulseConfig) : this() {
             captureMode = config.captureMode
@@ -95,6 +98,7 @@ public class PulseConfig private constructor(
             remote = config.remote
             reporting = config.reporting
             screenshots = config.screenshots
+            chaos = config.chaos
         }
 
         public fun captureMode(mode: CaptureMode): Builder = apply { captureMode = mode }
@@ -132,13 +136,16 @@ public class PulseConfig private constructor(
 
         public fun screenshots(policy: ScreenshotPolicy): Builder = apply { screenshots = policy }
 
+        /** 네트워크 장애 모사를 이 호스트들에만 허용한다. null이면 끈다. */
+        public fun chaos(policy: ChaosPolicy?): Builder = apply { chaos = policy }
+
         public fun build(): PulseConfig {
             require(queueCapacity in MIN_QUEUE_CAPACITY..MAX_QUEUE_CAPACITY) {
                 "queueCapacity는 $MIN_QUEUE_CAPACITY..$MAX_QUEUE_CAPACITY 범위여야 합니다: $queueCapacity"
             }
             return PulseConfig(
                 captureMode, limits, retention, redaction, queueCapacity, startRecording, insights, replay, filter, context, endpoints,
-                bodyFormats, monitoring, remote, reporting, screenshots,
+                bodyFormats, monitoring, remote, reporting, screenshots, chaos,
             )
         }
     }

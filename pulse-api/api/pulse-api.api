@@ -196,6 +196,52 @@ public final class com/naury/pulse/api/CaptureSource : java/lang/Enum {
 	public static fun values ()[Lcom/naury/pulse/api/CaptureSource;
 }
 
+public final class com/naury/pulse/api/ChaosAction : java/lang/Enum {
+	public static final field DELAY Lcom/naury/pulse/api/ChaosAction;
+	public static final field FAIL_IO Lcom/naury/pulse/api/ChaosAction;
+	public static final field STATUS_429 Lcom/naury/pulse/api/ChaosAction;
+	public static final field STATUS_500 Lcom/naury/pulse/api/ChaosAction;
+	public static final field STATUS_503 Lcom/naury/pulse/api/ChaosAction;
+	public static final field TIMEOUT Lcom/naury/pulse/api/ChaosAction;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/naury/pulse/api/ChaosAction;
+	public static fun values ()[Lcom/naury/pulse/api/ChaosAction;
+}
+
+public final class com/naury/pulse/api/ChaosPolicy {
+	public fun <init> (Ljava/util/Set;)V
+	public final fun allowsHost (Ljava/lang/String;)Z
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllowedHosts ()Ljava/util/Set;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/naury/pulse/api/ChaosRule {
+	public static final field Companion Lcom/naury/pulse/api/ChaosRule$Companion;
+	public static final field DEFAULT_DELAY_MILLIS J
+	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/ChaosAction;)V
+	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/ChaosAction;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/ChaosAction;Ljava/lang/String;F)V
+	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/ChaosAction;Ljava/lang/String;FJ)V
+	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/ChaosAction;Ljava/lang/String;FJZ)V
+	public fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/ChaosAction;Ljava/lang/String;FJZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/naury/pulse/api/ChaosAction;Ljava/lang/String;FJZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAction ()Lcom/naury/pulse/api/ChaosAction;
+	public final fun getDelayMillis ()J
+	public final fun getEnabled ()Z
+	public final fun getHost ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getPathPrefix ()Ljava/lang/String;
+	public final fun getProbability ()F
+	public fun hashCode ()I
+	public final fun withEnabled (Z)Lcom/naury/pulse/api/ChaosRule;
+}
+
+public final class com/naury/pulse/api/ChaosRule$Companion {
+}
+
 public final class com/naury/pulse/api/ConnectionStatistics {
 	public fun <init> (IIIII)V
 	public final fun getCacheHits ()I
@@ -646,6 +692,15 @@ public final class com/naury/pulse/api/PhaseStatistics {
 	public final fun getType ()Lcom/naury/pulse/api/TimingPhaseType;
 }
 
+public abstract interface class com/naury/pulse/api/PulseChaos {
+	public abstract fun getEnabled ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun getPolicy ()Lcom/naury/pulse/api/ChaosPolicy;
+	public abstract fun getRules ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun remove (Ljava/lang/String;)V
+	public abstract fun setEnabled (Z)V
+	public abstract fun upsert (Lcom/naury/pulse/api/ChaosRule;)V
+}
+
 public final class com/naury/pulse/api/PulseConfig {
 	public static final field Companion Lcom/naury/pulse/api/PulseConfig$Companion;
 	public static final field DEFAULT_QUEUE_CAPACITY I
@@ -656,6 +711,7 @@ public final class com/naury/pulse/api/PulseConfig {
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBodyFormats ()Lcom/naury/pulse/api/BodyFormats;
 	public final fun getCaptureMode ()Lcom/naury/pulse/api/CaptureMode;
+	public final fun getChaos ()Lcom/naury/pulse/api/ChaosPolicy;
 	public final fun getContext ()Lcom/naury/pulse/api/ContextCapture;
 	public final fun getEndpoints ()Lcom/naury/pulse/api/EndpointGrouping;
 	public final fun getFilter ()Lcom/naury/pulse/api/CaptureFilter;
@@ -680,6 +736,7 @@ public final class com/naury/pulse/api/PulseConfig$Builder {
 	public final fun bodyFormats (Lcom/naury/pulse/api/BodyFormats;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun build ()Lcom/naury/pulse/api/PulseConfig;
 	public final fun captureMode (Lcom/naury/pulse/api/CaptureMode;)Lcom/naury/pulse/api/PulseConfig$Builder;
+	public final fun chaos (Lcom/naury/pulse/api/ChaosPolicy;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun context (Lcom/naury/pulse/api/ContextCapture;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun endpoints (Lcom/naury/pulse/api/EndpointGrouping;)Lcom/naury/pulse/api/PulseConfig$Builder;
 	public final fun filter (Lcom/naury/pulse/api/CaptureFilter;)Lcom/naury/pulse/api/PulseConfig$Builder;
@@ -717,6 +774,7 @@ public abstract interface class com/naury/pulse/api/PulseInspector {
 	public fun endSpan (Ljava/lang/String;)V
 	public fun environment ()Lcom/naury/pulse/api/EnvironmentSnapshot;
 	public abstract fun getCaptureHealth ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun getChaos ()Lcom/naury/pulse/api/PulseChaos;
 	public abstract fun getConfig ()Lcom/naury/pulse/api/PulseConfig;
 	public fun getFlags ()Lkotlinx/coroutines/flow/StateFlow;
 	public abstract fun getMocks ()Lcom/naury/pulse/api/PulseMocks;
@@ -755,6 +813,7 @@ public final class com/naury/pulse/api/PulseInspector$DefaultImpls {
 	public static fun beginSpan (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/String;)Ljava/lang/String;
 	public static fun endSpan (Lcom/naury/pulse/api/PulseInspector;Ljava/lang/String;)V
 	public static fun environment (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/EnvironmentSnapshot;
+	public static fun getChaos (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseChaos;
 	public static fun getFlags (Lcom/naury/pulse/api/PulseInspector;)Lkotlinx/coroutines/flow/StateFlow;
 	public static fun getRemote (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseRemote;
 	public static fun getReports (Lcom/naury/pulse/api/PulseInspector;)Lcom/naury/pulse/api/PulseReports;
