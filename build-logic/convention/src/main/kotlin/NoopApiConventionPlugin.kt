@@ -14,7 +14,14 @@ class NoopApiConventionPlugin : Plugin<Project> {
                 dependsOn(":pulse-bundle:compileReleaseKotlin", ":pulse-noop:compileReleaseKotlin")
                 bundleClasses.set(layout.projectDirectory.dir(CLASSES.format("pulse-bundle")))
                 noopClasses.set(layout.projectDirectory.dir(CLASSES.format("pulse-noop")))
-                classNames.set(listOf("com.naury.pulse.api.Pulse", "com.naury.pulse.api.PulseHandle"))
+                classNames.set(
+                    listOf(
+                        "com.naury.pulse.api.Pulse",
+                        "com.naury.pulse.api.PulseHandle",
+                        "com.naury.pulse.api.PulseWebViewClient",
+                        "com.naury.pulse.api.PulseWebChromeClient",
+                    ),
+                )
                 report.set(layout.buildDirectory.file("reports/noop-api.txt"))
             }
             tasks.named("check") { dependsOn(verify) }
