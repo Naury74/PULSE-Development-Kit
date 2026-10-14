@@ -108,7 +108,7 @@ Compose 화면 안에 넣으려면 `PulseInspectorScreen(inspector = pulse, onCl
 - 연결한 `OkHttpClient`의 요청만 기록합니다. WebView, Cronet, `HttpURLConnection`, 다른 앱의 트래픽은 기록하지 않습니다.
 - application interceptor 위치에서 기록하므로 OkHttp가 나중에 붙이는 헤더(`Host`, `Accept-Encoding`, 쿠키 저장소의 쿠키)는 보이지 않습니다.
 - 본문은 JSON만 저장합니다(form·텍스트는 `BodyFormats`로 켬). multipart·바이너리와 WebSocket 프레임은 기록하지 않습니다.
-- 저장 데이터는 암호화하지 않습니다. 스크린샷 차단은 아직 없습니다.
+- 저장 데이터는 암호화하지 않습니다. 인스펙터 화면의 스크린샷 차단은 `pulse_inspector_secure` 리소스로 켭니다.
 - 네이티브 크래시와 ANR은 그 자리에서 잡지 못하고 다음 실행 때 시스템 기록(Android 11+)으로 남깁니다.
 - 성능은 JVM에서만 쟀고 Android 기기 측정은 아직입니다.
 

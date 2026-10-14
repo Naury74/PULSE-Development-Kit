@@ -5,5 +5,7 @@
     <bool name="pulse_notification_enabled">true</bool>
     <!-- 화면 위 PULSE 버튼(마커·구간·화면 캡처)의 처음 값. 인스펙터 설정에서 바꿀 수 있다. -->
     <bool name="pulse_overlay_enabled">false</bool>
+    <!-- true면 인스펙터 화면을 캡처·화면 녹화·최근 앱 미리보기에서 가린다(FLAG_SECURE). 기록을 화면 공유로 보여 줄 수 없게 된다. -->
+    <bool name="pulse_inspector_secure">false</bool>
     <color name="pulse_brand">#3B5BDB</color>
 </resources>

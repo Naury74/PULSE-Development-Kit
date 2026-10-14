@@ -161,7 +161,7 @@ unzip -o -q pulse-sample-release.apk 'classes*.dex' -d rel && \
 - 본문은 기본으로 **JSON만** 저장합니다. form·텍스트는 `BodyFormats`로 켜야 하고, multipart·이미지는 메타데이터만 남습니다.
 - application interceptor 위치라 OkHttp가 나중에 붙이는 헤더(`Host`, `Accept-Encoding`, 쿠키 저장소 쿠키)는 안 보입니다.
 - 기기 성능(Macrobenchmark)은 아직 재지 않았습니다. 기기 테스트는 Android 16 에뮬레이터(폴드)에서만 했고 API 26 실기기·저사양 기기는 확인하지 않았습니다.
-- 저장 데이터 암호화, 스크린샷 차단, WebSocket 프레임 기록은 없습니다.
+- 저장 데이터 암호화와 WebSocket 프레임 기록은 없습니다. 인스펙터 화면의 스크린샷 차단은 `pulse_inspector_secure` 리소스로 켭니다.
 - 마스킹은 이름 규칙 기반입니다. 키 이름이 평범한 값(예: `"memo": "비밀번호는 1234"`)이나 응답의 IP 주소 같은 개인정보는 가리지 않습니다. 우리 API의 필드 이름을 `withSensitiveNames`로 더해야 합니다.
 - 진단 규칙 임계값은 일반적인 기본값입니다(`InsightThresholds`로 조정).
 - 로그 문장 속 개인정보와 화면 캡처는 가리지 못합니다. `logcat`·`screenshotOnCrash`·플로팅 버튼 캡처는 이 점을 감안해 켜세요.

@@ -99,4 +99,5 @@ RedactionPolicy.strict()
 | --- | --- | --- |
 | `pulse_launcher_icon_enabled` | `true` | debug 빌드에 PULSE 런처 아이콘 |
 | `pulse_notification_enabled` | `true` | 요청 수·오류를 보여 주는 알림 |
+| `pulse_inspector_secure` | `false` | 인스펙터 화면을 스크린샷·화면 녹화·최근 앱 미리보기에서 가림(`FLAG_SECURE`) |
 | `pulse_overlay_enabled` | `false` | 앱 화면 위 플로팅 버튼(마커·구간·화면 캡처). 설정 탭에서 기기마다 바꿀 수 있음 |
