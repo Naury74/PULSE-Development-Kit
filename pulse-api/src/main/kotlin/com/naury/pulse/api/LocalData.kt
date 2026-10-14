@@ -7,22 +7,27 @@ package com.naury.pulse.api
  * @property sharedPreferences SharedPreferences 파일 이름(`getSharedPreferences(name, …)`의 name).
  * @property databases SQLite·Room DB 파일 이름(`getDatabasePath(name)`의 name). 읽기 전용으로 연다.
  * @property maxRows 한 번에 읽을 행 수, 1..1,000.
+ * @property allowPreferenceEdits true면 등록한 SharedPreferences의 값을 인스펙터에서 바꾸거나 지울 수 있다(확인 후, 기존 형식 유지).
+ *   바꾼 기록은 키 이름만 이벤트로 남는다. DB는 언제나 읽기 전용이다.
  */
 public class DataInspection @JvmOverloads constructor(
     public val sharedPreferences: Set<String> = emptySet(),
     public val databases: Set<String> = emptySet(),
     public val maxRows: Int = DEFAULT_MAX_ROWS,
+    public val allowPreferenceEdits: Boolean = false,
 ) {
     init {
         require(maxRows in 1..MAX_ROWS_LIMIT) { "maxRows는 1..$MAX_ROWS_LIMIT 범위여야 합니다." }
     }
 
-    override fun equals(other: Any?): Boolean =
-        other is DataInspection && sharedPreferences == other.sharedPreferences && databases == other.databases && maxRows == other.maxRows
+    private fun values(): List<Any> = listOf(sharedPreferences, databases, maxRows, allowPreferenceEdits)
 
-    override fun hashCode(): Int = listOf(sharedPreferences, databases, maxRows).hashCode()
+    override fun equals(other: Any?): Boolean = other is DataInspection && values() == other.values()
 
-    override fun toString(): String = "DataInspection(sharedPreferences=$sharedPreferences, databases=$databases, maxRows=$maxRows)"
+    override fun hashCode(): Int = values().hashCode()
+
+    override fun toString(): String = "DataInspection(sharedPreferences=$sharedPreferences, databases=$databases, maxRows=$maxRows, " +
+        "allowPreferenceEdits=$allowPreferenceEdits)"
 
     public companion object {
         public const val DEFAULT_MAX_ROWS: Int = 200
@@ -59,4 +64,14 @@ public interface PulseLocalData {
     public suspend fun tables(database: String): List<DataTable>
 
     public suspend fun rows(database: String, table: String, offset: Int): DataRows
+
+    /** [DataInspection.allowPreferenceEdits]가 켜져 있는지. */
+    public val canEditPreferences: Boolean
+        get() = false
+
+    /**
+     * [name]의 [key] 값을 [value]로 바꾼다. null이면 지운다. 기존 형식(Boolean·Int·Long·Float·String)으로 바꾸며, 형식이 맞지 않거나
+     * 바꿀 수 없는 형식(Set)이거나 편집을 허용하지 않았으면 [IllegalArgumentException]·[IllegalStateException].
+     */
+    public suspend fun editPreference(name: String, key: String, value: String?): Unit = error("편집을 허용하지 않았습니다.")
 }

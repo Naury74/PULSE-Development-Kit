@@ -294,8 +294,10 @@ public final class com/naury/pulse/api/DataInspection {
 	public fun <init> (Ljava/util/Set;)V
 	public fun <init> (Ljava/util/Set;Ljava/util/Set;)V
 	public fun <init> (Ljava/util/Set;Ljava/util/Set;I)V
-	public synthetic fun <init> (Ljava/util/Set;Ljava/util/Set;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/Set;Ljava/util/Set;IZ)V
+	public synthetic fun <init> (Ljava/util/Set;Ljava/util/Set;IZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllowPreferenceEdits ()Z
 	public final fun getDatabases ()Ljava/util/Set;
 	public final fun getMaxRows ()I
 	public final fun getSharedPreferences ()Ljava/util/Set;
@@ -934,10 +936,17 @@ public final class com/naury/pulse/api/PulseLabel$Companion {
 }
 
 public abstract interface class com/naury/pulse/api/PulseLocalData {
+	public fun editPreference (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getCanEditPreferences ()Z
 	public abstract fun preferences (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun rows (Ljava/lang/String;Ljava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun sources ()Ljava/util/List;
 	public abstract fun tables (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/naury/pulse/api/PulseLocalData$DefaultImpls {
+	public static fun editPreference (Lcom/naury/pulse/api/PulseLocalData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun getCanEditPreferences (Lcom/naury/pulse/api/PulseLocalData;)Z
 }
 
 public abstract interface class com/naury/pulse/api/PulseMocks {
