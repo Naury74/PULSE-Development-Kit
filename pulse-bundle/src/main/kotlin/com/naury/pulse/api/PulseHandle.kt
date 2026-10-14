@@ -30,12 +30,15 @@ import com.naury.pulse.storage.PulseStorage
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.EventListener
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -295,6 +298,9 @@ public class PulseHandle private constructor(
         scope.launch { storage.clear() }
     }
 
+    @Volatile
+    private var startup: Job? = null
+
     /** 기록을 멈추고 남은 기록을 저장한 뒤 자원을 닫는다. 닫은 뒤에는 [Pulse.initialize]로 새 핸들을 만들 수 있다. */
     public fun close() {
         Pulse.release(this)
@@ -302,6 +308,8 @@ public class PulseHandle private constructor(
         reporter.close()
         engine.close()
         appContext.close()
+        // 시작 정리(세션 기록·오래된 기록 삭제)가 DB를 쓰는 중에 닫으면, 바로 다시 연 핸들의 쓰기가 잠금에 막힐 수 있다.
+        startup?.let { job -> runBlocking { withTimeoutOrNull(STARTUP_JOIN_MILLIS) { job.join() } } }
         scope.cancel()
         storage.close()
     }
@@ -318,6 +326,7 @@ public class PulseHandle private constructor(
     internal companion object {
         private const val INSPECTOR_ACTIVITY = "com.naury.pulse.ui.PulseInspectorActivity"
         private const val MAX_STATISTICS_EVENTS = 50_000
+        private const val STARTUP_JOIN_MILLIS = 2_000L
         private const val MAX_SESSIONS_FOR_DIFF = 5_000
         private const val MAX_DIFF_ITEMS = 20_000
         private const val DIFF_PAGE = 500
@@ -344,7 +353,7 @@ public class PulseHandle private constructor(
                 handle.monitor.start()
                 reporter.start()
                 handle.reportService.uploader.start()
-                handle.scope.launch {
+                handle.startup = handle.scope.launch {
                     storage.startSession(engine.recorder.sessionId, System.currentTimeMillis())
                     handle.monitor.recordExitReasons()
                 }

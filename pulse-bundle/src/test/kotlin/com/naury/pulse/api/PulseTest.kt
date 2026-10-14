@@ -148,12 +148,23 @@ class PulseTest {
         }
     }
 
-    private suspend fun awaitCompleted(handle: PulseHandle): TransactionSummary = withTimeout(10_000) {
+    private suspend fun awaitCompleted(handle: PulseHandle): TransactionSummary {
         var found: TransactionSummary? = null
-        while (found?.state != TransactionState.COMPLETED) {
-            found = handle.loadTransactions(TransactionQuery(), null, 10).items.firstOrNull()
-            if (found?.state != TransactionState.COMPLETED) delay(20)
+        return try {
+            withTimeout(10_000) {
+                while (found?.state != TransactionState.COMPLETED) {
+                    found = handle.loadTransactions(TransactionQuery(), null, 10).items.firstOrNull()
+                    if (found?.state != TransactionState.COMPLETED) delay(20)
+                }
+                requireNotNull(found)
+            }
+        } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+            throw AssertionError(
+                "last=${found?.path} ${found?.state} rec=${handle.recordingState.value} fail=${handle.captureHealth.value.writeFailures} " +
+                    "sessions=${handle.loadSessions(null, null, 10).map { it.id.take(6) + ":" + it.current }} " +
+                    "failed=${handle.loadTransactions(TransactionQuery(status = StatusFilter.FAILED), null, 10).items.map { it.state }}",
+                timeout,
+            )
         }
-        requireNotNull(found)
     }
 }
